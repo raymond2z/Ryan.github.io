@@ -1,0 +1,85 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 400px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+  font-size: 24px;
+  margin: 0 0 20px;
+}
+
+.input-container {
+  margin-bottom: 20px;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.input-item {
+  margin-right: 20px;
+  flex: 1;
+}
+
+.label {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+input {
+  padding: 5px;
+  width: 50px;
+  text-align: right;
+}
+
+/* 拉長"預先剔除的號碼"輸入框 */
+#excludeNumbers {
+  flex: 3; /* 調整寬度 */
+  width: auto; /* 讓寬度自動調整 */
+}
+
+button {
+  background-color: #007BFF;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background-color 0.3s;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.result-container {
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  padding: 20px;
+  text-align: left;
+}
+
+p {
+  font-weight: bold;
+  margin: 0;
+}

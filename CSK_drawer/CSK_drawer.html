@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="style.css"> <!-- 確保這裡引用的檔案名與CSS檔案名一致 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>CSK抽籤器</h1>
+    <div class="input-container">
+      <div class="input-row">
+        <div class="input-item">
+          <label for="minRange">最小範圍:</label>
+          <input type="number" id="minRange" value="1" min="1">
+        </div>
+        <div class="input-item">
+          <label for="maxRange">最大範圍:</label>
+          <input type="number" id="maxRange" value="40" min="1">
+        </div>
+        <div class="input-item">
+          <label for="groupSize">每組人數:</label>
+          <input type="number" id="groupSize" value="4" min="1">
+        </div>
+      </div>
+      <div class="input-row">
+        <label for="excludeNumbers">預先剔除的號碼 (用逗號分隔):</label>
+        <input type="text" id="excludeNumbers">
+      </div>
+    </div>
+    <button id="drawButton">抽籤</button>
+    <button id="resetButton">重置</button>
+    <div id="result" class="result-container"></div>
+  </div>
+  <script>
+    let minRangeInput, maxRangeInput, groupSizeInput, excludeNumbersInput, drawButton, resetButton, resultParagraph;
+    let range, groupSize, availableNumbers, results, excludedNumbers;
+
+    function setup() {
+      minRangeInput = select("#minRange");
+      maxRangeInput = select("#maxRange");
+      groupSizeInput = select("#groupSize");
+      excludeNumbersInput = select("#excludeNumbers");
+      drawButton = select("#drawButton");
+      resetButton = select("#resetButton");
+      resultParagraph = select("#result");
+
+      drawButton.mousePressed(drawNumbers);
+      resetButton.mousePressed(resetDrawing);
+
+      noCanvas();
+      availableNumbers = [];
+      results = [];
+      excludedNumbers = [];
+    }
+
+    function drawNumbers() {
+      const minRange = parseInt(minRangeInput.value());
+      const maxRange = parseInt(maxRangeInput.value());
+      groupSize = parseInt(groupSizeInput.value());
+      excludedNumbers = excludeNumbersInput.value().split(",").map(num => parseInt(num));
+
+      if (minRange >= maxRange || groupSize <= 0 || isNaN(minRange) || isNaN(maxRange) || isNaN(groupSize)) {
+        resultParagraph.html("請輸入有效範圍和組大小！");
+        return;
+      }
+
+      if (availableNumbers.length === 0) {
+        for (let i = minRange; i <= maxRange; i++) {
+          if (!excludedNumbers.includes(i)) {
+            availableNumbers.push(i);
+          }
+        }
+      }
+
+      if (availableNumbers.length < groupSize) {
+        groupSize = availableNumbers.length; // 如果剩餘人數小於每組數量，將剩餘的號碼分為一組
+      }
+
+      const group = [];
+      for (let i = 0; i < groupSize; i++) {
+        const index = floor(random(availableNumbers.length));
+        group.push(availableNumbers.splice(index, 1)[0]);
+      }
+      results.push(group);
+      displayResults();
+    }
+
+    function displayResults() {
+      let output = "抽籤範圍: " + minRangeInput.value() + " 到 " + maxRangeInput.value() + "<br>";
+      for (let i = 0; i < results.length; i++) {
+        output += "抽籤結果 " + (i + 1) + ">>&nbsp;&nbsp;&nbsp;" + results[i].join(", ") + "<br>";
+      }
+      resultParagraph.html(output);
+      if (availableNumbers.length === 0) {
+        resultParagraph.html(output + "所有號碼已經抽完！");
+        drawButton.attribute('disabled', true); // 禁用抽籤按鈕
+      }
+    }
+
+    function resetDrawing() {
+      minRangeInput.value('1');
+      maxRangeInput.value('40');
+      groupSizeInput.value('4');
+      excludeNumbersInput.value('');
+      availableNumbers = [];
+      results = [];
+      resultParagraph.html('');
+      drawButton.removeAttribute('disabled'); // 重置後啟用抽籤按鈕
+    }
+  </script>
+</body>
+</html>
