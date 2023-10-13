@@ -89,7 +89,7 @@ label {
     <input type="number" id="min" value="1" min="1">
     <label for="max">最大範圍:</label>
     <input type="number" id="max" value="37" min="1">
-    <label for="perGroup">每組數量:</label>
+    <label for="perGroup">每組人數:</label>
     <input type="number" id="perGroup" value="4" min="1">
     <button id="updatePerGroup">更新</button>
   </div>
@@ -214,14 +214,14 @@ function updateDisplay() {
   }
 
   if (allDrawn) {
-    result += '<br>所有号码已经抽完!';
+    result += '<br>所有號碼已经抽完！';
   }
 
   select('#results').html(result);
 }
 
 function updateRemaining() {
-  select('#remaining').html(`剩餘未被抽取的號碼: ${allNumbers.length}`);
+  select('#remaining').html(`剩餘未抽的人數: ${allNumbers.length}`);
 }
 
 function updatePerGroup() {
