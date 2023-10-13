@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<style>
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f0f0f0;
+  text-align: center;
+  padding: 20px;
+}
+
+#ui div:nth-child(1) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
+}
+
+button {
+  padding: 15px 30px;
+  background-color: #0078d4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+button:hover {
+  background-color: #0059b3;
+}
+
+#results {
+  text-align: left;
+  margin: 0 auto;
+  max-width: 600px;
+  font-size: 28px;
+}
+
+input[type="number"] {
+  height: 40px;
+  font-size: 24px;
+  width: 80px;
+}
+
+input#exclude {
+  height: 60px;
+  font-size: 24px;
+  width: 300px;
+}
+
+label {
+  font-size: 24px;
+  font-family: 'SimHei', sans-serif;
+}
+
+#allowRepeat {
+  transform: scale(2);
+}
+
+#reset,
+#draw {
+  margin-top: 20px;
+}
+
+.remaining {
+  font-size: 24px;
+}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+</head>
+
+<body>
+
+<div style="text-align:center;">
+  <h1>CSK抽籤器</h1>
+</div>
+
+<div id="ui">
+
+  <div>
+    <label for="min">最小範圍:</label>
+    <input type="number" id="min" value="1" min="1">
+    <label for="max">最大範圍:</label>
+    <input type="number" id="max" value="37" min="1">
+    <label for="perGroup">每組數量:</label>
+    <input type="number" id="perGroup" value="4" min="1">
+    <button id="updatePerGroup">更新</button>
+  </div>
+
+  <div class="exclude">
+    <label for="exclude">預先剔除的號碼:</label>
+    <input id="exclude" placeholder="例如:1,5,8">
+  </div>
+
+  <div>
+    <label for="allowRepeat">允許重複抽取:</label>
+    <input type="checkbox" id="allowRepeat">
+  </div>
+
+  <button id="reset">重置</button>
+  <button id="draw">抽籤</button>
+  <div class="remaining" id="remaining"></div>
+</div>
+
+<div id="results"></div>
+
+<script>
+
+let min, max, allowRepeat, excludeNumbers;
+let perGroup, allNumbers, groupCount = 1, numInGroup = 0, allDrawn = false;
+let allResults = [];
+
+function setup() {
+
+  min = select('#min');
+  max = select('#max');
+  perGroup = select('#perGroup');
+  allowRepeat = select('#allowRepeat');
+  excludeNumbers = select('#exclude');
+  select('#updatePerGroup').mousePressed(updatePerGroup);
+
+  reset();
+
+  select('#reset').mousePressed(reset);
+  select('#draw').mousePressed(drawNumber);
+
+}
+
+function reset() {
+
+  allNumbers = [];
+  for (let i = min.value(); i <= max.value(); i++) {
+    allNumbers.push(i);
+  }
+
+  const excludes = excludeNumbers.value().split(',').map(Number);
+  allNumbers = allNumbers.filter(n => !excludes.includes(n));
+
+  groupCount = 1;
+  numInGroup = 0;
+  allDrawn = false;
+  allResults = [];
+
+  updateDisplay();
+  updateRemaining();
+}
+
+function drawNumber() {
+
+  if (allNumbers.length === 0) {
+    allDrawn = true;
+    updateDisplay();
+    return;
+  }
+
+  let num;
+
+  if (allowRepeat.checked()) {
+    num = drawNumberWithRepeat();
+  } else {
+    num = drawNumberWithoutRepeat();
+  }
+
+  if (!allResults[groupCount - 1]) {
+    allResults[groupCount - 1] = [];
+  }
+
+  allResults[groupCount - 1].push(num);
+
+  numInGroup++;
+
+  if (numInGroup >= perGroup.value()) {
+    numInGroup = 0;
+    groupCount++;
+  }
+
+  updateDisplay();
+  updateRemaining();
+}
+
+function drawNumberWithRepeat() {
+  let num;
+  do {
+    let index = floor(random(allNumbers.length));
+    num = allNumbers[index];
+  } while (allResults[groupCount - 1] && allResults[groupCount - 1].includes(num));
+  return num;
+}
+
+function drawNumberWithoutRepeat() {
+  let index = floor(random(allNumbers.length));
+  let num = allNumbers[index];
+  allNumbers.splice(index, 1);
+  return num;
+}
+
+function updateDisplay() {
+
+  let result = `抽籤範圍: ${min.value()} - ${max.value()}&nbsp;&nbsp;&nbsp;<span class="remaining"></span><br>`;
+
+  for (let i = 0; i < allResults.length; i++) {
+    if (i > 0) {
+      result += '<br>';
+    }
+    result += `第${i + 1}組抽籤>>&nbsp;&nbsp;&nbsp `;
+    result += allResults[i].join(', ');
+  }
+
+  if (allDrawn) {
+    result += '<br>所有号码已经抽完!';
+  }
+
+  select('#results').html(result);
+}
+
+function updateRemaining() {
+  select('#remaining').html(`剩餘未被抽取的號碼: ${allNumbers.length}`);
+}
+
+function updatePerGroup() {
+  perGroup = select('#perGroup');
+}
+
+</script>
+
+</body>
+</html>
