@@ -1,0 +1,86 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column; /* 讓元素垂直排列 */
+    align-items: center; /* 水平置中 */
+    justify-content: center; /* 垂直置中 (如果內容不多，效果不明顯) */
+    min-height: 100vh; /* 至少填滿整個視窗高度 */
+    background-color: #f0f0f0; /* 淺灰色背景 */
+    margin: 0;
+    overflow: hidden; /* 防止頁面滾動或特效元素跑到奇怪地方 */
+}
+
+#game-container {
+    width: 500px;
+    height: 400px;
+    border: 2px solid #333;
+    background-color: #fff; /* 白色背景 */
+    position: relative; /* 重要！讓裡面的 target 和 spark 可以絕對定位 */
+    overflow: hidden; /* 防止 target 或 spark 跑到外面 */
+    margin-top: 20px; /* 和標題間隔 */
+}
+
+#target {
+    width: 50px;
+    height: 50px;
+    background-color: red;
+    border-radius: 50%; /* 變成圓形 */
+    position: absolute; /* 絕對定位，相對於 game-container */
+    cursor: pointer; /* 滑鼠移上去變手指 */
+    /* 初始位置由 JS 設定 */
+    top: 50px;
+    left: 50px;
+    transition: top 0.1s ease-out,
+                left 0.1s ease-out,
+                transform 0.1s ease-in-out, /* 讓縮放效果平滑 */
+                box-shadow 0.1s ease-in-out; /* 讓陰影效果平滑 */
+    user-select: none; /* 防止點太快時選中文本 */
+    -webkit-user-select: none; /* Safari/Chrome */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE/Edge */
+}
+
+/* 定義點擊時的特效 */
+#target.clicked-effect {
+    transform: scale(1.15); /* 稍微放大 15% */
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5); /* 加入陰影 */
+}
+
+#score-board {
+    margin-top: 20px; /* 和遊戲區間隔 */
+    font-size: 1.5em; /* 稍大字體 */
+    font-weight: bold;
+}
+
+/* --- 火花樣式 Start --- */
+
+/* 火花的基礎樣式 */
+.spark {
+    width: 8px;         /* 火花大小 */
+    height: 8px;
+    background-color: orange; /* 火花顏色 */
+    border-radius: 50%;
+    position: absolute;   /* 絕對定位，相對於 game-container */
+    pointer-events: none; /* 讓火花不會阻礙點擊 */
+    opacity: 1;           /* 初始不透明 */
+    /* 動畫: 名稱 持續時間 速度曲線 結束狀態 */
+    animation: spark-burst 0.6s ease-out forwards;
+    z-index: 10; /* 確保火花在目標上方 (如果需要) */
+}
+
+/* 定義火花爆開的動畫 */
+@keyframes spark-burst {
+    0% {
+        transform: translate(0, 0) scale(1); /* 初始位置和大小 */
+        opacity: 1;
+    }
+    100% {
+        /*
+         * 使用 CSS 變數 (--tx, --ty) 讓每個火花飛向不同方向
+         * 這些變數會在 JavaScript 中為每個火花隨機設定
+         */
+        transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(0); /* 飛到隨機位置並縮小消失 */
+        opacity: 0; /* 完全透明 */
+    }
+}
+/* --- 火花樣式 End --- */
