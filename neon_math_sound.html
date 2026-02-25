@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Sonification v4.3 - Final Fix</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: rgba(20, 20, 20, 0.95);
+            --neon-blue: #00ffff;
+            --neon-pink: #ff33cc;
+            --neon-yellow: #ffff00;
+            --neon-red: #ff4444;
+            --grid-line: #1f1f1f;
+            --axis-line: #888;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type=range] {
+            width: 100px;
+            accent-color: var(--neon-blue);
+            cursor: pointer;
+        }
+
+        /* Canvas */
+        .canvas-wrapper {
+            position: relative;
+            width: 95%;
+            max-width: 1000px;
+            height: 50vh;
+            min-height: 350px;
+            margin: 20px 0;
+            border: 1px solid #444;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background: #000;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .formula-display {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #aaa;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        /* Controls */
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            width: 95%;
+            max-width: 1000px;
+            padding-bottom: 40px;
+        }
+
+        button {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #555;
+            color: #aaa;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        button:hover { background: rgba(255, 255, 255, 0.15); color: #fff; border-color: #999; }
+        
+        .btn-cartesian.active { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) inset; }
+        .btn-polar.active { border-color: var(--neon-yellow); color: var(--neon-yellow); box-shadow: 0 0 15px rgba(255, 255, 0, 0.2) inset; }
+        .btn-special.active { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(255, 51, 204, 0.2) inset; }
+        
+        .btn-stop { grid-column: 1 / -1; border-color: var(--neon-red); color: var(--neon-red); margin-top: 15px; }
+        .btn-stop:hover { background: var(--neon-red); color: white; }
+
+        /* Start Overlay */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+            transition: opacity 0.5s ease;
+        }
+        
+        .start-btn {
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            background: transparent;
+            box-shadow: 0 0 30px var(--neon-blue);
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+        .start-btn:hover { background: var(--neon-blue); color: #000; }
+        
+        .hidden { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="start-overlay">
+        <button class="start-btn" id="initBtn">START DEMO</button>
+        <p style="margin-top: 20px; color: #888;">Audio Visualization Engine Ready</p>
+    </div>
+
+    <header>
+        <h1>MATH SONIFICATION v4.3</h1>
+        <div class="audio-controls">
+            <label for="volumeSlider" style="font-size:0.8rem; color:#aaa;">VOL</label>
+            <input type="range" id="volumeSlider" min="0" max="100" value="30">
+            <button id="muteBtn" style="padding: 6px 12px; width: 70px;">MUTE</button>
+        </div>
+    </header>
+
+    <div class="canvas-wrapper" id="canvasContainer">
+        <canvas id="mainCanvas"></canvas>
+        <div class="formula-display" id="formulaText">READY</div>
+    </div>
+
+    <main class="controls-panel">
+        <button class="btn-cartesian" data-type="linear">Linear</button>
+        <button class="btn-cartesian" data-type="parabola">Parabola</button>
+        <button class="btn-cartesian" data-type="wavyLine">Wavy Line</button>
+        <button class="btn-cartesian" data-type="sine">Sine Wave</button>
+        <button class="btn-cartesian" data-type="bars">Bars 1/sin(x)</button>
+        <button class="btn-cartesian" data-type="tan">Tan(x)</button>
+        
+        <button class="btn-special" data-type="heart">ECG Heart</button>
+        <button class="btn-special" data-type="filledHeart">Complex Heart</button>
+        
+        <button class="btn-polar" data-type="spiral">Polar Spiral</button>
+        <button class="btn-polar" data-type="polarFlower">Polar Flower</button>
+        <button class="btn-polar" data-type="chaosFlower">Chaos Flower</button>
+        <button class="btn-polar" data-type="polarHeart">Polar Heart</button>
+
+        <button class="btn-stop" id="stopBtn">STOP & RESET</button>
+    </main>
+
+    <script type="module">
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            duration: 10000,
+            colors: {
+                cyan: '#00ffff',
+                pink: '#ff33cc',
+                yellow: '#ffff00',
+                red: '#ff4444',
+                white: '#ffffff',
+                grid: '#1f1f1f',
+                axis: '#888888'
+            }
+        };
+
+        // --- AUDIO MODULE ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.osc = null;
+                this.oscGain = null;
+                this.isMuted = false;
+                this.volume = 0.3;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.connect(this.ctx.destination);
+                    this.setVolume(this.volume);
+                }
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            }
+
+            setVolume(val) {
+                this.volume = val;
+                if (this.masterGain && !this.isMuted) {
+                    this.masterGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.1);
+                }
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                if (this.masterGain) {
+                    const target = this.isMuted ? 0 : this.volume;
+                    this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.1);
+                }
+                return this.isMuted;
+            }
+
+            playTone(type) {
+                this.stopTone();
+                this.oscGain = this.ctx.createGain();
+                this.oscGain.connect(this.masterGain);
+                this.osc = this.ctx.createOscillator();
+                
+                if (['bars', 'chaosFlower', 'filledHeart'].includes(type)) {
+                    this.osc.type = type === 'filledHeart' ? 'sine' : 'sawtooth';
+                } else if (['spiral', 'polarFlower', 'polarHeart'].includes(type)) {
+                    this.osc.type = 'triangle';
+                } else {
+                    this.osc.type = 'sine';
+                }
+
+                this.osc.connect(this.oscGain);
+                this.osc.start();
+                this.oscGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                this.oscGain.gain.linearRampToValueAtTime(1, this.ctx.currentTime + 0.1);
+            }
+
+            updateFrequency(freq) {
+                if (this.osc && isFinite(freq) && freq > 0) {
+                    this.osc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.01);
+                }
+            }
+
+            stopTone() {
+                if (this.osc && this.oscGain) {
+                    const oldOsc = this.osc;
+                    const oldGain = this.oscGain;
+                    oldGain.gain.cancelScheduledValues(this.ctx.currentTime);
+                    oldGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+                    setTimeout(() => {
+                        try { oldOsc.stop(); oldOsc.disconnect(); oldGain.disconnect(); } catch(e){}
+                    }, 100);
+                    this.osc = null;
+                    this.oscGain = null;
+                }
+            }
+        }
+
+        // --- MATH MODULE ---
+        const MathLogic = {
+            getPoint(type, progress, width, height) {
+                const cx = width / 2;
+                const cy = height / 2;
+                let x = 0, y = 0, mathX = 0, mathY = 0;
+                const isPolar = ['spiral', 'polarFlower', 'chaosFlower', 'polarHeart'].includes(type);
+
+                // Check for invalid progress
+                if (!Number.isFinite(progress)) return { x: cx, y: cy };
+
+                if (!isPolar) {
+                    x = progress * width;
+                    mathX = (x - cx) / 40; 
+                    
+                    try {
+                        switch(type) {
+                            case 'linear': mathY = mathX; break;
+                            case 'parabola': mathY = 0.1 * mathX * mathX - 4; break;
+                            case 'wavyLine': mathY = mathX + 2 * Math.sin(3 * mathX); break;
+                            case 'sine': mathY = 4 * Math.sin(mathX); break;
+                            case 'tan': mathY = Math.max(-10, Math.min(10, Math.tan(mathX * 0.5))); break;
+                            case 'bars': 
+                                let s = Math.sin(2 * mathX);
+                                mathY = (Math.abs(s) < 0.1) ? (s > 0 ? 10 : -10) : 1/s;
+                                mathY = Math.max(-8, Math.min(8, mathY)); break;
+                            case 'heart':
+                                let beat = (mathX + 500) % (Math.PI * 2);
+                                mathY = (beat > 0 && beat < 1) ? Math.sin(beat*10) * Math.exp(-beat*3) * 5 : 0;
+                                break;
+                            case 'filledHeart':
+                                let fhX = mathX / 2.5;
+                                let limit = 1.8;
+                                if (Math.abs(fhX) < limit) {
+                                    let base = Math.pow(Math.abs(fhX), 2/3);
+                                    let rootTerm = 3.3 - fhX*fhX;
+                                    let shape = rootTerm > 0 ? 0.9 * Math.sqrt(rootTerm) : 0;
+                                    let osc = Math.sin(200 * fhX); 
+                                    mathY = (base + shape * osc) * 2.5;
+                                } else {
+                                    mathY = Math.pow(Math.abs(fhX), 2/3) * 2.5;
+                                }
+                                break;
+                        }
+                    } catch(e) { mathY = 0; }
+                    
+                    if (!Number.isFinite(mathY)) mathY = 0;
+                    y = cy - (mathY * 30);
+                } 
+                else {
+                    const maxTheta = Math.PI * 8;
+                    const theta = progress * maxTheta;
+                    let r = 0;
+                    
+                    try {
+                        switch(type) {
+                            case 'spiral': r = theta * 12; break;
+                            case 'polarFlower': r = 150 * Math.sin(4 * theta); break;
+                            case 'chaosFlower': r = 80 * (Math.cos(3 * theta) + Math.sin(20 * theta)); break;
+                            case 'polarHeart':
+                                let ht = progress * Math.PI * 2;
+                                r = 100 * (1 - Math.sin(ht));
+                                return { 
+                                    x: cx + r * Math.cos(ht + Math.PI/2), 
+                                    y: cy - r * Math.sin(ht + Math.PI/2) 
+                                };
+                        }
+                    } catch(e) { r = 0; }
+
+                    if (!Number.isFinite(r)) r = 0;
+                    x = cx + r * Math.cos(theta);
+                    y = cy - r * Math.sin(theta);
+                }
+                return { x, y };
+            },
+
+            getConfig(type) {
+                const map = {
+                    linear: { label: 'f(x) = x', color: CONFIG.colors.cyan },
+                    parabola: { label: 'f(x) = 0.1x² - 4', color: CONFIG.colors.cyan },
+                    wavyLine: { label: 'f(x) = x + 2sin(3x)', color: CONFIG.colors.cyan },
+                    sine: { label: 'f(x) = 4sin(x)', color: CONFIG.colors.cyan },
+                    bars: { label: 'f(x) = csc(2x)', color: CONFIG.colors.cyan },
+                    tan: { label: 'f(x) = tan(0.5x)', color: CONFIG.colors.cyan },
+                    heart: { label: 'Heartbeat Pattern', color: CONFIG.colors.pink },
+                    filledHeart: { label: 'Complex Heart Fill', color: CONFIG.colors.pink, highDensity: true },
+                    spiral: { label: 'r = θ', color: CONFIG.colors.yellow, isPolar: true },
+                    polarFlower: { label: 'r = 150 sin(4θ)', color: CONFIG.colors.yellow, isPolar: true },
+                    chaosFlower: { label: 'r = Chaos', color: CONFIG.colors.yellow, isPolar: true },
+                    polarHeart: { label: 'r = 100(1 - sin(θ))', color: CONFIG.colors.red, isPolar: true },
+                };
+                return map[type] || { label: 'Unknown', color: '#fff' };
+            }
+        };
+
+        // --- RENDERER MODULE ---
+        class Renderer {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.container = document.getElementById('canvasContainer');
+                this.width = 0;
+                this.height = 0;
+                this.lastWidth = 0;
+                
+                // Debounce resize
+                let resizeTimer;
+                this.resizeObserver = new ResizeObserver(entries => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                         const entry = entries[0];
+                         if (Math.abs(entry.contentRect.width - this.lastWidth) > 2) {
+                             this.resize();
+                         }
+                    }, 100);
+                });
+                this.resizeObserver.observe(this.container);
+            }
+
+            resize() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = this.container.getBoundingClientRect();
+                if (rect.width === 0) return;
+
+                this.width = Math.floor(rect.width);
+                this.height = Math.floor(rect.height);
+                this.lastWidth = this.width;
+
+                this.canvas.width = this.width * dpr;
+                this.canvas.height = this.height * dpr;
+                this.ctx.scale(dpr, dpr);
+                
+                this.clear();
+                this.drawGrid(false); // Default grid
+            }
+
+            clear() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+            }
+
+            drawGrid(isPolar) {
+                const w = this.width;
+                const h = this.height;
+                const cx = w / 2;
+                const cy = h / 2;
+
+                this.ctx.lineWidth = 1;
+                
+                if (isPolar) {
+                    this.ctx.strokeStyle = '#222';
+                    for (let r = 50; r < Math.max(w, h); r += 50) {
+                        this.ctx.beginPath(); this.ctx.arc(cx, cy, r, 0, Math.PI * 2); this.ctx.stroke();
+                    }
+                } else {
+                    this.ctx.strokeStyle = CONFIG.colors.grid;
+                    this.ctx.beginPath();
+                    for (let i = 0; i <= w; i += 50) { this.ctx.moveTo(i, 0); this.ctx.lineTo(i, h); }
+                    for (let i = 0; i <= h; i += 50) { this.ctx.moveTo(0, i); this.ctx.lineTo(w, i); }
+                    this.ctx.stroke();
+                }
+
+                this.ctx.strokeStyle = CONFIG.colors.axis;
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, cy); this.ctx.lineTo(w, cy);
+                this.ctx.moveTo(cx, 0); this.ctx.lineTo(cx, h);
+                this.ctx.stroke();
+
+                // Arrows
+                this.ctx.fillStyle = CONFIG.colors.axis;
+                this.ctx.beginPath();
+                this.ctx.moveTo(w, cy); this.ctx.lineTo(w - 10, cy - 5); this.ctx.lineTo(w - 10, cy + 5);
+                this.ctx.moveTo(cx, 0); this.ctx.lineTo(cx - 5, 10); this.ctx.lineTo(cx + 5, 10);
+                this.ctx.fill();
+            }
+
+            drawFunctionStep(prevPoint, currPoint, type, config, isHighDensity) {
+                if (!Number.isFinite(prevPoint.x) || !Number.isFinite(currPoint.x)) return;
+
+                this.ctx.strokeStyle = config.color;
+                this.ctx.shadowColor = config.color;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+
+                if (isHighDensity) {
+                    this.ctx.lineWidth = 1.5;
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(prevPoint.x, prevPoint.y);
+                    if (currPoint.x > prevPoint.x) {
+                        const step = 0.5;
+                        for (let px = prevPoint.x; px <= currPoint.x; px += step) {
+                            const subProg = px / this.width;
+                            const subP = MathLogic.getPoint(type, subProg, this.width, this.height);
+                            this.ctx.lineTo(subP.x, subP.y);
+                        }
+                    }
+                    this.ctx.stroke();
+                } else {
+                    this.ctx.lineWidth = 3;
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.beginPath();
+                    const dist = Math.hypot(currPoint.x - prevPoint.x, currPoint.y - prevPoint.y);
+                    if (dist > 100) {
+                        this.ctx.moveTo(currPoint.x, currPoint.y);
+                    } else {
+                        this.ctx.moveTo(prevPoint.x, prevPoint.y);
+                        this.ctx.lineTo(currPoint.x, currPoint.y);
+                    }
+                    this.ctx.stroke();
+                }
+            }
+
+            drawHead(point, isPolar, isHighDensity) {
+                if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(point.x, point.y);
+                if (isPolar) this.ctx.lineTo(point.x, point.y);
+                else this.ctx.lineTo(point.x + 2, point.y);
+                
+                this.ctx.strokeStyle = CONFIG.colors.white;
+                this.ctx.shadowColor = CONFIG.colors.white;
+                this.ctx.lineWidth = isHighDensity ? 3 : 5;
+                this.ctx.shadowBlur = 20;
+                this.ctx.stroke();
+            }
+        }
+
+        // --- MAIN APP ---
+        class App {
+            constructor() {
+                this.audio = new AudioEngine();
+                this.renderer = new Renderer('mainCanvas');
+                
+                this.state = {
+                    currentType: null,
+                    startTime: null,
+                    prevPoint: { x: 0, y: 0 },
+                    animationId: null
+                };
+
+                this.ui = {
+                    initBtn: document.getElementById('initBtn'),
+                    overlay: document.getElementById('start-overlay'),
+                    volumeSlider: document.getElementById('volumeSlider'),
+                    muteBtn: document.getElementById('muteBtn'),
+                    stopBtn: document.getElementById('stopBtn'),
+                    formula: document.getElementById('formulaText'),
+                    btns: document.querySelectorAll('button[data-type]')
+                };
+
+                this.bindEvents();
+                setTimeout(() => this.renderer.resize(), 100);
+            }
+
+            bindEvents() {
+                this.ui.initBtn.addEventListener('click', () => {
+                    this.audio.init();
+                    this.ui.overlay.classList.add('hidden');
+                });
+                
+                this.ui.volumeSlider.addEventListener('input', (e) => this.audio.setVolume(e.target.value / 100));
+                
+                this.ui.muteBtn.addEventListener('click', () => {
+                    const muted = this.audio.toggleMute();
+                    this.ui.muteBtn.textContent = muted ? "UNMUTE" : "MUTE";
+                    this.ui.muteBtn.style.color = muted ? CONFIG.colors.red : '#aaa';
+                });
+                
+                this.ui.btns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.ui.btns.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.startAnimation(btn.dataset.type);
+                    });
+                });
+                
+                this.ui.stopBtn.addEventListener('click', () => this.stopAnimation(true));
+            }
+
+            startAnimation(type) {
+                this.stopAnimation(false);
+                this.audio.init();
+                
+                const config = MathLogic.getConfig(type);
+                this.renderer.clear();
+                this.renderer.drawGrid(config.isPolar);
+                
+                this.ui.formula.innerText = config.label;
+                this.ui.formula.style.color = config.color;
+                this.ui.formula.style.textShadow = `0 0 10px ${config.color}`;
+                
+                this.state.currentType = type;
+                this.state.startTime = null; // Reset time
+                
+                const startP = MathLogic.getPoint(type, 0, this.renderer.width, this.renderer.height);
+                this.state.prevPoint = startP;
+
+                this.audio.playTone(type);
+
+                // [CRITICAL FIX] Use requestAnimationFrame to start loop, ensuring proper timestamp
+                this.state.animationId = requestAnimationFrame(this.loop.bind(this));
+            }
+
+            loop(timestamp) {
+                if (!this.state.currentType) return;
+                
+                // Initialize startTime on the first frame of the loop
+                if (!this.state.startTime) this.state.startTime = timestamp;
+                
+                const elapsed = timestamp - this.state.startTime;
+                
+                // Safety check for NaN elapsed
+                if (isNaN(elapsed)) {
+                     this.state.animationId = requestAnimationFrame(this.loop.bind(this));
+                     return;
+                }
+
+                const progress = Math.min(elapsed / CONFIG.duration, 1.0);
+                
+                const type = this.state.currentType;
+                const config = MathLogic.getConfig(type);
+                const currPoint = MathLogic.getPoint(type, progress, this.renderer.width, this.renderer.height);
+                
+                const useHighDensity = config.highDensity && !config.isPolar;
+
+                this.renderer.drawFunctionStep(this.state.prevPoint, currPoint, type, config, useHighDensity);
+                this.renderer.drawHead(currPoint, config.isPolar, useHighDensity);
+
+                // Audio
+                const h = this.renderer.height || 1;
+                const heightRatio = 1 - (currPoint.y / h);
+                const safeRatio = Math.max(0, Math.min(1, heightRatio));
+                const rangeFreq = (type === 'filledHeart' || type === 'bars') ? 1500 : 1000;
+                this.audio.updateFrequency(100 + (safeRatio * rangeFreq));
+
+                this.state.prevPoint = currPoint;
+
+                if (progress < 1.0) {
+                    this.state.animationId = requestAnimationFrame(this.loop.bind(this));
+                } else {
+                    this.stopAnimation(false);
+                    this.ui.formula.innerHTML += " [COMPLETE]";
+                }
+            }
+
+            stopAnimation(fullReset) {
+                if (this.state.animationId) {
+                    cancelAnimationFrame(this.state.animationId);
+                    this.state.animationId = null;
+                }
+                this.audio.stopTone();
+                
+                if (fullReset) {
+                    this.ui.btns.forEach(b => b.classList.remove('active'));
+                    this.state.currentType = null;
+                    this.renderer.clear();
+                    this.renderer.drawGrid(false);
+                    this.ui.formula.innerText = "READY";
+                    this.ui.formula.style.color = "#aaa";
+                    this.ui.formula.style.textShadow = "none";
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => new App());
+    </script>
+</body>
+</html>
