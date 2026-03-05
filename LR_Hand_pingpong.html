@@ -14,94 +14,128 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
+    <!-- p5.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
     <style>
         body { background-color: #0f172a; color: white; margin: 0; overflow: hidden; }
-        #game_canvas {
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        #canvas-container canvas {
+            /* Removed heavy box-shadow for performance */
             border-radius: 12px;
-            background-color: #1e293b;
+            /* 將背景顏色交給 p5.js 的 background() 處理，避免殘影 */
         }
         .neon-text-pink { text-shadow: 0 0 10px #ec4899, 0 0 20px #ec4899; }
         .neon-text-cyan { text-shadow: 0 0 10px #06b6d4, 0 0 20px #06b6d4; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center font-sans">
+<body class="min-h-screen flex flex-col items-center justify-center font-sans bg-[#0f172a] p-4">
 
     <!-- Hidden Video Element for MediaPipe -->
-    <video id="input_video" class="hidden" autoplay playsinline></video>
+    <video id="input_video" class="hidden" autoplay playsinline style="display: none;"></video>
 
-    <!-- Main Game Container -->
-    <div class="relative w-full max-w-5xl p-4 flex flex-col items-center">
+    <!-- Main Game Container 結構優化：使用相對定位的外框，讓介面完美疊加 -->
+    <div class="relative w-full max-w-[1024px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-[#1e293b]">
         
         <!-- UI Overlay: Start Screen -->
-        <div id="start-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm rounded-xl m-4">
+        <div id="start-screen" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm p-10 text-center">
             <h1 class="text-5xl font-black mb-6 tracking-wider">
                 <span class="text-pink-500 neon-text-pink">HAND</span> 
                 <span class="text-white">PONG</span> 
                 <span class="text-cyan-500 neon-text-cyan">TRACKER</span>
             </h1>
-            <p class="text-slate-300 mb-8 max-w-md text-center text-lg">
+            <p class="text-slate-300 mb-8 max-w-md text-lg">
                 Use your webcam to play! Step back so the camera sees your hands. <br><br>
                 <b class="text-pink-400">Left Hand</b> controls the left paddle.<br>
                 <b class="text-cyan-400">Right Hand</b> controls the right paddle.<br>
                 <i>The paddles follow your index fingers.</i>
             </p>
-            <button id="start-btn" class="px-8 py-4 bg-white text-slate-900 font-bold rounded-full text-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.4)]">
+
+            <!-- 難度選擇區塊 -->
+            <div class="mb-8 flex flex-col items-center">
+                <p class="text-slate-400 mb-3 text-sm font-bold uppercase tracking-widest">Select Speed</p>
+                <div class="flex gap-3 bg-slate-800 p-1.5 rounded-xl">
+                    <button id="btn-slow" class="px-6 py-2 rounded-lg text-slate-300 hover:text-white transition-colors">Slow</button>
+                    <button id="btn-normal" class="px-6 py-2 rounded-lg bg-slate-600 text-white font-bold shadow-md transition-colors">Normal</button>
+                    <button id="btn-fast" class="px-6 py-2 rounded-lg text-slate-300 hover:text-white transition-colors">Fast</button>
+                </div>
+            </div>
+
+            <button id="start-btn" class="px-8 py-4 bg-white text-slate-900 font-bold rounded-full text-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.4)] cursor-pointer">
                 Enable Camera & Play
             </button>
         </div>
 
         <!-- UI Overlay: Loading Screen -->
-        <div id="loading-screen" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-900/90 rounded-xl m-4">
+        <div id="loading-screen" class="hidden absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm p-12 text-center">
             <div class="w-16 h-16 border-4 border-slate-600 border-t-white rounded-full animate-spin mb-4"></div>
-            <p class="text-xl font-medium animate-pulse">Loading AI Hand Tracking...</p>
+            <p class="text-xl font-medium text-white animate-pulse">Loading AI Hand Tracking...</p>
             <p class="text-sm text-slate-400 mt-2">Please allow camera permissions if prompted.</p>
         </div>
 
-        <!-- Game Canvas -->
-        <canvas id="game_canvas" width="1024" height="768" class="w-full max-w-[1024px] aspect-[4/3] object-contain"></canvas>
+        <!-- p5.js Canvas Container -->
+        <div id="canvas-container" class="hidden absolute inset-0 z-10 w-full h-full"></div>
     </div>
 
     <script>
         // --- DOM Elements ---
         const videoElement = document.getElementById('input_video');
-        const canvasElement = document.getElementById('game_canvas');
-        const ctx = canvasElement.getContext('2d');
         const startBtn = document.getElementById('start-btn');
         const startScreen = document.getElementById('start-screen');
         const loadingScreen = document.getElementById('loading-screen');
 
         // --- Game State & Constants ---
-        const CW = canvasElement.width;
-        const CH = canvasElement.height;
-        
         let gameState = 'start'; // start, loading, playing
         let latestHandResults = null;
 
-        const leftPaddle = { x: 30, y: CH/2 - 60, targetY: CH/2 - 60, w: 20, h: 140, score: 0, color: '#ec4899' }; // Pink
-        const rightPaddle = { x: CW - 50, y: CH/2 - 60, targetY: CH/2 - 60, w: 20, h: 140, score: 0, color: '#06b6d4' }; // Cyan
-        
-        const ball = { x: CW/2, y: CH/2, vx: 8, vy: 4, size: 16, color: '#ffffff', speedMultiplier: 1.05 };
+        let leftPaddle, rightPaddle, ball;
+
+        // --- 球速與難度設定 ---
+        const speedSettings = {
+            slow: { vx: 6, vy: 4, multiplier: 1.02 },
+            normal: { vx: 10, vy: 6, multiplier: 1.05 },
+            fast: { vx: 16, vy: 8, multiplier: 1.10 }
+        };
+        let currentSpeedMode = 'normal';
+
+        // --- p5.js Setup ---
+        function setup() {
+            // Create canvas and attach it to the div container
+            let canvas = createCanvas(1024, 768);
+            canvas.parent('canvas-container');
+            
+            // Make p5 canvas responsive so it doesn't break layout
+            canvas.style('width', '100%');
+            canvas.style('height', '100%');
+            
+            // Initialize game objects
+            leftPaddle = { x: 30, y: height/2 - 60, targetY: height/2 - 60, w: 20, h: 140, score: 0, color: color('#ec4899') };
+            rightPaddle = { x: width - 50, y: height/2 - 60, targetY: height/2 - 60, w: 20, h: 140, score: 0, color: color('#06b6d4') };
+            
+            // 基礎球體屬性 (速度與倍率將在 resetBall() 根據選擇難度覆蓋)
+            ball = { x: width/2, y: height/2, vx: 10, vy: 5, size: 16, color: color('#ffffff'), speedMultiplier: 1.05 };
+            
+            noStroke();
+        }
 
         // --- Game Logic ---
         function resetBall() {
-            ball.x = CW / 2;
-            ball.y = CH / 2;
-            // Send ball towards the player who just scored (randomize vertical)
-            ball.vx = (Math.random() > 0.5 ? 8 : -8);
-            ball.vy = (Math.random() * 8) - 4;
+            const settings = speedSettings[currentSpeedMode];
+            ball.x = width / 2;
+            ball.y = height / 2;
+            // 套用玩家選擇的速度
+            ball.vx = (Math.random() > 0.5 ? settings.vx : -settings.vx);
+            ball.vy = (Math.random() * (settings.vy * 2)) - settings.vy;
+            ball.speedMultiplier = settings.multiplier;
         }
 
         function updateGame() {
-            if (gameState !== 'playing') return;
-
             // 1. Move paddles smoothly towards hand targets
-            leftPaddle.y += (leftPaddle.targetY - leftPaddle.y) * 0.15;
-            rightPaddle.y += (rightPaddle.targetY - rightPaddle.y) * 0.15;
+            leftPaddle.y += (leftPaddle.targetY - leftPaddle.y) * 0.25; // Increased snap speed
+            rightPaddle.y += (rightPaddle.targetY - rightPaddle.y) * 0.25;
 
             // Constrain paddles to screen
-            leftPaddle.y = Math.max(0, Math.min(CH - leftPaddle.h, leftPaddle.y));
-            rightPaddle.y = Math.max(0, Math.min(CH - rightPaddle.h, rightPaddle.y));
+            leftPaddle.y = constrain(leftPaddle.y, 0, height - leftPaddle.h);
+            rightPaddle.y = constrain(rightPaddle.y, 0, height - rightPaddle.h);
 
             // 2. Move Ball
             ball.x += ball.vx;
@@ -111,8 +145,8 @@
             if (ball.y <= 0) {
                 ball.y = 0;
                 ball.vy *= -1;
-            } else if (ball.y + ball.size >= CH) {
-                ball.y = CH - ball.size;
+            } else if (ball.y + ball.size >= height) {
+                ball.y = height - ball.size;
                 ball.vy *= -1;
             }
 
@@ -127,7 +161,6 @@
                 ball.x = leftPaddle.x + leftPaddle.w; // Prevent sticking
                 ball.vx *= -ball.speedMultiplier; // Bounce & speed up
                 
-                // Add spin/angle based on where it hit the paddle
                 let hitPoint = (ball.y + ball.size/2) - (leftPaddle.y + leftPaddle.h/2);
                 ball.vy = hitPoint * 0.15; 
             }
@@ -139,10 +172,9 @@
                 ball.y + ball.size >= rightPaddle.y && 
                 ball.y <= rightPaddle.y + rightPaddle.h) {
                 
-                ball.x = rightPaddle.x - ball.size; // Prevent sticking
-                ball.vx *= -ball.speedMultiplier; // Bounce & speed up
+                ball.x = rightPaddle.x - ball.size; 
+                ball.vx *= -ball.speedMultiplier; 
                 
-                // Add spin/angle based on where it hit the paddle
                 let hitPoint = (ball.y + ball.size/2) - (rightPaddle.y + rightPaddle.h/2);
                 ball.vy = hitPoint * 0.15;
             }
@@ -151,56 +183,74 @@
             if (ball.x < 0) {
                 rightPaddle.score++;
                 resetBall();
-            } else if (ball.x > CW) {
+            } else if (ball.x > width) {
                 leftPaddle.score++;
                 resetBall();
             }
         }
 
-        // --- Drawing Logic ---
-        function drawGame() {
-            // Clear canvas
-            ctx.clearRect(0, 0, CW, CH);
+        // --- p5.js Draw Loop (runs automatically ~60 FPS) ---
+        function draw() {
+            // 確保透明度狀態完全重置
+            drawingContext.globalAlpha = 1.0;
 
-            // Draw Camera Feed faintly in the background (Mirrored)
-            if (videoElement.readyState >= 2) {
-                ctx.save();
-                ctx.globalAlpha = 0.15;
-                ctx.scale(-1, 1);
-                // Draw mirrored video
-                ctx.drawImage(videoElement, -CW, 0, CW, CH);
-                ctx.restore();
+            if (gameState !== 'playing') {
+                background(30, 41, 59); // 實心深藍 #1e293b
+                return;
             }
 
+            // Update physics
+            updateGame();
+
+            // --- 全新背景渲染策略：徹底解決殘影 & 創造深藍濾鏡氛圍 ---
+            if (videoElement.readyState >= 2) {
+                // 1. 畫出 100% 不透明的原始攝影機畫面 
+                // (這會直接用新畫面「完全覆蓋」上一幀，100% 消滅所有殘影)
+                push();
+                scale(-1, 1);
+                drawingContext.drawImage(videoElement, -width, 0, width, height);
+                pop();
+
+                // 2. 疊加一層 85% (大約 alpha 220) 不透明度的深藍色遮罩
+                // (這會把明亮的攝影機畫面壓暗，創造出截圖中那種沉穩的深藍色氛圍)
+                fill(30, 41, 59, 220); // 30, 41, 59 是 #1e293b 的 RGB 值
+                noStroke();
+                rect(0, 0, width, height);
+            } else {
+                // 若相機尚未準備好，直接塗滿深藍色
+                background(30, 41, 59);
+            }
+
+            // 確保後續的遊戲物件 (球、球拍、分數) 都是 100% 實心，疊加在深藍濾鏡之上
+            drawingContext.globalAlpha = 1.0;
+
             // Draw Center Line
-            ctx.setLineDash([15, 15]);
-            ctx.beginPath();
-            ctx.moveTo(CW/2, 0);
-            ctx.lineTo(CW/2, CH);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-            ctx.setLineDash([]); // reset
+            stroke(255, 255, 255, 51); // White with ~20% opacity
+            strokeWeight(4);
+            drawingContext.setLineDash([15, 15]);
+            line(width/2, 0, width/2, height);
+            drawingContext.setLineDash([]); 
+            noStroke();
 
             // Draw Scores
-            ctx.font = 'bold 80px sans-serif';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.textAlign = 'center';
-            ctx.fillText(leftPaddle.score, CW/4, 100);
-            ctx.fillText(rightPaddle.score, (CW/4)*3, 100);
+            textFont('sans-serif');
+            textStyle(BOLD);
+            textSize(80);
+            fill(255, 255, 255, 76); // White with ~30% opacity
+            textAlign(CENTER, TOP);
+            text(leftPaddle.score, width/4, 100);
+            text(rightPaddle.score, (width/4)*3, 100);
 
-            // Draw Paddles
-            drawRect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h, leftPaddle.color);
-            drawRect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h, rightPaddle.color);
+            // Draw Paddles (Shadows removed for performance)
+            fill(leftPaddle.color);
+            rect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h);
+            fill(rightPaddle.color);
+            rect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h);
 
-            // Draw Ball
-            ctx.beginPath();
-            ctx.arc(ball.x + ball.size/2, ball.y + ball.size/2, ball.size/2, 0, Math.PI * 2);
-            ctx.fillStyle = ball.color;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = ball.color;
-            ctx.fill();
-            ctx.shadowBlur = 0; // reset
+            // Draw Ball (Shadows removed for performance)
+            fill(ball.color);
+            ellipseMode(CORNER); 
+            ellipse(ball.x, ball.y, ball.size, ball.size);
 
             // Draw Hand Tracking Feedback (Index fingers)
             if (latestHandResults && latestHandResults.multiHandLandmarks) {
@@ -209,43 +259,25 @@
                     
                     // We mirror the X coordinate because the video is mirrored!
                     const mirroredX = 1.0 - indexTip.x;
-                    const cx = mirroredX * CW;
-                    const cy = indexTip.y * CH;
+                    const cx = mirroredX * width;
+                    const cy = indexTip.y * height;
 
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, 12, 0, 2 * Math.PI);
-                    // Color based on which side of the screen the hand is on
-                    ctx.fillStyle = mirroredX < 0.5 ? leftPaddle.color : rightPaddle.color;
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = ctx.fillStyle;
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
+                    let handColor = mirroredX < 0.5 ? leftPaddle.color : rightPaddle.color;
+
+                    // Draw tracking dot
+                    fill(handColor);
+                    ellipseMode(CENTER);
+                    ellipse(cx, cy, 24, 24); 
                     
                     // Faint line connecting hand to paddle target
-                    ctx.beginPath();
-                    ctx.moveTo(cx, cy);
-                    ctx.lineTo(mirroredX < 0.5 ? leftPaddle.x + leftPaddle.w/2 : rightPaddle.x + rightPaddle.w/2, cy);
-                    ctx.strokeStyle = ctx.fillStyle;
-                    ctx.globalAlpha = 0.3;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.globalAlpha = 1.0;
+                    stroke(handColor);
+                    strokeWeight(2);
+                    drawingContext.globalAlpha = 0.3;
+                    line(cx, cy, mirroredX < 0.5 ? leftPaddle.x + leftPaddle.w/2 : rightPaddle.x + rightPaddle.w/2, cy);
+                    drawingContext.globalAlpha = 1.0;
+                    noStroke();
                 }
             }
-        }
-
-        function drawRect(x, y, w, h, color) {
-            ctx.fillStyle = color;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = color;
-            ctx.fillRect(x, y, w, h);
-            ctx.shadowBlur = 0;
-        }
-
-        function gameLoop() {
-            updateGame();
-            drawGame();
-            requestAnimationFrame(gameLoop);
         }
 
         // --- MediaPipe Hand Tracking Setup ---
@@ -255,16 +287,18 @@
 
         hands.setOptions({
             maxNumHands: 2, // Allow 2 hands max
-            modelComplexity: 1,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
+            modelComplexity: 0, // <--- OPTIMIZATION: Set to 0 for maximum performance/least lag
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
         });
 
         hands.onResults((results) => {
-            // First time results come in, hide loading screen
+            // First time results come in, hide loading screen and show canvas
             if (gameState === 'loading') {
                 loadingScreen.classList.add('hidden');
+                document.getElementById('canvas-container').classList.remove('hidden');
                 gameState = 'playing';
+                resetBall(); // Start the game when tracking is ready
             }
 
             latestHandResults = results;
@@ -275,28 +309,24 @@
                     const indexTip = landmarks[8];
                     const mirroredX = 1.0 - indexTip.x;
                     
-                    // Target Y is the raw Y percentage mapped to Canvas Height
-                    // We subtract half the paddle height to center the paddle on the finger
-                    const targetCanvasY = (indexTip.y * CH) - (leftPaddle.h / 2);
+                    const targetCanvasY = (indexTip.y * height) - (leftPaddle.h / 2);
 
-                    // If hand is on the left half of the screen, control left paddle
                     if (mirroredX < 0.5) {
                         leftPaddle.targetY = targetCanvasY;
-                    } 
-                    // If hand is on the right half, control right paddle
-                    else {
+                    } else {
                         rightPaddle.targetY = targetCanvasY;
                     }
                 }
             }
         });
 
+        // <--- OPTIMIZATION: Lowered camera resolution requests to lighten the processing load
         const camera = new Camera(videoElement, {
             onFrame: async () => {
                 await hands.send({image: videoElement});
             },
-            width: 640,
-            height: 480
+            width: 480,  
+            height: 360
         });
 
         // --- Initialization ---
@@ -307,14 +337,28 @@
             
             // Start the camera and hand tracking
             camera.start();
-            
-            // Start the game rendering loop immediately
-            resetBall();
-            requestAnimationFrame(gameLoop);
         });
 
-        // Initial draw before start
-        drawGame();
+        // --- 速度選擇按鈕邏輯 ---
+        const btnSlow = document.getElementById('btn-slow');
+        const btnNormal = document.getElementById('btn-normal');
+        const btnFast = document.getElementById('btn-fast');
+
+        function updateSpeedSelection(mode) {
+            currentSpeedMode = mode;
+            // 更新按鈕的視覺樣式 (UI 切換)
+            const baseClass = "px-6 py-2 rounded-lg transition-colors ";
+            const inactiveClass = baseClass + "text-slate-300 hover:text-white";
+            const activeClass = baseClass + "bg-slate-600 text-white font-bold shadow-md";
+
+            btnSlow.className = mode === 'slow' ? activeClass : inactiveClass;
+            btnNormal.className = mode === 'normal' ? activeClass : inactiveClass;
+            btnFast.className = mode === 'fast' ? activeClass : inactiveClass;
+        }
+
+        btnSlow.addEventListener('click', () => updateSpeedSelection('slow'));
+        btnNormal.addEventListener('click', () => updateSpeedSelection('normal'));
+        btnFast.addEventListener('click', () => updateSpeedSelection('fast'));
 
     </script>
 </body>
