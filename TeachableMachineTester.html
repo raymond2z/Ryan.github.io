@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachable Machine Model Tester</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TensorFlow.js and Teachable Machine libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        .progress-bar-fill {
+            transition: width 0.3s ease-in-out;
+        }
+        /* Custom scrollbar for labels if many exist */
+        #label-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800 selection:bg-blue-200">
+
+    <main class="max-w-2xl mx-auto p-4 md:p-8 pt-12">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            
+            <!-- Header -->
+            <div class="bg-blue-600 p-6 text-white text-center">
+                <h1 class="text-2xl font-bold mb-2">Image Classifier Tester</h1>
+                <p class="text-blue-100 text-sm">Universal Teachable Machine Model Loader</p>
+            </div>
+
+            <div class="p-6 md:p-8">
+                
+                <!-- Setup View: URL Input -->
+                <div id="setup-view" class="space-y-6">
+                    <div class="space-y-2">
+                        <label for="model-url" class="block text-sm font-semibold text-gray-700">Teachable Machine Sharable Link</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="model-url" 
+                                   placeholder="https://teachablemachine.withgoogle.com/models/..." 
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                            <button onclick="loadModelFromInput()" id="load-btn" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
+                                Load Model
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500">Paste the "Sharable Link" from your Teachable Machine project export tab.</p>
+                    </div>
+
+                    <div id="setup-status" class="hidden flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div id="status-spinner" class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <p id="status-text" class="text-sm font-medium text-gray-600">Checking model URL...</p>
+                    </div>
+                </div>
+
+                <!-- Main Content View (Hidden until model loads) -->
+                <div id="main-content" class="hidden space-y-6">
+                    
+                    <!-- Model Info Header -->
+                    <div class="flex items-center justify-between border-b pb-4">
+                        <div>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Active Model</span>
+                            <p id="loaded-url-display" class="text-sm text-gray-500 truncate max-w-[200px] md:max-w-xs"></p>
+                        </div>
+                        <button onclick="resetToSetup()" class="text-xs font-semibold text-red-600 hover:text-red-700 underline">Change Model</button>
+                    </div>
+
+                    <!-- Input Method Tabs -->
+                    <div class="flex p-1 bg-gray-100 rounded-lg">
+                        <button id="tab-webcam" onclick="switchTab('webcam')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium bg-white shadow-sm text-blue-600 transition-colors">
+                            Webcam
+                        </button>
+                        <button id="tab-upload" onclick="switchTab('upload')" class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+                            Image Upload
+                        </button>
+                    </div>
+
+                    <!-- Webcam Section -->
+                    <div id="webcam-section" class="flex flex-col items-center space-y-4">
+                        <div id="webcam-wrapper" class="w-full max-w-[400px] aspect-square bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center relative shadow-inner">
+                            <p id="webcam-placeholder" class="text-gray-400 text-sm absolute">Camera off</p>
+                        </div>
+                        <button id="webcam-btn" onclick="toggleWebcam()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            Start Webcam
+                        </button>
+                    </div>
+
+                    <!-- Upload Section -->
+                    <div id="upload-section" class="hidden flex-col items-center space-y-4">
+                        <div class="w-full max-w-[400px] aspect-square bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl overflow-hidden flex flex-col items-center justify-center relative hover:bg-gray-50 transition-colors group cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                            <img id="uploaded-image" class="absolute inset-0 w-full h-full object-cover hidden" alt="Uploaded preview">
+                            <div id="upload-placeholder" class="flex flex-col items-center text-gray-500 group-hover:text-blue-500 transition-colors">
+                                <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span class="text-sm font-medium">Click to upload image</span>
+                            </div>
+                            <input type="file" id="file-upload" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200">
+
+                    <!-- Predictions Results -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Predictions</h3>
+                        <div id="label-container" class="space-y-4">
+                            <!-- Prediction bars will be injected here -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="text/javascript">
+        // --- State Variables ---
+        let model, webcam, maxPredictions;
+        let isWebcamActive = false;
+        let animationId;
+        let currentMode = 'webcam'; 
+        let currentUrl = '';
+
+        // --- DOM Elements ---
+        const setupView = document.getElementById('setup-view');
+        const setupStatus = document.getElementById('setup-status');
+        const statusText = document.getElementById('status-text');
+        const statusSpinner = document.getElementById('status-spinner');
+        const modelUrlInput = document.getElementById('model-url');
+        const loadBtn = document.getElementById('load-btn');
+        
+        const mainContent = document.getElementById('main-content');
+        const labelContainer = document.getElementById('label-container');
+        const webcamWrapper = document.getElementById('webcam-wrapper');
+        const webcamBtn = document.getElementById('webcam-btn');
+        const webcamPlaceholder = document.getElementById('webcam-placeholder');
+        const uploadedImage = document.getElementById('uploaded-image');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const loadedUrlDisplay = document.getElementById('loaded-url-display');
+
+        // --- URL Handling & Model Loading ---
+        async function loadModelFromInput() {
+            let url = modelUrlInput.value.trim();
+            if (!url) return;
+
+            // Basic normalization: ensure URL ends with a slash for tmImage library
+            if (!url.endsWith('/')) {
+                url += '/';
+            }
+
+            // Show status
+            setupStatus.classList.remove('hidden');
+            statusText.textContent = "Connecting to Teachable Machine...";
+            statusText.classList.remove('text-red-600');
+            statusSpinner.classList.remove('hidden');
+            loadBtn.disabled = true;
+
+            try {
+                const modelURL = url + "model.json";
+                const metadataURL = url + "metadata.json";
+
+                // Load model
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+                currentUrl = url;
+
+                // Setup prediction UI
+                setupPredictionUI();
+
+                // Switch Views
+                setupView.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                loadedUrlDisplay.textContent = url;
+
+            } catch (error) {
+                console.error("Model Load Error:", error);
+                statusText.textContent = "Error: Could not load model. Ensure the link is a valid Teachable Machine sharable link.";
+                statusText.classList.add('text-red-600');
+                statusSpinner.classList.add('hidden');
+                loadBtn.disabled = false;
+            }
+        }
+
+        function resetToSetup() {
+            // Stop any active webcam
+            if (isWebcamActive) {
+                stopWebcam();
+            }
+            
+            // Clear UI
+            mainContent.classList.add('hidden');
+            setupView.classList.remove('hidden');
+            setupStatus.classList.add('hidden');
+            loadBtn.disabled = false;
+            modelUrlInput.value = '';
+            
+            // Clear predictions
+            labelContainer.innerHTML = '';
+        }
+
+        // --- Prediction UI ---
+        function setupPredictionUI() {
+            labelContainer.innerHTML = ''; 
+            for (let i = 0; i < maxPredictions; i++) {
+                const classLabel = model.getClassLabels()[i];
+                const barHtml = `
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">${classLabel}</span>
+                            <span id="prob-text-${i}" class="text-sm font-bold text-gray-900">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="prob-bar-${i}" class="bg-blue-600 h-2.5 rounded-full progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                `;
+                labelContainer.insertAdjacentHTML('beforeend', barHtml);
+            }
+        }
+
+        function updatePredictionUI(predictions) {
+            for (let i = 0; i < maxPredictions; i++) {
+                const probability = (predictions[i].probability * 100).toFixed(1);
+                const textElem = document.getElementById(`prob-text-${i}`);
+                const barElem = document.getElementById(`prob-bar-${i}`);
+
+                if (!textElem || !barElem) continue;
+                
+                textElem.innerText = `${probability}%`;
+                barElem.style.width = `${probability}%`;
+                
+                if (probability > 75) {
+                    barElem.className = "bg-green-500 h-2.5 rounded-full progress-bar-fill";
+                } else if (probability < 15) {
+                    barElem.className = "bg-gray-400 h-2.5 rounded-full progress-bar-fill";
+                } else {
+                    barElem.className = "bg-blue-600 h-2.5 rounded-full progress-bar-fill";
+                }
+            }
+        }
+
+        function resetPredictionValues() {
+            for (let i = 0; i < maxPredictions; i++) {
+                const t = document.getElementById(`prob-text-${i}`);
+                const b = document.getElementById(`prob-bar-${i}`);
+                if (t && b) {
+                    t.innerText = `0%`;
+                    b.style.width = `0%`;
+                    b.className = "bg-blue-600 h-2.5 rounded-full progress-bar-fill";
+                }
+            }
+        }
+
+        // --- Tabs ---
+        async function switchTab(tab) {
+            if (currentMode === tab) return;
+            currentMode = tab;
+
+            const tabWebcam = document.getElementById('tab-webcam');
+            const tabUpload = document.getElementById('tab-upload');
+            const sectionWebcam = document.getElementById('webcam-section');
+            const sectionUpload = document.getElementById('upload-section');
+
+            resetPredictionValues();
+
+            if (tab === 'webcam') {
+                tabWebcam.className = "flex-1 py-2 px-4 rounded-md text-sm font-medium bg-white shadow-sm text-blue-600 transition-colors";
+                tabUpload.className = "flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors";
+                sectionWebcam.classList.remove('hidden');
+                sectionUpload.classList.add('hidden');
+            } else {
+                tabUpload.className = "flex-1 py-2 px-4 rounded-md text-sm font-medium bg-white shadow-sm text-blue-600 transition-colors";
+                tabWebcam.className = "flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors";
+                sectionUpload.classList.remove('hidden');
+                sectionWebcam.classList.add('hidden');
+                if (isWebcamActive) stopWebcam();
+                if (uploadedImage.src && !uploadedImage.src.includes(window.location.host)) predictImage();
+            }
+        }
+
+        // --- Webcam ---
+        async function toggleWebcam() {
+            if (isWebcamActive) {
+                stopWebcam();
+            } else {
+                startWebcam();
+            }
+        }
+
+        async function startWebcam() {
+            webcamBtn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Starting...';
+            webcamBtn.disabled = true;
+
+            const flip = true; 
+            webcam = new tmImage.Webcam(400, 400, flip);
+            
+            try {
+                await webcam.setup();
+                await webcam.play();
+                
+                webcamWrapper.innerHTML = '';
+                webcam.canvas.classList.add('w-full', 'h-full', 'object-cover');
+                webcamWrapper.appendChild(webcam.canvas);
+                
+                isWebcamActive = true;
+                webcamBtn.disabled = false;
+                webcamBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path></svg> Stop Webcam';
+                webcamBtn.classList.replace('bg-blue-600', 'bg-red-600');
+                webcamBtn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
+                
+                window.requestAnimationFrame(loop);
+            } catch (err) {
+                console.error("Webcam Error:", err);
+                webcamBtn.disabled = false;
+                webcamBtn.innerHTML = "Camera Access Denied";
+                setTimeout(() => {
+                    webcamBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Start Webcam';
+                }, 3000);
+            }
+        }
+
+        function stopWebcam() {
+            if (webcam) webcam.stop();
+            cancelAnimationFrame(animationId);
+            webcamWrapper.innerHTML = '';
+            webcamWrapper.appendChild(webcamPlaceholder);
+            webcamBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Start Webcam';
+            webcamBtn.classList.replace('bg-red-600', 'bg-blue-600');
+            webcamBtn.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+            isWebcamActive = false;
+            resetPredictionValues();
+        }
+
+        async function loop() {
+            if (isWebcamActive) {
+                webcam.update(); 
+                const prediction = await model.predict(webcam.canvas);
+                updatePredictionUI(prediction);
+                animationId = window.requestAnimationFrame(loop);
+            }
+        }
+
+        // --- Image Upload ---
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage.src = e.target.result;
+                    uploadedImage.classList.remove('hidden');
+                    uploadPlaceholder.classList.add('hidden');
+                    uploadedImage.onload = () => predictImage();
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function predictImage() {
+            if (model && uploadedImage.src && !uploadedImage.hidden) {
+                const prediction = await model.predict(uploadedImage);
+                updatePredictionUI(prediction);
+            }
+        }
+
+        // Handle Enter key on input
+        modelUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadModelFromInput();
+        });
+
+    </script>
+</body>
+</html>
