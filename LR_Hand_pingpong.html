@@ -20,9 +20,7 @@
     <style>
         body { background-color: #0f172a; color: white; margin: 0; overflow: hidden; }
         #canvas-container canvas {
-            /* Removed heavy box-shadow for performance */
             border-radius: 12px;
-            /* 將背景顏色交給 p5.js 的 background() 處理，避免殘影 */
         }
         .neon-text-pink { text-shadow: 0 0 10px #ec4899, 0 0 20px #ec4899; }
         .neon-text-cyan { text-shadow: 0 0 10px #06b6d4, 0 0 20px #06b6d4; }
@@ -33,7 +31,7 @@
     <!-- Hidden Video Element for MediaPipe -->
     <video id="input_video" class="hidden" autoplay playsinline style="display: none;"></video>
 
-    <!-- Main Game Container 結構優化：使用相對定位的外框，讓介面完美疊加 -->
+    <!-- Main Game Container -->
     <div class="relative w-full max-w-[1024px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border border-slate-800 bg-[#1e293b]">
         
         <!-- UI Overlay: Start Screen -->
@@ -88,6 +86,12 @@
         let latestHandResults = null;
 
         let leftPaddle, rightPaddle, ball;
+        
+        // --- 美化特效變數 ---
+        let particles = [];
+        let ballTrail = [];
+        let shakeFrames = 0; // 螢幕震動計時器
+        let audioCtx = null; // 音效引擎
 
         // --- 球速與難度設定 ---
         const speedSettings = {
@@ -97,22 +101,49 @@
         };
         let currentSpeedMode = 'normal';
 
+        // --- 音效生成系統 (8-bit 復古風) ---
+        function playSound(freq, type, duration) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            // 音量控制與淡出設定，避免爆音
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- 粒子特效生成 ---
+        function spawnParticles(x, y, pColor) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x, 
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    alpha: 255,
+                    color: pColor,
+                    size: Math.random() * 6 + 2
+                });
+            }
+        }
+
         // --- p5.js Setup ---
         function setup() {
-            // Create canvas and attach it to the div container
             let canvas = createCanvas(1024, 768);
             canvas.parent('canvas-container');
-            
-            // Make p5 canvas responsive so it doesn't break layout
             canvas.style('width', '100%');
             canvas.style('height', '100%');
             
-            // Initialize game objects
-            leftPaddle = { x: 30, y: height/2 - 60, targetY: height/2 - 60, w: 20, h: 140, score: 0, color: color('#ec4899') };
-            rightPaddle = { x: width - 50, y: height/2 - 60, targetY: height/2 - 60, w: 20, h: 140, score: 0, color: color('#06b6d4') };
+            // 修正：移除 color() 函數，改用純色碼字串，避免粒子特效改寫球拍的透明度
+            leftPaddle = { x: 30, y: height/2 - 60, targetY: height/2 - 60, w: 20, h: 140, score: 0, color: '#ec4899' };
+            rightPaddle = { x: width - 50, y: height/2 - 60, targetY: height/2 - 60, w: 20, h: 140, score: 0, color: '#06b6d4' };
             
-            // 基礎球體屬性 (速度與倍率將在 resetBall() 根據選擇難度覆蓋)
-            ball = { x: width/2, y: height/2, vx: 10, vy: 5, size: 16, color: color('#ffffff'), speedMultiplier: 1.05 };
+            ball = { x: width/2, y: height/2, vx: 10, vy: 5, size: 16, color: '#ffffff', speedMultiplier: 1.05 };
             
             noStroke();
         }
@@ -122,35 +153,42 @@
             const settings = speedSettings[currentSpeedMode];
             ball.x = width / 2;
             ball.y = height / 2;
-            // 套用玩家選擇的速度
             ball.vx = (Math.random() > 0.5 ? settings.vx : -settings.vx);
             ball.vy = (Math.random() * (settings.vy * 2)) - settings.vy;
             ball.speedMultiplier = settings.multiplier;
+            
+            // 重置特效
+            ballTrail = [];
         }
 
         function updateGame() {
-            // 1. Move paddles smoothly towards hand targets
-            leftPaddle.y += (leftPaddle.targetY - leftPaddle.y) * 0.25; // Increased snap speed
+            // Paddles
+            leftPaddle.y += (leftPaddle.targetY - leftPaddle.y) * 0.25;
             rightPaddle.y += (rightPaddle.targetY - rightPaddle.y) * 0.25;
 
-            // Constrain paddles to screen
             leftPaddle.y = constrain(leftPaddle.y, 0, height - leftPaddle.h);
             rightPaddle.y = constrain(rightPaddle.y, 0, height - rightPaddle.h);
 
-            // 2. Move Ball
+            // 記錄殘影軌跡
+            ballTrail.push({ x: ball.x, y: ball.y });
+            if (ballTrail.length > 15) {
+                ballTrail.shift(); // 限制殘影長度
+            }
+
+            // Move Ball
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // 3. Wall Collisions (Top & Bottom)
+            // 撞擊牆壁 (上下)
             if (ball.y <= 0) {
-                ball.y = 0;
-                ball.vy *= -1;
+                ball.y = 0; ball.vy *= -1;
+                playSound(300, 'square', 0.1); // 牆壁音效
             } else if (ball.y + ball.size >= height) {
-                ball.y = height - ball.size;
-                ball.vy *= -1;
+                ball.y = height - ball.size; ball.vy *= -1;
+                playSound(300, 'square', 0.1); // 牆壁音效
             }
 
-            // 4. Paddle Collisions
+            // 撞擊球拍
             // Left Paddle
             if (ball.vx < 0 && 
                 ball.x <= leftPaddle.x + leftPaddle.w && 
@@ -158,11 +196,13 @@
                 ball.y + ball.size >= leftPaddle.y && 
                 ball.y <= leftPaddle.y + leftPaddle.h) {
                 
-                ball.x = leftPaddle.x + leftPaddle.w; // Prevent sticking
-                ball.vx *= -ball.speedMultiplier; // Bounce & speed up
-                
+                ball.x = leftPaddle.x + leftPaddle.w; 
+                ball.vx *= -ball.speedMultiplier; 
                 let hitPoint = (ball.y + ball.size/2) - (leftPaddle.y + leftPaddle.h/2);
                 ball.vy = hitPoint * 0.15; 
+                
+                playSound(800, 'square', 0.1); // 擊球音效
+                spawnParticles(ball.x, ball.y + ball.size/2, leftPaddle.color); // 噴發粒子
             }
 
             // Right Paddle
@@ -174,58 +214,73 @@
                 
                 ball.x = rightPaddle.x - ball.size; 
                 ball.vx *= -ball.speedMultiplier; 
-                
                 let hitPoint = (ball.y + ball.size/2) - (rightPaddle.y + rightPaddle.h/2);
                 ball.vy = hitPoint * 0.15;
+
+                playSound(800, 'square', 0.1); // 擊球音效
+                spawnParticles(ball.x + ball.size, ball.y + ball.size/2, rightPaddle.color); // 噴發粒子
             }
 
-            // 5. Scoring
+            // 得分判定
             if (ball.x < 0) {
                 rightPaddle.score++;
+                playSound(150, 'sawtooth', 0.6); // 失誤音效
+                shakeFrames = 20; // 觸發螢幕震動
                 resetBall();
             } else if (ball.x > width) {
                 leftPaddle.score++;
+                playSound(150, 'sawtooth', 0.6); // 失誤音效
+                shakeFrames = 20; // 觸發螢幕震動
                 resetBall();
+            }
+
+            // 更新粒子狀態
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 10; // 粒子淡出速度
+                if (p.alpha <= 0) particles.splice(i, 1);
             }
         }
 
-        // --- p5.js Draw Loop (runs automatically ~60 FPS) ---
+        // --- p5.js Draw Loop ---
         function draw() {
-            // 確保透明度狀態完全重置
             drawingContext.globalAlpha = 1.0;
 
             if (gameState !== 'playing') {
-                background(30, 41, 59); // 實心深藍 #1e293b
+                background(30, 41, 59); 
                 return;
             }
 
-            // Update physics
             updateGame();
 
-            // --- 全新背景渲染策略：徹底解決殘影 & 創造深藍濾鏡氛圍 ---
+            // --- 螢幕震動效果 ---
+            push(); // 儲存當前繪圖狀態
+            if (shakeFrames > 0) {
+                let magnitude = shakeFrames * 0.5; // 震動幅度隨時間減弱
+                translate(random(-magnitude, magnitude), random(-magnitude, magnitude));
+                shakeFrames--;
+            }
+
+            // 背景渲染
             if (videoElement.readyState >= 2) {
-                // 1. 畫出 100% 不透明的原始攝影機畫面 
-                // (這會直接用新畫面「完全覆蓋」上一幀，100% 消滅所有殘影)
                 push();
                 scale(-1, 1);
                 drawingContext.drawImage(videoElement, -width, 0, width, height);
                 pop();
 
-                // 2. 疊加一層 85% (大約 alpha 220) 不透明度的深藍色遮罩
-                // (這會把明亮的攝影機畫面壓暗，創造出截圖中那種沉穩的深藍色氛圍)
-                fill(30, 41, 59, 220); // 30, 41, 59 是 #1e293b 的 RGB 值
+                fill(30, 41, 59, 220); 
                 noStroke();
                 rect(0, 0, width, height);
             } else {
-                // 若相機尚未準備好，直接塗滿深藍色
                 background(30, 41, 59);
             }
 
-            // 確保後續的遊戲物件 (球、球拍、分數) 都是 100% 實心，疊加在深藍濾鏡之上
             drawingContext.globalAlpha = 1.0;
 
             // Draw Center Line
-            stroke(255, 255, 255, 51); // White with ~20% opacity
+            stroke(255, 255, 255, 51);
             strokeWeight(4);
             drawingContext.setLineDash([15, 15]);
             line(width/2, 0, width/2, height);
@@ -236,40 +291,60 @@
             textFont('sans-serif');
             textStyle(BOLD);
             textSize(80);
-            fill(255, 255, 255, 76); // White with ~30% opacity
+            fill(255, 255, 255, 76); 
             textAlign(CENTER, TOP);
             text(leftPaddle.score, width/4, 100);
             text(rightPaddle.score, (width/4)*3, 100);
 
-            // Draw Paddles (Shadows removed for performance)
+            // Draw Paddles (加入微圓角讓美感提升)
             fill(leftPaddle.color);
-            rect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h);
+            rect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h, 10);
             fill(rightPaddle.color);
-            rect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h);
+            rect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h, 10);
 
-            // Draw Ball (Shadows removed for performance)
+            // --- Draw Ball Trail (殘影渲染) ---
+            for (let i = 0; i < ballTrail.length; i++) {
+                let pos = ballTrail[i];
+                // 越舊的軌跡越小、越透明
+                let alpha = map(i, 0, ballTrail.length, 0, 150);
+                let trailSize = map(i, 0, ballTrail.length, ball.size * 0.2, ball.size);
+                
+                fill(255, 255, 255, alpha);
+                ellipseMode(CENTER);
+                ellipse(pos.x + ball.size/2, pos.y + ball.size/2, trailSize, trailSize);
+            }
+
+            // Draw Ball
             fill(ball.color);
             ellipseMode(CORNER); 
             ellipse(ball.x, ball.y, ball.size, ball.size);
 
+            // --- Draw Particles (粒子渲染) ---
+            for (let p of particles) {
+                push(); // 隔離粒子的透明度設定
+                // 使用原生的 globalAlpha 來處理粒子透明度，效能更好且不會影響球拍
+                drawingContext.globalAlpha = Math.max(0, p.alpha / 255.0);
+                fill(p.color);
+                ellipseMode(CENTER);
+                ellipse(p.x, p.y, p.size, p.size);
+                pop();
+            }
+            drawingContext.globalAlpha = 1.0; // 確保重置透明度
+
             // Draw Hand Tracking Feedback (Index fingers)
             if (latestHandResults && latestHandResults.multiHandLandmarks) {
                 for (const landmarks of latestHandResults.multiHandLandmarks) {
-                    const indexTip = landmarks[8]; // 8 is the index finger tip
-                    
-                    // We mirror the X coordinate because the video is mirrored!
+                    const indexTip = landmarks[8]; 
                     const mirroredX = 1.0 - indexTip.x;
                     const cx = mirroredX * width;
                     const cy = indexTip.y * height;
 
                     let handColor = mirroredX < 0.5 ? leftPaddle.color : rightPaddle.color;
 
-                    // Draw tracking dot
                     fill(handColor);
                     ellipseMode(CENTER);
                     ellipse(cx, cy, 24, 24); 
                     
-                    // Faint line connecting hand to paddle target
                     stroke(handColor);
                     strokeWeight(2);
                     drawingContext.globalAlpha = 0.3;
@@ -278,37 +353,36 @@
                     noStroke();
                 }
             }
+
+            pop(); // 結束螢幕震動的座標系平移
         }
 
-        // --- MediaPipe Hand Tracking Setup ---
+        // --- MediaPipe Setup ---
         const hands = new Hands({locateFile: (file) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
         }});
 
         hands.setOptions({
-            maxNumHands: 2, // Allow 2 hands max
-            modelComplexity: 0, // <--- OPTIMIZATION: Set to 0 for maximum performance/least lag
+            maxNumHands: 2,
+            modelComplexity: 0,
             minDetectionConfidence: 0.5,
             minTrackingConfidence: 0.5
         });
 
         hands.onResults((results) => {
-            // First time results come in, hide loading screen and show canvas
             if (gameState === 'loading') {
                 loadingScreen.classList.add('hidden');
                 document.getElementById('canvas-container').classList.remove('hidden');
                 gameState = 'playing';
-                resetBall(); // Start the game when tracking is ready
+                resetBall(); 
             }
 
             latestHandResults = results;
 
             if (results.multiHandLandmarks) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    // Use Index Finger Tip (landmark 8)
                     const indexTip = landmarks[8];
                     const mirroredX = 1.0 - indexTip.x;
-                    
                     const targetCanvasY = (indexTip.y * height) - (leftPaddle.h / 2);
 
                     if (mirroredX < 0.5) {
@@ -320,7 +394,6 @@
             }
         });
 
-        // <--- OPTIMIZATION: Lowered camera resolution requests to lighten the processing load
         const camera = new Camera(videoElement, {
             onFrame: async () => {
                 await hands.send({image: videoElement});
@@ -331,11 +404,13 @@
 
         // --- Initialization ---
         startBtn.addEventListener('click', () => {
+            // 初始化音效引擎 (必須由使用者點擊後才能啟動，這是瀏覽器的安全機制)
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+
             startScreen.classList.add('hidden');
             loadingScreen.classList.remove('hidden');
             gameState = 'loading';
-            
-            // Start the camera and hand tracking
             camera.start();
         });
 
@@ -346,7 +421,6 @@
 
         function updateSpeedSelection(mode) {
             currentSpeedMode = mode;
-            // 更新按鈕的視覺樣式 (UI 切換)
             const baseClass = "px-6 py-2 rounded-lg transition-colors ";
             const inactiveClass = baseClass + "text-slate-300 hover:text-white";
             const activeClass = baseClass + "bg-slate-600 text-white font-bold shadow-md";
