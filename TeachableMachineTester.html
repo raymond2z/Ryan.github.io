@@ -41,9 +41,9 @@
                         <label for="model-url" class="block text-sm font-semibold text-gray-700">Teachable Machine Sharable Link</label>
                         <div class="flex gap-2">
                             <input type="text" id="model-url" 
-                                   value="https://teachablemachine.withgoogle.com/models/mA0-xbefQ/"
-                                   placeholder="https://teachablemachine.withgoogle.com/models/..." 
-                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                                value="https://teachablemachine.withgoogle.com/models/mA0-xbefQ/"
+                                placeholder="https://teachablemachine.withgoogle.com/models/..." 
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
                             <button onclick="loadModelFromInput()" id="load-btn" 
                                     class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
                                 Load Model
@@ -103,8 +103,8 @@
                         <div class="w-full space-y-3">
                             <div class="flex gap-2">
                                 <input type="text" id="img-direct-url" 
-                                       placeholder="Paste image link (e.g. Pokemon image)..." 
-                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    placeholder="Paste image link (e.g. Pokemon image)..." 
+                                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                 <button onclick="loadImageFromUrl(false)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">Load</button>
                             </div>
                             <div id="url-preview-wrapper" class="w-full max-w-[400px] mx-auto aspect-square bg-gray-100 border rounded-xl overflow-hidden flex flex-col items-center justify-center relative p-4">
@@ -137,14 +137,14 @@
         let model, webcam, maxPredictions, isWebcamActive = false, animationId, currentMode = 'webcam'; 
 
         const setupView = document.getElementById('setup-view'), setupStatus = document.getElementById('setup-status'), 
-              statusText = document.getElementById('status-text'), statusSpinner = document.getElementById('status-spinner'),
-              modelUrlInput = document.getElementById('model-url'), loadBtn = document.getElementById('load-btn'),
-              mainContent = document.getElementById('main-content'), labelContainer = document.getElementById('label-container'),
-              webcamWrapper = document.getElementById('webcam-wrapper'), webcamBtn = document.getElementById('webcam-btn'),
-              previewImage = document.getElementById('preview-image'), previewPlaceholder = document.getElementById('preview-placeholder'),
-              urlPreviewImage = document.getElementById('url-preview-image'), urlErrorContainer = document.getElementById('url-error-container'),
-              urlPreviewPlaceholder = document.getElementById('url-preview-placeholder'), urlEmptyPlaceholder = document.getElementById('url-empty-placeholder'),
-              imgDirectUrlInput = document.getElementById('img-direct-url'), loadedUrlDisplay = document.getElementById('loaded-url-display');
+            statusText = document.getElementById('status-text'), statusSpinner = document.getElementById('status-spinner'),
+            modelUrlInput = document.getElementById('model-url'), loadBtn = document.getElementById('load-btn'),
+            mainContent = document.getElementById('main-content'), labelContainer = document.getElementById('label-container'),
+            webcamWrapper = document.getElementById('webcam-wrapper'), webcamBtn = document.getElementById('webcam-btn'),
+            previewImage = document.getElementById('preview-image'), previewPlaceholder = document.getElementById('preview-placeholder'),
+            urlPreviewImage = document.getElementById('url-preview-image'), urlErrorContainer = document.getElementById('url-error-container'),
+            urlPreviewPlaceholder = document.getElementById('url-preview-placeholder'), urlEmptyPlaceholder = document.getElementById('url-empty-placeholder'),
+            imgDirectUrlInput = document.getElementById('img-direct-url'), loadedUrlDisplay = document.getElementById('loaded-url-display');
 
         async function loadModelFromInput() {
             let url = modelUrlInput.value.trim();
@@ -283,7 +283,6 @@
             urlErrorContainer.classList.add('hidden');
             urlPreviewImage.classList.add('hidden');
 
-            // Use a simple public CORS proxy if requested
             const finalUrl = useProxy ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
             
             urlPreviewImage.src = finalUrl;
