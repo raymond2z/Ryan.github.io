@@ -1,109 +1,65 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-<title>W3.CSS Template</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<style>
-body {font-family: "Times New Roman", Georgia, Serif;}
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Playfair Display";
-  letter-spacing: 5px;
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ryan 的互動小工具、實驗與學習筆記。">
+  <title>Ryan 的小作品</title>
+  <style>
+    :root { color-scheme: dark; --bg: #101827; --card: #1d293b; --text: #e5edf8; --muted: #a7b5c9; --accent: #62d5ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    main { width: min(100% - 2rem, 980px); margin: 0 auto; padding: 4rem 0; }
+    h1 { font-size: clamp(2.25rem, 8vw, 4.75rem); line-height: 1.1; margin: 0; }
+    .intro { color: var(--muted); font-size: 1.15rem; max-width: 42rem; margin: 1rem 0 3rem; }
+    h2 { margin: 3rem 0 1rem; font-size: 1.35rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+    a.card { display: block; padding: 1.35rem; border: 1px solid #334155; border-radius: 1rem; color: inherit; background: var(--card); text-decoration: none; transition: transform .15s, border-color .15s; }
+    a.card:hover, a.card:focus-visible { transform: translateY(-3px); border-color: var(--accent); }
+    .card h3 { margin: 0 0 .35rem; color: var(--accent); }
+    .card p { margin: 0; color: var(--muted); }
+    footer { margin-top: 4rem; color: var(--muted); font-size: .9rem; }
+    footer a { color: var(--accent); }
+  </style>
 </head>
 <body>
+  <main>
+    <header>
+      <p>RYAN'S PLAYGROUND</p>
+      <h1>小工具、互動實驗與筆記</h1>
+      <p class="intro">這裡收集我做過的網頁小作品、課堂工具與學習紀錄。每個作品可直接在瀏覽器開啟使用。</p>
+    </header>
 
-<!-- Navbar (sit on top) -->
-<div class="w3-top">
-  <div class="w3-bar w3-white w3-padding w3-card" style="letter-spacing:4px;">
-    <a href="#home" class="w3-bar-item w3-button">Gourmet au Catering</a>
-    <!-- Right-sided navbar links. Hide them on small screens -->
-    <div class="w3-right w3-hide-small">
-      <a href="#about" class="w3-bar-item w3-button">About</a>
-      <a href="#menu" class="w3-bar-item w3-button">Menu</a>
-      <a href="#contact" class="w3-bar-item w3-button">Contact</a>
-    </div>
-  </div>
-</div>
+    <section aria-labelledby="tools">
+      <h2 id="tools">小工具與互動作品</h2>
+      <div class="grid">
+        <a class="card" href="CSK_drawer2/"><h3>CSK 抽籤器</h3><p>可設定範圍、分組人數、排除號碼與是否允許重複的抽籤工具。</p></a>
+        <a class="card" href="CSK_drawer/"><h3>CSK 抽籤器（舊版）</h3><p>另一個分組抽籤版本，保留作為歷史實作。</p></a>
+        <a class="card" href="clicking_game/"><h3>點擊目標小遊戲</h3><p>在畫面中快速點擊目標、累積分數的小遊戲。</p></a>
+        <a class="card" href="GachaName%20PickingV2/gacha.html"><h3>Gacha Name Picking</h3><p>具音效的隨機抽選小工具。</p></a>
+        <a class="card" href="IR/"><h3>IR 實驗</h3><p>以 p5.js 與序列埠程式庫製作的互動實驗。</p></a>
+      </div>
+    </section>
 
-<!-- Header -->
-<header class="w3-display-container w3-content w3-wide" style="max-width:1600px;min-width:500px" id="home">
-  <img class="w3-image" src="/w3images/hamburger.jpg" alt="Hamburger Catering" width="1600" height="800">
-  <div class="w3-display-bottomleft w3-padding-large w3-opacity">
-    <h1 class="w3-xxlarge">Le Catering</h1>
-  </div>
-</header>
+    <section aria-labelledby="experiments">
+      <h2 id="experiments">其他實驗</h2>
+      <div class="grid">
+        <a class="card" href="TeachableMachineTester.html"><h3>Teachable Machine Tester</h3><p>機器學習模型測試頁面。</p></a>
+        <a class="card" href="neon_math_sound.html"><h3>Neon Math Sound</h3><p>聲音與數學視覺效果實驗。</p></a>
+        <a class="card" href="LR_Hand_pingpong.html"><h3>Hand Ping Pong</h3><p>手部互動乒乓球實驗。</p></a>
+        <a class="card" href="interface.html"><h3>Interface</h3><p>介面設計練習。</p></a>
+      </div>
+    </section>
 
-<!-- Page content -->
-<div class="w3-content" style="max-width:1100px">
+    <section aria-labelledby="notes">
+      <h2 id="notes">筆記與文件</h2>
+      <div class="grid">
+        <a class="card" href="Python%E7%BC%96%E7%A8%8B%EF%BC%88%E4%BA%8C%E7%BA%A7%EF%BC%89.md"><h3>Python 編程（二級）</h3><p>Python 學習筆記。</p></a>
+        <a class="card" href="Fusion%20360%20%E7%9A%84%E4%BB%8B%E9%9D%A2%E5%8F%8A%E8%A8%AD%E5%AE%9A%202c446fcc6ede46e493fa204d7bffd72e.html"><h3>Fusion 360 介面及設定</h3><p>Fusion 360 的操作與設定紀錄。</p></a>
+      </div>
+    </section>
 
-  <!-- About Section -->
-  <div class="w3-row w3-padding-64" id="about">
-    <div class="w3-col m6 w3-padding-large w3-hide-small">
-     <img src="/w3images/tablesetting2.jpg" class="w3-round w3-image w3-opacity-min" alt="Table Setting" width="600" height="750">
-    </div>
-
-    <div class="w3-col m6 w3-padding-large">
-      <h1 class="w3-center">About Catering</h1><br>
-      <h5 class="w3-center">Tradition since 1889</h5>
-      <p class="w3-large">The Catering was founded in blabla by Mr. Smith in lorem ipsum dolor sit amet, consectetur adipiscing elit consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute iruredolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.We only use <span class="w3-tag w3-light-grey">seasonal</span> ingredients.</p>
-      <p class="w3-large w3-text-grey w3-hide-medium">Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod temporincididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-    </div>
-  </div>
-  
-  <hr>
-  
-  <!-- Menu Section -->
-  <div class="w3-row w3-padding-64" id="menu">
-    <div class="w3-col l6 w3-padding-large">
-      <h1 class="w3-center">Our Menu</h1><br>
-      <h4>Bread Basket</h4>
-      <p class="w3-text-grey">Assortment of fresh baked fruit breads and muffins 5.50</p><br>
-    
-      <h4>Honey Almond Granola with Fruits</h4>
-      <p class="w3-text-grey">Natural cereal of honey toasted oats, raisins, almonds and dates 7.00</p><br>
-    
-      <h4>Belgian Waffle</h4>
-      <p class="w3-text-grey">Vanilla flavored batter with malted flour 7.50</p><br>
-    
-      <h4>Scrambled eggs</h4>
-      <p class="w3-text-grey">Scrambled eggs, roasted red pepper and garlic, with green onions 7.50</p><br>
-    
-      <h4>Blueberry Pancakes</h4>
-      <p class="w3-text-grey">With syrup, butter and lots of berries 8.50</p>    
-    </div>
-    
-    <div class="w3-col l6 w3-padding-large">
-      <img src="/w3images/tablesetting.jpg" class="w3-round w3-image w3-opacity-min" alt="Menu" style="width:100%">
-    </div>
-  </div>
-
-  <hr>
-
-  <!-- Contact Section -->
-  <div class="w3-container w3-padding-64" id="contact">
-    <h1>Contact</h1><br>
-    <p>We offer full-service catering for any event, large or small. We understand your needs and we will cater the food to satisfy the biggerst criteria of them all, both look and taste. Do not hesitate to contact us.</p>
-    <p class="w3-text-blue-grey w3-large"><b>Catering Service, 42nd Living St, 43043 New York, NY</b></p>
-    <p>You can also contact us by phone 00553123-2323 or email catering@catering.com, or you can send us a message here:</p>
-    <form action="/action_page.php" target="_blank">
-      <p><input class="w3-input w3-padding-16" type="text" placeholder="Name" required name="Name"></p>
-      <p><input class="w3-input w3-padding-16" type="number" placeholder="How many people" required name="People"></p>
-      <p><input class="w3-input w3-padding-16" type="datetime-local" placeholder="Date and time" required name="date" value="2020-11-16T20:00"></p>
-      <p><input class="w3-input w3-padding-16" type="text" placeholder="Message \ Special requirements" required name="Message"></p>
-      <p><button class="w3-button w3-light-grey w3-section" type="submit">SEND MESSAGE</button></p>
-    </form>
-  </div>
-  
-<!-- End page content -->
-</div>
-
-<!-- Footer -->
-<footer class="w3-center w3-light-grey w3-padding-32">
-  <p>Powered by <a href="https://www.w3schools.com/w3css/default.asp" title="W3.CSS" target="_blank" class="w3-hover-text-green">w3.css</a></p>
-</footer>
-
+    <footer>原始碼與完整目錄說明請見 <a href="README.md">README</a>。</footer>
+  </main>
 </body>
 </html>
