@@ -44,6 +44,11 @@ test('real persistent Rust Student Worker supports reset, velocity fields, contr
         assert.ok(Math.abs(a[i]-b[i])<2e-5,name+' mismatch at '+i);
     }
 
+    // Recycle transferred float32 frame buffers to exercise the mobile memory path.
+    const recycled=[frame.fields.rho.buffer,frame.fields.ux.buffer,frame.fields.uy.buffer];
+    worker.postMessage({type:'recycle',buffers:recycled},recycled);
+    assert.ok(recycled.every(buffer=>buffer.byteLength===0),'buffers transfer to Worker');
+
     response=nextReply(worker,'skipped');
     worker.postMessage({type:'step',revision:99,requestId:8,count:3,budgetMs:Infinity});
     assert.equal((await response).requestId,8);
