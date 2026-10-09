@@ -23,3 +23,24 @@ footer{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-s
 @media(max-width:720px){main{padding:22px 13px}.topbar{padding:12px 14px}.hero{align-items:flex-start}.tag{display:none}.stat-grid{grid-template-columns:1fr 1fr}.settings,.telemetry,.results{padding:17px}.method-grid{grid-template-columns:1fr}.settings-grid{gap:10px}.buttons button{flex:1 1 45%}.result-head{align-items:flex-start}}
 @media(max-width:410px){.settings-grid{grid-template-columns:1fr}.topbar nav{gap:7px}.topbar .nav-current{display:none}.identity{font-size:20px}.bar-line{grid-template-columns:92px 1fr 75px;gap:7px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Separate WebGPU Stage-1 diagnostic and real equation-kernel probe */
+.gpu-lab{margin-top:20px;padding:23px 25px}
+.gpu-lab .result-head{align-items:flex-start}
+.gpu-experiment-label{white-space:nowrap;font-size:11px;font-weight:750;color:#0d6f68;background:#e4f6f1;padding:9px 12px;border-radius:20px}
+.gpu-layout{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px}
+.gpu-capability{border:1px solid #d4e3e8;border-radius:11px;background:#f4f8fa;color:#3b6672;line-height:1.6;padding:13px;font-size:12px;white-space:pre-line;overflow-wrap:anywhere;min-height:60px}
+.gpu-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.gpu-inputs label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#526e7b}
+.gpu-inputs select{min-width:0;width:100%;border-radius:8px;background:#fff;padding:9px;border:1px solid #c7d9e2;font-size:14px;color:#153340}
+.gpu-hint{color:#657c89;font-size:12px;line-height:1.65;margin:14px 0}
+.gpu-actions{display:flex;gap:8px;flex-wrap:wrap}
+.gpu-actions button{padding:9px 12px;border-radius:8px;font-size:12px;font-weight:700}
+.gpu-status{font-size:12px;color:#5a7685;line-height:1.6;margin-bottom:0}
+.gpu-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.gpu-validation{font-size:12px;color:#4f7180;background:#f2f7f8;line-height:1.65;margin-top:14px;padding:12px;border-radius:9px;border:1px solid #e0e9ed}
+.gpu-validation[data-pass=true]{color:#0b6b58;background:#e8f8f0;border-color:#aee4cb}
+.gpu-validation[data-pass=false]{color:#9a4e28;background:#fff4ec;border-color:#edc6b2}
+@media(max-width:930px){.gpu-layout{grid-template-columns:1fr}}
+@media(max-width:560px){.gpu-lab{padding:17px}.gpu-inputs{grid-template-columns:1fr}.gpu-experiment-label{display:none}.gpu-stat-grid{grid-template-columns:1fr 1fr}.gpu-actions button{flex:1 1 45%}}
