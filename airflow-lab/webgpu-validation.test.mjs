@@ -68,6 +68,6 @@ test('Benchmark page includes every WebGPU probe control',()=>{
   for(const id of new Set([...ui.matchAll(/\$\('([A-Za-z][A-Za-z0-9]*)'\)/g)].map(m=>m[1]))){
     assert.ok(html.includes('id="'+id+'"'),'Missing #'+id);
   }
-  assert.match(html,/GPU equilibrium/i);
+  assert.match(html,/equilibrium-only/i);
   assert.match(html,/not.*fluid/i);
 });
