@@ -13,7 +13,7 @@ permissions:
 jobs:
   benchmark-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,3 +37,7 @@ jobs:
         run: node --test airflow-lab/webgpu-validation.test.mjs
       - name: Verify Stage 2 D2Q9 solver math and UI (hardware GPU pending)
         run: node --test airflow-lab/gpu-solver.test.mjs
+      - name: Validate WGSL shader syntax and semantics with Naga
+        run: |
+          npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9.wgsl
+          npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9-solver.wgsl
