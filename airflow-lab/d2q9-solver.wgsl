@@ -61,14 +61,14 @@ fn collision(@builtin(global_invocation_id) tid:vec3<u32>){
     output[q*cfg.count+i]=equilibrium[q]+limiter*correction[q];
   }
 }
-fn gather(q:u32,x:i32,y:i32,target:u32)->f32{
-  if(solid[target]!=0u){return 0.0;}
+fn gather(q:u32,x:i32,y:i32,cellIndex:u32)->f32{
+  if(solid[cellIndex]!=0u){return 0.0;}
   let sx=x-CX[q];let sy=y-CY[q];
   if(sx<0||sy<0||sx>=i32(cfg.width)||sy>=i32(cfg.height)){return 0.0;}
   let src=u32(sx)+u32(sy)*cfg.width;
   if(solid[src]!=0u){
     // A population aimed at a solid neighbor is reflected into the same fluid cell.
-    return input[OP[q]*cfg.count+target];
+    return input[OP[q]*cfg.count+cellIndex];
   }
   return input[q*cfg.count+src];
 }
