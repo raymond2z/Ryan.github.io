@@ -142,7 +142,7 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
       await submitSteps(chunk);
       computeMs+=performance.now()-start;
       completed+=chunk;
-      onProgress({done:completed,total:config.steps});
+      onProgress({phase:'gpu',done:completed,total:config.steps});
     }
     const wallMs=performance.now()-wallStart;
     const readStart=performance.now();
@@ -157,10 +157,13 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
     const actual=unpackMacroscopic(packed,solid,config.width,config.height);
     const summary=summarize(actual);
     // Reference is not included in GPU solve measurements.
+    onProgress({phase:'reference',done:0,total:config.warmup+config.steps});
     const referenceStart=performance.now();
     for(let k=0;k<config.warmup+config.steps;k++){
       if(checkCancelled())throw new Error('Cancelled');
       reference.step();
+      if((k+1)%25===0||k+1===config.warmup+config.steps)
+        onProgress({phase:'reference',done:k+1,total:config.warmup+config.steps});
     }
     const referenceMs=performance.now()-referenceStart;
     const fullField=compareFullFields(actual,reference);
