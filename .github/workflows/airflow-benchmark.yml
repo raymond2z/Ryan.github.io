@@ -25,5 +25,10 @@ jobs:
           node --check airflow-lab/benchmark-core.mjs
           node --check airflow-lab/benchmark-worker.mjs
           node --check airflow-lab/simulation.mjs
+          node --check airflow-lab/gpu-engine.mjs
+          node --check airflow-lab/gpu-worker.mjs
+          node --check airflow-lab/gpu-probe-ui.mjs
       - name: Run benchmark tests
         run: node --test airflow-lab/benchmark.test.mjs
+      - name: Run WebGPU probe regression tests (no GPU adapter required)
+        run: node --test airflow-lab/webgpu-validation.test.mjs
