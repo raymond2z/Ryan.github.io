@@ -1,5 +1,5 @@
 // Stage 2 interface stays separate from the validated equilibrium probe and Student Lab.
-import {runWebGpuSolver} from './gpu-solver.mjs';
+import {runWebGpuSolver} from './gpu-solver.mjs?build=stage2-r2-20261010';
 const $=id=>document.getElementById(id);
 const fmt=(n,p=1)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:p}):'—';
 let busy=false,cancelled=false,activeWorker=null,activeReject=null,lastResult=null;
@@ -16,7 +16,7 @@ function locked(value){
 }
 function trialWorker(settings){
   return new Promise((resolve,reject)=>{
-    const worker=new Worker(new URL('./gpu-solver-worker.mjs',import.meta.url),{type:'module'});
+    const worker=new Worker(new URL('./gpu-solver-worker.mjs?build=stage2-r2-20261010',import.meta.url),{type:'module'});
     activeWorker=worker;
     const cleanup=()=>{worker.terminate();if(activeWorker===worker){activeWorker=null;activeReject=null;}};
     activeReject=()=>{cleanup();reject(new Error('Cancelled'));};

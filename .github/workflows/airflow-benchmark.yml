@@ -41,3 +41,4 @@ jobs:
         run: |
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9.wgsl
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9-solver.wgsl
+          npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9-solver-r2-20261010.wgsl

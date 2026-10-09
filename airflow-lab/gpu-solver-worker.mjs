@@ -1,4 +1,4 @@
-import {runWebGpuSolver} from './gpu-solver.mjs';
+import {runWebGpuSolver} from './gpu-solver.mjs?build=stage2-r2-20261010';
 self.addEventListener('message',async({data})=>{
   if(data?.action!=='solve')return;
   try{

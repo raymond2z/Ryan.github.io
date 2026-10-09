@@ -65,7 +65,7 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
     const distributionBytes=initial.byteLength,macroBytes=n*4*4;
     if(Math.max(distributionBytes,macroBytes)>device.limits.maxStorageBufferBindingSize)
       throw new Error('GPU buffer exceeds the device storage limit');
-    const response=await fetch(new URL('./d2q9-solver.wgsl',import.meta.url));
+    const response=await fetch(new URL('./d2q9-solver-r2-20261010.wgsl',import.meta.url),{cache:'no-store'});
     if(!response.ok)throw new Error('Could not load D2Q9 shader (HTTP '+response.status+').');
     const module=device.createShaderModule({code:await response.text(),label:'Stage 2 D2Q9 complete flow solver'});
     if(module.getCompilationInfo){
