@@ -1,0 +1,29 @@
+name: Airflow Benchmark Checks
+on:
+  push:
+    paths:
+      - 'airflow-lab/**'
+      - '.github/workflows/airflow-benchmark.yml'
+  pull_request:
+    paths:
+      - 'airflow-lab/**'
+      - '.github/workflows/airflow-benchmark.yml'
+permissions:
+  contents: read
+jobs:
+  benchmark-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check airflow-lab/benchmark.mjs
+          node --check airflow-lab/benchmark-core.mjs
+          node --check airflow-lab/benchmark-worker.mjs
+          node --check airflow-lab/simulation.mjs
+      - name: Run benchmark tests
+        run: node --test airflow-lab/benchmark.test.mjs
