@@ -3,13 +3,16 @@ import {runWebGpuSolver} from './gpu-solver.mjs';
 const $=id=>document.getElementById(id);
 const fmt=(n,p=1)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:p}):'—';
 let busy=false,cancelled=false,activeWorker=null,activeReject=null,lastResult=null;
+let previousControls={};
 function status(message){$('gpuSolverStatus').textContent=message;}
 function locked(value){
   busy=value;$('gpuSolverRun').disabled=value;
   $('gpuSolverStop').disabled=!value;$('gpuSolverExport').disabled=value||!lastResult;
   for(const id of ['runSelected','compareCpu','compareRust','gpuRun','gpuDiagnose']){
-    if(value)$(id).disabled=true;
+    if(value){previousControls[id]=$(id).disabled;$(id).disabled=true;}
+    else if(Object.hasOwn(previousControls,id))$(id).disabled=previousControls[id];
   }
+  if(!value)previousControls={};
 }
 function trialWorker(settings){
   return new Promise((resolve,reject)=>{
@@ -20,7 +23,9 @@ function trialWorker(settings){
     worker.onmessage=({data})=>{
       if(data.id!==1)return;
       if(data.type==='progress'){
-        status('GPU solver running · '+data.progress.done+'/'+data.progress.total+' full steps…');
+        status(data.progress.phase==='reference'
+          ?'Independent JavaScript validation · '+data.progress.done+'/'+data.progress.total+' steps (not included in GPU timing)…'
+          :'GPU solver running · '+data.progress.done+'/'+data.progress.total+' full steps…');
       }else if(data.type==='done'){cleanup();resolve(data.result);}
       else if(data.type==='error'){cleanup();reject(new Error(data.error));}
     };
@@ -81,11 +86,11 @@ async function run(){
         status('WebGPU Worker unavailable. Retrying on main-thread GPU (may cause temporary UI lag)…');
         result=await runWebGpuSolver(settings,{env:navigator,
           checkCancelled:()=>cancelled,
-          onProgress:p=>status('Full GPU steps: '+p.done+'/'+p.total)});
+          onProgress:p=>status((p.phase==='reference'?'CPU validation: ':'Full GPU steps: ')+p.done+'/'+p.total)});
       }
     }else result=await runWebGpuSolver(settings,{env:navigator,
       checkCancelled:()=>cancelled,
-      onProgress:p=>status('Full GPU steps: '+p.done+'/'+p.total)});
+      onProgress:p=>status((p.phase==='reference'?'CPU validation: ':'Full GPU steps: ')+p.done+'/'+p.total)});
     if(cancelled)throw new Error('Cancelled');
     lastResult=result;showResult(result);
     status('Full fluid solver finished · '+result.steps+' evolving steps, '+fmt(result.stepsPerSecond,1)+
@@ -95,12 +100,7 @@ async function run(){
     if(activeWorker){activeWorker.terminate();activeWorker=null;}
     activeReject=null;
     locked(false);
-    // Restore normal CPU and equilibrium buttons unless those runs are active.
-    $('runSelected').disabled=!$('stopRun').disabled;
-    $('compareCpu').disabled=typeof Worker==='undefined'||!$('stopRun').disabled;
-    $('compareRust').disabled=$('wasmSupport').textContent!=='Ready'||!$('stopRun').disabled;
-    $('gpuDiagnose').disabled=false;
-    $('gpuRun').disabled=!navigator.gpu;
+
   }
 }
 $('gpuSolverRun').addEventListener('click',run);
