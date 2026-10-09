@@ -99,6 +99,10 @@ function renderResult(result){
 }
 async function runProbe(){
   if(gpuBusy||!canRun)return;
+  if(!$('gpuSolverStop').disabled){
+    status('Finish the full GPU solver experiment before running the equilibrium probe.');
+    return;
+  }
   if(!$('stopRun').disabled){status('Finish the CPU benchmark before measuring GPU work.');return;}
   cancelled=false;
   const settings={grid:$('gpuGrid').value,dispatches:Number($('gpuDispatches').value),
