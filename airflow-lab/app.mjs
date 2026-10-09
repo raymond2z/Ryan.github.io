@@ -16,7 +16,7 @@ for(const [key,value]of Object.entries(EXTRA_SHAPES))notes[key]=value.note;
 document.querySelectorAll('[data-shape-preview]').forEach(el=>el.innerHTML=shapePreview(el.dataset.shapePreview));
 let view='curl',tool='move',running=!matchMedia('(prefers-reduced-motion: reduce)').matches;
 let sensor=null,pointer=null,particles=[],captures=[],experiment='shapes',lastFrame=0,lastReadout=0,pendingSteps=0,toastTimer;
-const particleCount=460;
+const particleCount=matchMedia('(pointer:coarse)').matches||innerWidth<700?220:460;
 
 function makeParticle(startAnywhere=true) {
   let x=2,y=2;
@@ -260,12 +260,34 @@ document.addEventListener('keydown',event=>{
   if(event.key.toLowerCase()==='r')flowReset();
 });
 
+let demoPhase=0;
+function setLevel(level){
+  document.body.dataset.level=level;press('level',level);
+  if(level==='beginner'){toolSelected('move');if(view==='density')setView('curl');$('vectors').checked=false;$('force').checked=false;paint();}
+}
+document.querySelectorAll('[data-level]').forEach(el=>el.addEventListener('click',()=>setLevel(el.dataset.level)));
+$('demoButton').addEventListener('click',()=>{
+  setLevel('beginner');sim.speed=.085;sim.viscosity=.025;$('speed').value=.085;$('speedValue').textContent='0.085';$('viscosity').value=.025;$('viscosityValue').textContent='0.025';
+  $('animation').value='7';shapeSelected('block',0);setView('speed');running=true;syncRunning();demoPhase=1;$('nextDemo').hidden=false;
+  $('demoStatus').textContent='Step 1/2: Watch the wake behind the block, then try the next shape.';
+  $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
+});
+$('nextDemo').addEventListener('click',()=>{
+  if(demoPhase!==1)return;shapeSelected('streamlined',0);setView('speed');running=true;syncRunning();demoPhase=2;$('nextDemo').hidden=true;
+  $('demoStatus').textContent='Step 2/2: Same wind speed, different shape. How has the wake changed? Compare after similar simulation steps.';
+  $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
+});
 const experiments={
   shapes:{label:'01 / SHAPE TEST',title:'Which shape leaves a narrower wake?',text:'Try the block, then the streamlined shape. Both have the same front-facing height at 0°. Keep the flow settings unchanged and compare after a similar number of steps.',predict:'Which shape will disturb the flow more?',observe:'Follow particles behind each shape.',explain:'Use what you see to support your answer.'},
   speed:{label:'02 / SPEED TEST',title:'What changes when the flow gets faster?',text:'Keep the circle and viscosity unchanged. Compare speeds of 0.040, 0.100 and 0.200. Use Reset flow for each fresh test, then compare after a similar number of steps.',predict:'Will faster flow create a different wake?',observe:'Compare the swirls and particle paths.',explain:'Describe one change you can actually see.'},
   angle:{label:'03 / ANGLE TEST',title:'What happens when you tilt the shape?',text:'Start with the streamlined shape at 0°. Try 20°, keeping flow speed and viscosity unchanged. Compare the flow above and below the shape.',predict:'Will the flow stay balanced on both sides?',observe:'Use direction arrows and the speed view.',explain:'Explain how the angle changed the flow.'}
 };
-function selectExperiment(next){experiment=next;press('experiment',next);const e=experiments[next];for(const [id,key]of [['challengeLabel','label'],['challengeTitle','title'],['challengeText','text'],['predictText','predict'],['observeText','observe'],['explainText','explain']])$(id).textContent=e[key];}
+function selectExperiment(next){
+  experiment=next;press('experiment',next);const e=experiments[next];
+  for(const [id,key]of [['challengeLabel','label'],['challengeTitle','title'],['challengeText','text'],['predictText','predict'],['observeText','observe'],['explainText','explain']])$(id).textContent=e[key];
+  const options={shapes:['Block leaves a narrower wake','Streamlined leaves a narrower wake'],speed:['Faster flow changes the wake','Faster flow makes little difference'],angle:['Tilting changes the flow balance','Tilting makes little difference']}[next];
+  $('prediction').options[1].textContent=options[0];$('prediction').options[2].textContent=options[1];$('prediction').value='';$('conclusion').value='';
+}
 document.querySelectorAll('[data-experiment]').forEach(el=>el.addEventListener('click',()=>selectExperiment(el.dataset.experiment)));
 function setupExperiment(){
   sim.viscosity=.025;sim.speed=experiment==='speed'?.040:.085;
@@ -300,8 +322,37 @@ function renderCaptures() {
   });
   if(captures.length===1){const empty=document.createElement('div');empty.className='capture-empty';empty.textContent='Your second view will appear here.';root.append(empty);}
   $('captureButton').disabled=captures.length>=2;
+  $('exportComparison').disabled=captures.length!==2;
 }
 $('captureButton').addEventListener('click',capture);
+function reportLines(c,text,x,y,width,spacing,max=2){
+  const words=String(text||'No observation entered').split(/\s+/);let line='',count=0;
+  for(const word of words){const next=line?line+' '+word:word;if(line&&c.measureText(next).width>width){c.fillText(line,x,y+spacing*count++);line=word;if(count>=max)return;}else line=next;}
+  if(count<max)c.fillText(line,x,y+spacing*count);
+}
+async function exportReport(){
+ if(captures.length!==2)return;
+ const imageList=await Promise.all(captures.map(item=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=item.image;})));
+ const sheet=document.createElement('canvas');sheet.width=1840;sheet.height=920;const c=sheet.getContext('2d');
+ c.fillStyle='#f3f6f8';c.fillRect(0,0,1840,920);c.fillStyle='#0e1824';c.fillRect(0,0,1840,125);
+ c.fillStyle='#5de4d1';c.font='bold 36px sans-serif';c.fillText('AIRFLOW LAB / A–B COMPARISON',40,54);
+ c.fillStyle='#e4eff2';c.font='22px sans-serif';c.fillText(experiments[experiment].title,40,94);
+ captures.forEach((r,n)=>{const x=40+n*920;c.fillStyle='#fff';c.fillRect(x,144,900,585);c.drawImage(imageList[n],x+10,155,880,381);
+  c.fillStyle='#163445';c.font='bold 25px sans-serif';c.fillText('VIEW '+(n?'B':'A')+' · '+names[r.shape],x+12,574);
+  c.fillStyle='#566c7c';c.font='19px sans-serif';c.fillText('Flow '+r.speed.toFixed(3)+' · Viscosity '+r.viscosity.toFixed(3)+' · Angle '+r.angle+'°',x+12,610);
+  c.fillText(r.steps.toLocaleString()+' steps · '+viewNames[r.view],x+12,645);
+  c.fillStyle='#163445';c.font='18px sans-serif';reportLines(c,r.note,x+12,686,860,24,2);
+ });
+ const p=$('prediction');c.font='19px sans-serif';c.fillStyle='#163445';
+ reportLines(c,'Prediction: '+(p.selectedIndex?p.options[p.selectedIndex].textContent:'Not recorded'),40,778,1740,25,1);
+ reportLines(c,'Explanation: '+$('conclusion').value,40,811,1740,26,2);
+ c.fillStyle='#637989';c.font='17px sans-serif';c.fillText('Simplified 2D learning model · Simulation units · Not a calibrated aerodynamic test',40,892);
+ sheet.toBlob(blob=>{if(!blob){notify('Report export unavailable on this device.');return;}
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='airflow-lab-comparison.png';document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);notify('Comparison report ready. Check your downloads.');
+ },'image/png');
+}
+$('exportComparison').addEventListener('click',()=>exportReport().catch(()=>notify('Could not export report. Try downloading views separately.')));
 
 // Optional browser-native tools share the visible controls and state.
 const modelContext=navigator.modelContext||document.modelContext;
@@ -336,4 +387,4 @@ if(modelContext?.registerTool) {
   register({name:'capture_wind_tunnel_view',description:'Capture the current rendered view for the visible two-view comparison. Fails when both slots are occupied.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>{if(captures.length>=2)throw new Error('Both comparison slots are full.');return capture();}});
   window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
-resetParticles();syncRunning();setView('curl');toolSelected('move');requestAnimationFrame(frame);
+setLevel('beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');requestAnimationFrame(frame);

@@ -16,3 +16,24 @@ footer{padding:24px 0 0;color:#7a8e9b;font-size:12px}footer>p{font-size:12px;mar
 @media(max-width:520px){.shape-grid{grid-template-columns:repeat(2,1fr);gap:8px}.shape-grid button{font-size:14px}.shape-grid button svg{width:68px;height:34px}.experiment-tabs button{font-size:14px}.tool-buttons button{font-size:14px}.tool-buttons{gap:3px}.tools-row .text-button{font-size:14px}.header-actions .text-button{font-size:14px}}
 
 .shape-grid [data-shape-preview]{display:flex;align-items:center;justify-content:center;width:100%;height:34px}.shape-grid [data-shape=pikachu][aria-pressed=true] svg{fill:#b98200}.shape-grid button{min-height:76px}
+
+
+/* Classroom onboarding */
+.launch-strip{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:16px;background:#e5f6f2;border:1px solid #bfe4db;border-radius:16px;padding:18px 20px;margin-bottom:22px}
+.launch-copy{flex:1 1 280px}.launch-copy strong{display:block;color:#12443f;font-size:18px;margin:4px 0}.launch-copy p{font-size:13px;color:#426e68;margin:5px 0 0}
+.launch-actions{display:flex;gap:8px;flex-wrap:wrap}.launch-strip .primary-button{background:#006f61;color:white}.launch-strip .primary-button:hover{background:#005d50}
+.mode-switch{display:flex;border:1px solid #bdd9d4;border-radius:9px;background:white;padding:3px;gap:2px}
+.mode-switch button{font-size:13px;color:#54756e;background:transparent;padding:9px 12px;border-radius:7px;min-height:40px}
+.mode-switch button[aria-pressed=true]{background:#0d7568;color:white}
+body[data-level=beginner] .advanced-only{display:none!important}
+.prediction-group{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.prediction-group label{display:block;font-size:13px;margin-bottom:6px}
+.prediction-group select{width:100%;max-width:370px;border:1px solid #bdced6;border-radius:8px;padding:10px;font-size:14px;color:var(--ink);background:white}
+.capture-panel #exportComparison{margin-top:10px}
+.reflection{padding:20px 26px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+.reflection label{font-size:14px;color:var(--ink)}.reflection label span{font-weight:normal;display:block;color:#677f8a;font-size:13px;margin-top:4px}
+.reflection textarea{width:100%;font:inherit;font-size:14px;min-height:80px;border:1px solid #bdced6;border-radius:8px;padding:10px;resize:vertical}
+.reflection small{color:#6b7f8b;line-height:1.5}
+@media(max-width:800px){.launch-strip{align-items:stretch}.launch-actions{flex:1 1 auto}.launch-actions button{flex:1}.mode-switch{margin-left:auto}}
+@media(max-width:520px){.launch-strip{padding:14px;gap:12px}.launch-copy{flex-basis:100%}.launch-actions{width:100%}.mode-switch{width:100%}.mode-switch button{flex:1}.transport button,.tool-buttons button,.view-switch button{min-height:44px}.launch-actions button{min-height:44px}.prediction-group select{font-size:16px}.reflection{padding:16px}.canvas-wrap canvas{min-height:155px}.experiment-section{margin-top:20px}}
+@media print{.launch-strip{display:none}.reflection textarea{border:0}}
