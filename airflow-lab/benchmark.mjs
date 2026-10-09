@@ -108,7 +108,7 @@ function showLatest(r){
   const pair=comparison(r);
   $('agreement').textContent=pair.text==='Not paired'
     ?'No matching test yet. Run both CPU engines to check the computed fields.'
-    :(pair.text==='Match'?'Numerical summaries agree. ':'Numerical difference detected. ')+
+    :(pair.css==='pass'?'Numerical summaries agree within the selected tolerance. ':'Numerical difference detected. ')+
       'Maximum difference across mean density, x/y velocity and kinetic energy: '+pair.difference.toExponential(3)+'.'+
       (r.hidden?' Tab was hidden: FPS is not reliable.':'');
 }
