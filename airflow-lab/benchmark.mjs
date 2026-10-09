@@ -5,13 +5,16 @@ const records=[];
 let busy=false,cancelled=false,activeWorker=null,activeReject=null,nextId=0;
 const controlIds=['grid','shape','speed','steps','repeats'];
 const inputs=[...controlIds.map($),...document.querySelectorAll('input[name=engine]')];
+let wasmReady=false;
+const engineName=e=>e==='worker'?'JS Worker':e==='wasm'?'Rust / WASM':'JavaScript';
 const fmt=(x,d=1)=>Number.isFinite(x)?x.toLocaleString(undefined,{maximumFractionDigits:d}):'—';
 const median=xs=>[...xs].sort((a,b)=>a-b)[Math.floor(xs.length/2)];
 const config=()=>({grid:$('grid').value,shape:$('shape').value,speed:Number($('speed').value),steps:Number($('steps').value)});
 const chosenEngine=()=>document.querySelector('input[name=engine]:checked').value;
 function busyMode(value){
-  busy=value;inputs.forEach(e=>e.disabled=value || (e.value==='worker'&&!('Worker' in window)));
+  busy=value;inputs.forEach(e=>e.disabled=value||(e.value==='worker'&&!('Worker' in window))||(e.value==='wasm'&&!wasmReady));
   $('runSelected').disabled=value;$('compareCpu').disabled=value||!('Worker' in window);
+  $('compareRust').disabled=value||!wasmReady;
   $('stopRun').disabled=!value;$('progressArea').hidden=!value;
 }
 function reportProgress(message,completed,total){
@@ -34,10 +37,11 @@ function frameMonitor(){
     return {fps:1000*gaps.length/gaps.reduce((a,b)=>a+b,0),worstGap:Math.max(...gaps),hidden};
   };
 }
-function workerTrial(settings,onProgress){
+function workerTrial(settings,onProgress,engine='worker'){
   return new Promise((resolve,reject)=>{
     if(!('Worker' in window)){reject(new Error('Web Worker unavailable'));return;}
-    const worker=new Worker(new URL('./benchmark-worker.mjs',import.meta.url),{type:'module'});
+    const path=engine==='wasm'?'./wasm-worker.mjs':'./benchmark-worker.mjs';
+    const worker=new Worker(new URL(path,import.meta.url),{type:'module'});
     activeWorker=worker;activeReject=reject;
     const cleanup=()=>{worker.terminate();if(activeWorker===worker)activeWorker=null;if(activeReject===reject)activeReject=null;};
     worker.onmessage=({data})=>{
@@ -55,7 +59,7 @@ async function oneTrial(engine,settings,onProgress){
   try{
     const result=engine==='javascript'
       ?await runCpuTrial(settings,{onProgress,checkCancelled:()=>cancelled})
-      :await workerTrial(settings,onProgress);
+      :await workerTrial(settings,onProgress,engine);
     return {...result,ui:stop()};
   }catch(error){stop();throw error;}
 }
@@ -74,8 +78,10 @@ function comparison(record){
   const other=records.find(r=>r.id!==record.id&&r.engine!==record.engine&&r.key===record.key);
   if(!other)return {text:'Not paired',css:''};
   const result=compareFields(record.metrics,other.metrics);
-  const same=result.matches&&record.solidCells===other.solidCells;
-  return {text:same?'Match':'Different',css:same?'pass':'warn',difference:result.maxDifference};
+  const isRust=record.engine==='wasm'||other.engine==='wasm';
+  const tolerance=isRust?1e-7:1e-9;
+  const same=result.maxDifference<=tolerance&&record.solidCells===other.solidCells;
+  return {text:same?(isRust?'Within tolerance':'Match'):'Different',css:same?'pass':'warn',difference:result.maxDifference};
 }
 function heatmap(record){
   const d=record.preview,off=document.createElement('canvas');
@@ -91,7 +97,7 @@ function heatmap(record){
   const canvas=$('fieldPreview'),ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.imageSmoothingEnabled=true;ctx.drawImage(off,0,0,canvas.width,canvas.height);
-  $('previewLabel').textContent=(record.engine==='worker'?'JS Worker':'JavaScript')+' · '+record.config.grid;
+  $('previewLabel').textContent=engineName(record.engine)+' · '+record.config.grid;
 }
 function showLatest(r){
   $('liveThroughput').textContent=fmt(r.throughput,0);
@@ -116,7 +122,7 @@ function render(){
   for(const r of [...records].reverse()){
     const tr=document.createElement('tr'),pair=comparison(r);
     const cells=[
-      (r.engine==='worker'?'JS Worker':'JavaScript')+' · '+r.samples.length+' run(s)',
+      engineName(r.engine)+' · '+r.samples.length+' run(s)',
       r.config.grid+' / '+r.config.shape+' · '+r.config.speed.toFixed(3),
       String(r.config.steps),fmt(r.computeMs,1)+' ms',fmt(r.throughput,0),
       (r.hidden?'⚠ ':'')+fmt(r.uiFps,1),fmt(r.worstGap,1)+' ms',pair.text
@@ -133,7 +139,7 @@ function render(){
     const max=Math.max(last.throughput,other.throughput);
     for(const r of [other,last]){
       const row=document.createElement('div');row.className='bar-line';
-      const name=document.createElement('span');name.textContent=r.engine==='worker'?'JS Worker':'JavaScript';
+      const name=document.createElement('span');name.textContent=engineName(r.engine);
       const track=document.createElement('div');track.className='bar-track';
       const fill=document.createElement('div');fill.className='bar-fill';fill.style.width=(100*r.throughput/max).toFixed(1)+'%';
       const value=document.createElement('strong');value.textContent=fmt(r.throughput,0)+' /s';
@@ -151,7 +157,7 @@ async function run(engines){
       const samples=[];
       for(let index=0;index<repeats;index++){
         if(cancelled)throw new Error('Cancelled');
-        const title=(engine==='worker'?'JS Worker':'JavaScript')+' · run '+(index+1)+'/'+repeats;
+        const title=engineName(engine)+' · run '+(index+1)+'/'+repeats;
         reportProgress(title,finished,total);
         const sample=await oneTrial(engine,settings,p=>{
           reportProgress(title+' · '+p.done+'/'+p.total+' steps',finished+p.done/settings.steps,total);
@@ -171,6 +177,7 @@ async function run(engines){
 }
 $('runSelected').addEventListener('click',()=>run([chosenEngine()]));
 $('compareCpu').addEventListener('click',()=>run(['javascript','worker']));
+$('compareRust').addEventListener('click',()=>run(['worker','wasm']));
 $('stopRun').addEventListener('click',()=>{
   if(!busy)return;
   cancelled=true;
@@ -199,6 +206,18 @@ $('exportCsv').addEventListener('click',()=>{
 const hasWorker=typeof Worker!=='undefined';
 $('workerSupport').textContent=hasWorker?'Ready':'Unsupported';
 if(!hasWorker){document.querySelector('input[value=worker]').disabled=true;$('compareCpu').disabled=true;}
+(async()=>{
+  const status=$('wasmSupport');
+  if(!hasWorker||typeof WebAssembly==='undefined'){status.textContent='Unsupported';return;}
+  try{
+    const url=new URL('./rust/airflow_solver.wasm',import.meta.url);
+    const response=await fetch(url,{method:'HEAD',cache:'no-store'});
+    if(!response.ok)throw new Error('Binary unavailable');
+    wasmReady=true;status.textContent='Ready';status.classList.add('working');
+    document.querySelector('input[value=wasm]').disabled=false;
+    $('compareRust').disabled=busy;
+  }catch{status.textContent='Build pending';}
+})();
 const ctx=$('fieldPreview').getContext('2d');ctx.fillStyle='#0b1a29';ctx.fillRect(0,0,640,280);
 (async()=>{
   let gpu='unavailable';
