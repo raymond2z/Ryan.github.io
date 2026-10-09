@@ -48,3 +48,25 @@ A Web Worker may improve UI responsiveness but does not guarantee faster physica
 ## Privacy
 
 Benchmark measurements remain in the current browser session until manually downloaded with **Export CSV**. This project does not upload device results to a server or automatically send them to GitHub. 
+
+## Student Lab integration (Rust/WASM Worker)
+
+The public Student Lab now supports a separate engine selector:
+
+- **Auto:** starts with the existing JavaScript display and attempts to initialize the Rust/WASM Worker. Once ready, it restarts the flow and runs computation off the UI thread.
+- **Rust / WASM:** explicitly requests the compiled Rust engine with automatic JavaScript fallback if the device cannot initialize it.
+- **JavaScript:** keeps the original in-page solver and all classroom tools.
+
+Changing the engine or the grid reloads the page and clears current experiments. This is intentional: comparisons should begin from known initial conditions.
+
+When the WASM engine is active, the worker retains its solver and its f64 arrays. It sends three Float32 arrays (density and x/y velocity) to the UI for visualization, reusing transferred buffers to reduce mobile memory churn. Shape masks are synchronized after drag/draw/erase/reset; viscosity and speed change in place; Stir applies momentum in the Rust solver. The original JavaScript solver remains an independent fallback.
+
+### Phone and iPad validation
+
+1. Open Student Lab on the same phone or iPad; select **Detailed** grid, **Block**, flow speed **0.150**, and **Normal** animation pace.
+2. Observe **Canvas fps** and **Flow steps/s** for a few minutes using Auto (Rust/WASM), then switch to JavaScript and repeat after a full reload.
+3. Test drag, pause/step, speed adjustment, change shape, and snapshots in both modes. Try **Stir** in Advanced mode.
+4. Do not interpret the Student Lab live FPS as a benchmark solver speed; the Worker integration also includes field-transfer and canvas-paint costs.
+5. For standardized solver comparisons, continue using Benchmark Lab with three repetitions and export its CSV.
+
+The current release includes automated Rust-worker tests for reset, settings changes, transfer buffers, numerical agreement, stale-message rejection and the Stir tool. It does **not** claim measured iPad/Samsung Student Lab FPS improvement before testing the completed interface.

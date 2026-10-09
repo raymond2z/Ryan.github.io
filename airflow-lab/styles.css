@@ -46,3 +46,14 @@ body[data-level=beginner] .advanced-only{display:none!important}
 .quality-note{font-size:12px;color:#a4b8c7;line-height:1.5;margin:0;padding:0 24px 13px}
 @media(max-width:800px){.quality-note{padding:0 17px 13px}.quality-control{width:100%;justify-content:flex-end}}
 @media(max-width:520px){.quality-control{justify-content:space-between}.quality-control select{flex:1;min-width:140px}.quality-control small{width:100%;text-align:right}.quality-note{padding:0 14px 12px}}
+
+/* Independently selectable Student Lab engines and measured live responsiveness */
+.student-engine-row{display:flex;align-items:center;gap:13px 20px;flex-wrap:wrap;border-top:1px solid #293c49;padding:12px 24px;color:#a2bbc9;font-size:12px}
+.student-engine-control{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.student-engine-control label{white-space:nowrap;font-weight:650}
+.student-engine-control select{color:#e1f1f2;background:#1b303d;border:1px solid #3d5c68;border-radius:7px;min-height:42px;padding:8px;font-size:13px}
+#engineStatus{font-size:12px;line-height:1.4;color:#83dec8}
+#engineStatus[data-fallback=true]{color:#f7c47c}
+#livePerformance{font-variant-numeric:tabular-nums;color:#a2bdcd;margin-left:auto;font-size:12px}
+@media(max-width:800px){.student-engine-row{padding:12px 17px}#livePerformance{margin-left:0;width:100%}}
+@media(max-width:520px){.student-engine-row{padding:12px 14px}.student-engine-control{width:100%;justify-content:space-between}.student-engine-control select{flex:1;min-width:160px}#engineStatus{width:100%}}

@@ -6,6 +6,12 @@ const qualityPreference=new URLSearchParams(location.search).get('quality');
 const qualityOption=['fast','detail'].includes(qualityPreference)?qualityPreference:'auto';
 const useFastGrid=qualityOption==='fast'||(qualityOption==='auto'&&(matchMedia('(pointer: coarse)').matches||innerWidth<700));
 const sim=new FluidSimulation(useFastGrid?168:240,useFastGrid?72:104);
+const enginePreference=new URLSearchParams(location.search).get('engine');
+const engineChoice=['javascript','wasm'].includes(enginePreference)?enginePreference:'auto';
+let wasmActive=false,wasmStarting=false,wasmWorker=null,workerRequest=0,workerInFlight=0;
+let engineRevision=0,lastWorkerRequest=0,manualSteps=0;
+let performanceWindow=performance.now(),paintedFrames=0,simulatedSteps=0;
+const requestedWasm=engineChoice!=='javascript';
 const canvas=$('tunnel'),ctx=canvas.getContext('2d',{alpha:false});
 const field=document.createElement('canvas');field.width=sim.width;field.height=sim.height;
 const fieldCtx=field.getContext('2d',{alpha:false});
@@ -36,6 +42,7 @@ function makeParticle(startAnywhere=true) {
 function resetParticles(){particles=Array.from({length:particleCount},()=>makeParticle());}
 function notify(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
 function paint() {
+  paintedFrames++;
   const data=pixels.data;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) {
     const i=x+y*W,k=i*4;
@@ -125,10 +132,101 @@ function runSteps(count,budgetMs=Infinity) {
   const start=performance.now();let completed=0;
   try{
     while(completed<count){sim.step();completed++;if(performance.now()-start>=budgetMs)break;}
-    moveParticles(completed);return completed;
+    moveParticles(completed);simulatedSteps+=completed;return completed;
   }
   catch{running=false;sim.reset();resetParticles();syncRunning();notify('The flow became unstable and was reset. Try a gentler speed or higher viscosity.');return 0;}
 }
+
+function engineLabel(message,fallback=false){
+  $('engineStatus').textContent=message;
+  $('engineStatus').dataset.fallback=String(fallback);
+}
+function resetRustField(){
+  if(!wasmActive||!wasmWorker)return;
+  engineRevision++;
+  workerInFlight=0;
+  // Always copy the current obstacle mask; drag/draw tools modify it on the UI thread.
+  wasmWorker.postMessage({type:'reset',revision:engineRevision,
+    speed:sim.speed,viscosity:sim.viscosity,solid:sim.solid.slice()});
+}
+function updateRustParameters(){
+  if(wasmActive&&wasmWorker)wasmWorker.postMessage({
+    type:'params',speed:sim.speed,viscosity:sim.viscosity
+  });
+}
+function endRustEngine(reason){
+  if(wasmWorker){wasmWorker.terminate();wasmWorker=null;}
+  wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;
+  // JS fallback must have f64 velocity fields for normal numeric operation.
+  sim.rho=new Float64Array(sim.n);
+  sim.ux=new Float64Array(sim.n);
+  sim.uy=new Float64Array(sim.n);
+  sim.reset();pendingSteps=0;resetParticles();paint();
+  engineLabel('JavaScript fallback · '+reason,true);
+  if(reason!=='selected')notify('Rust/WASM unavailable. The JavaScript simulator is still working.');
+}
+function publishRustStep(count,budgetMs,now){
+  if(!wasmActive||!wasmWorker||workerInFlight)return;
+  workerInFlight=++workerRequest;
+  lastWorkerRequest=now;
+  wasmWorker.postMessage({type:'step',revision:engineRevision,
+    requestId:workerInFlight,count,budgetMs});
+}
+function beginRustEngine(){
+  $('engine').value=engineChoice;
+  if(!requestedWasm){
+    engineLabel('JavaScript · selected');
+    return;
+  }
+  if(typeof Worker==='undefined'||typeof WebAssembly==='undefined'){
+    engineLabel('JavaScript fallback · Rust not supported',true);
+    return;
+  }
+  wasmStarting=true;
+  engineLabel('Loading Rust/WASM…');
+  try{
+    const worker=new Worker(new URL('./student-wasm-worker.mjs',import.meta.url),{type:'module'});
+    wasmWorker=worker;
+    worker.onerror=event=>{
+      event.preventDefault();
+      endRustEngine('worker error');
+    };
+    worker.onmessage=({data})=>{
+      if(worker!==wasmWorker)return;
+      if(data.type==='ready'){
+        wasmStarting=false;wasmActive=true;
+        // The user could have changed controls while WASM was loading.
+        sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;
+        resetRustField();
+        engineLabel((engineChoice==='auto'?'Auto · ':'')+'Rust/WASM worker');
+        notify('Rust/WASM is active. Flow restarted using your current settings.');
+        paint();
+      }else if(data.type==='error'){
+        endRustEngine('simulation error');
+      }else if(data.type==='skipped'){
+        if(data.requestId===workerInFlight)workerInFlight=0;
+      }else if(data.type==='frame'){
+        if(data.requestId===workerInFlight)workerInFlight=0;
+        if(data.revision!==engineRevision)return;
+        // Float32 fields are for drawing only. The Rust solver remains f64.
+        const previous=[sim.rho,sim.ux,sim.uy];
+        sim.rho=data.fields.rho;sim.ux=data.fields.ux;sim.uy=data.fields.uy;
+        const buffers=previous.filter(v=>v instanceof Float32Array&&v.length===sim.n).map(v=>v.buffer);
+        if(buffers.length===3)worker.postMessage({type:'recycle',buffers},buffers);
+        sim.time=data.time;sim.inletSpeed=data.inletSpeed;
+        sim.forceX=data.forceX;sim.forceY=data.forceY;
+        simulatedSteps+=data.steps;
+        pendingSteps=Math.max(0,pendingSteps-data.steps);
+        if(data.steps>0)moveParticles(data.steps);
+        if(performance.now()-lastPaint>=paintInterval){paint();lastPaint=performance.now();}
+      }
+    };
+    worker.postMessage({type:'init',width:W,height:H,speed:sim.speed,viscosity:sim.viscosity});
+  }catch{
+    endRustEngine('initialization failed');
+  }
+}
+
 function frame(now) {
   const elapsed=lastFrame?Math.min(100,now-lastFrame):0;lastFrame=now;
   const drawing=pointer&&['draw','erase','move'].includes(pointer.action);
@@ -136,12 +234,28 @@ function frame(now) {
     const animation=Number($('animation').value),superFast=animation===24;
     pendingSteps=Math.min(superFast?48:18,pendingSteps+elapsed*animation*.03);
     const count=Math.floor(pendingSteps);
-    if(count){
+    if(wasmActive){
+      if(count&&!workerInFlight&&now-lastWorkerRequest>=Math.max(1000/30,paintInterval)){
+        // The Worker can use a longer compute slice without blocking the UI thread.
+        const budgetMs=useFastGrid?(superFast?34:25):(superFast?36:29);
+        publishRustStep(count,budgetMs,now);
+      }
+    }else if(count){
       const budgetMs=useFastGrid?(superFast?18:9):(superFast?36:12);
       pendingSteps-=runSteps(count,budgetMs);
       if(now-lastPaint>=paintInterval){paint();lastPaint=now;}
     }
   }else pendingSteps=0;
+  if(wasmActive&&manualSteps>0&&!workerInFlight){
+    const count=Math.min(48,manualSteps);manualSteps-=count;
+    publishRustStep(count,Number.POSITIVE_INFINITY,now);
+  }
+  if(now-performanceWindow>=1000){
+    const seconds=(now-performanceWindow)/1000;
+    $('livePerformance').textContent='Canvas: '+Math.round(paintedFrames/seconds)+
+      ' fps · Flow: '+Math.round(simulatedSteps/seconds)+' steps/s';
+    performanceWindow=now;paintedFrames=0;simulatedSteps=0;
+  }
   if(now-lastReadout>250&&!document.hidden){
     updateProbe();
     updateRunStatus();
@@ -173,9 +287,9 @@ function shapeSelected(shape,angle=0,preservePosition=false) {
   const disabled=['custom','none'].includes(shape);$('angle').disabled=disabled;
   $('observation').innerHTML=notes[shape];$('canvasNote').textContent=shape==='none'?'Add a shape to disturb the flow':`Watch the wake behind the ${names[shape].toLowerCase()}`;
   if(shape!=='none'&&!preservePosition)toolSelected('move');
-  pendingSteps=0;updateRunStatus();updateProbe();paint();
+  pendingSteps=0;resetRustField();updateRunStatus();updateProbe();paint();
 }
-function flowReset(){sim.reset();pendingSteps=0;resetParticles();updateRunStatus();updateProbe();paint();}
+function flowReset(){sim.reset();pendingSteps=0;resetParticles();resetRustField();updateRunStatus();updateProbe();paint();}
 function toolSelected(next) {
   tool=next;press('tool',tool);
   $('toolHint').textContent={move:'Drag the object to reposition it. Release to restart the flow. Arrow keys move it too.',probe:'Click anywhere in the flow to measure its speed.',draw:'Drag to draw a barrier. Leave space for the flow to go around it.',erase:'Drag across a barrier to erase it.',push:'Drag gently through the fluid to create a small disturbance.'}[tool];
@@ -221,7 +335,10 @@ canvas.addEventListener('pointermove',event=>{
     const result=sim.translateMask(pointer.mask,p.x-pointer.start.x,p.y-pointer.start.y,pointer.origin);
     pointer.moved=!!result&&(result.dx!==0||result.dy!==0);
   }else if(pointer.action==='probe'){sensor=p;updateProbe();}
-  else if(pointer.action==='push')sim.push(p.x,p.y,p.x-pointer.x,p.y-pointer.y);
+  else if(pointer.action==='push'){
+    if(wasmActive)wasmWorker.postMessage({type:'push',x:p.x,y:p.y,dx:p.x-pointer.x,dy:p.y-pointer.y});
+    else sim.push(p.x,p.y,p.x-pointer.x,p.y-pointer.y);
+  }
   else editSegment(pointer,p);
   pointer.x=p.x;pointer.y=p.y;paint();
 });
@@ -230,6 +347,9 @@ function endPointer(event){
   const reset=['draw','erase'].includes(pointer.action)||(pointer.action==='move'&&pointer.moved);
   pointer=null;canvas.style.cursor=tool==='push'||tool==='move'?'grab':'crosshair';
   if(reset)flowReset();
+  // When paused, refresh the flow visualization after using Stir.
+  if(wasmActive&&tool==='push'&&!running&&!workerInFlight)
+    publishRustStep(0,0,performance.now());
 }
 canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('lostpointercapture',endPointer);
 canvas.addEventListener('keydown',event=>{
@@ -247,13 +367,25 @@ document.querySelectorAll('[data-shape]').forEach(el=>el.addEventListener('click
 document.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>setView(el.dataset.view)));
 document.querySelectorAll('[data-tool]').forEach(el=>el.addEventListener('click',()=>toolSelected(el.dataset.tool)));
 $('playButton').addEventListener('click',()=>{running=!running;syncRunning();});
-$('stepButton').addEventListener('click',()=>{running=false;pendingSteps=0;runSteps(10);syncRunning();paint();updateProbe();});
+$('stepButton').addEventListener('click',()=>{
+  running=false;pendingSteps=0;
+  if(wasmActive)manualSteps+=10;
+  else {runSteps(10);paint();updateProbe();}
+  syncRunning();
+});
 $('resetButton').addEventListener('click',flowReset);
 $('clearButton').addEventListener('click',()=>shapeSelected('none',0));
 $('closeSensor').addEventListener('click',()=>{sensor=null;$('sensorReadout').hidden=true;paint();});
 $('angle').addEventListener('input',()=>shapeSelected(sim.shape,Number($('angle').value),true));
 $('animation').addEventListener('change',()=>{pendingSteps=0;});
 $('quality').value=qualityOption;
+$('engine').value=engineChoice;
+$('engine').addEventListener('change',()=>{
+  const url=new URL(location.href),choice=$('engine').value;
+  if(choice==='auto')url.searchParams.delete('engine');
+  else url.searchParams.set('engine',choice);
+  location.assign(url.toString());
+});
 $('qualityStatus').textContent=useFastGrid?'Fast grid · 168 × 72':'Detailed grid · 240 × 104';
 $('quality').addEventListener('change',()=>{
   const next=$('quality').value;
@@ -262,8 +394,8 @@ $('quality').addEventListener('change',()=>{
   else url.searchParams.set('quality',next);
   location.assign(url.toString());
 });
-$('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);paint();});
-$('viscosity').addEventListener('input',()=>{sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);paint();});
+$('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);updateRustParameters();paint();});
+$('viscosity').addEventListener('input',()=>{sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);updateRustParameters();paint();});
 ['particles','vectors','force'].forEach(id=>$(id).addEventListener('change',paint));
 $('viscosityInfo').addEventListener('click',()=>notify('Viscosity is a fluid’s resistance to shear. In this model, higher viscosity smooths out motion and can make swirls fade sooner.'));
 $('fullscreenButton').addEventListener('click',async()=>{
@@ -407,4 +539,5 @@ if(modelContext?.registerTool) {
   register({name:'capture_wind_tunnel_view',description:'Capture the current rendered view for the visible two-view comparison. Fails when both slots are occupied.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>{if(captures.length>=2)throw new Error('Both comparison slots are full.');return capture();}});
   window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
-setLevel('beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');requestAnimationFrame(frame);
+setLevel('beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);
+window.addEventListener('pagehide',()=>{if(wasmWorker)wasmWorker.terminate();},{once:true});

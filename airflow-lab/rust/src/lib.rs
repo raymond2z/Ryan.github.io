@@ -141,6 +141,27 @@ impl Solver {
         self.force_y=(1.0-smoothing)*self.force_y+smoothing*fy*force_scale;
         true
     }
+    // Mirror the existing JavaScript stir tool while retaining f64 solver state.
+    fn push(&mut self,x:f64,y:f64,dx:f64,dy:f64){
+        if !x.is_finite()||!y.is_finite()||!dx.is_finite()||!dy.is_finite(){return;}
+        let min_y=(y-6.0).floor().max(2.0) as usize;
+        let max_y=(y+6.0).min((self.h-2) as f64).ceil() as usize;
+        let min_x=(x-6.0).floor().max(2.0) as usize;
+        let max_x=(x+6.0).min((self.w-2) as f64).ceil() as usize;
+        for yy in min_y..max_y{
+            for xx in min_x..max_x{
+                let i=xx+yy*self.w;if self.solid[i]!=0{continue;}
+                let distance=((xx as f64-x).powi(2)+(yy as f64-y).powi(2)).sqrt();
+                let weight=(1.0-distance/6.0).max(0.0);
+                let mut u=self.ux[i]+(dx*0.008).clamp(-0.035,0.035)*weight;
+                let mut v=self.uy[i]+(dy*0.008).clamp(-0.035,0.035)*weight;
+                let magnitude=(u*u+v*v).sqrt();
+                if magnitude>0.5{u*=0.5/magnitude;v*=0.5/magnitude;}
+                Self::equilibrium_into(&mut self.f,self.n,i,u*DT,v*DT,self.rho[i]);
+                self.ux[i]=u;self.uy[i]=v;
+            }
+        }
+    }
     fn step(&mut self)->bool {
         if !self.substep()||!self.substep(){return false;}
         self.time+=1;
@@ -190,6 +211,29 @@ pub unsafe extern "C" fn solver_ux_ptr(p:*mut Solver)->*const f64{
 pub unsafe extern "C" fn solver_uy_ptr(p:*mut Solver)->*const f64{
     if p.is_null(){return std::ptr::null();}
     (*p).uy.as_ptr()
+}
+#[no_mangle]
+pub unsafe extern "C" fn solver_set_params(p:*mut Solver,speed:f64,viscosity:f64)->i32{
+    if p.is_null()||!speed.is_finite()||!(0.0..=0.2).contains(&speed)||
+        !viscosity.is_finite()||!(0.02..=0.15).contains(&viscosity){return 0;}
+    let s=&mut *p;s.speed=speed;s.viscosity=viscosity;1
+}
+#[no_mangle]
+pub unsafe extern "C" fn solver_push(p:*mut Solver,x:f64,y:f64,dx:f64,dy:f64)->i32{
+    if p.is_null(){return 0;}
+    (*p).push(x,y,dx,dy);1
+}
+#[no_mangle]
+pub unsafe extern "C" fn solver_inlet_speed(p:*const Solver)->f64{
+    if p.is_null(){return 0.0;}(*p).inlet_speed
+}
+#[no_mangle]
+pub unsafe extern "C" fn solver_force_x(p:*const Solver)->f64{
+    if p.is_null(){return 0.0;}(*p).force_x
+}
+#[no_mangle]
+pub unsafe extern "C" fn solver_force_y(p:*const Solver)->f64{
+    if p.is_null(){return 0.0;}(*p).force_y
 }
 #[no_mangle]
 pub unsafe extern "C" fn solver_time(p:*const Solver)->u32{
