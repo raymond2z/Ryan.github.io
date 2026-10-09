@@ -22,7 +22,7 @@
       <span class="tag">Research preview · v1</span>
     </section>
     <section class="notice" aria-label="Availability notice"><strong>Working today:</strong> JavaScript on the main thread and the same JavaScript solver inside a Web Worker.
-      <strong>Coming later:</strong> Rust/WASM and WebGPU compute engines. Browser support detection does not mean an engine is implemented.</section>
+      <strong>New experimental engine:</strong> Rust/WebAssembly (runs in a Worker, compiled from the same D2Q9 mathematics). <strong>Coming later:</strong> WebGPU. Browser support detection does not mean an engine is implemented.</section>
     <div class="layout">
       <section class="panel settings" aria-label="Benchmark settings">
         <div class="panel-head"><span class="step">01</span><h2>Set up a fair test</h2></div>
@@ -30,7 +30,7 @@
           <legend>Choose an engine</legend>
           <label class="engine-card"><input type="radio" name="engine" value="javascript" checked><span><b>JavaScript</b><small>Original solver · main thread</small></span><span class="status working">Ready</span></label>
           <label class="engine-card"><input type="radio" name="engine" value="worker"><span><b>JS + Web Worker</b><small>Same solver · background thread</small></span><span class="status working" id="workerSupport">Checking</span></label>
-          <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>Rust / WebAssembly</b><small>Solver not ported yet</small></span><span class="status">Planned</span></div>
+          <label class="engine-card" id="wasmEngineCard"><input type="radio" name="engine" value="wasm" disabled><span><b>Rust / WebAssembly</b><small>Compiled D2Q9 solver · Web Worker</small></span><span class="status" id="wasmSupport">Checking binary</span></label>
           <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>WebGPU / WGSL</b><small>Compute shader not built yet</small></span><span class="status">Planned</span></div>
         </fieldset>
         <div class="settings-grid">
@@ -41,7 +41,7 @@
           <label>Runs per engine<select id="repeats"><option value="1" selected>1 run · First test</option><option value="3">3 runs · More reliable median</option></select></label>
         </div>
         <p class="help">Each run starts from a new fluid field, performs 8 identical warmup steps, then times the selected number of steps. No random inputs are used. The benchmark uses a fixed viscosity of 0.025.</p>
-        <div class="buttons"><button id="runSelected" class="primary">Run selected engine</button><button id="compareCpu" class="secondary">Compare both CPU engines</button><button id="stopRun" class="danger" disabled>Stop</button></div>
+        <div class="buttons"><button id="runSelected" class="primary">Run selected engine</button><button id="compareCpu" class="secondary">Compare JS + Worker</button><button id="compareRust" class="secondary" disabled>Compare Worker + Rust</button><button id="stopRun" class="danger" disabled>Stop</button></div>
         <div id="progressArea" class="progress-area" hidden><div class="progress-header"><strong id="progressText">Preparing…</strong><span id="progressPercent">0%</span></div><progress id="progress" max="100" value="0"></progress></div>
       </section>
       <section class="panel telemetry" aria-label="Device and live preview">
@@ -64,7 +64,7 @@
     </section>
     <section class="method">
       <h2>How to interpret these measurements</h2>
-      <div class="method-grid"><div><b>Same physics, different execution</b><p>Both working modes import the exact same D2Q9 JavaScript solver. A Worker moves the computation off the UI thread; it does not automatically make each step faster.</p></div><div><b>Keep tests comparable</b><p>Compare results collected on the same device, with identical grid, object, flow speed and measured steps. Changing resolution can also change the simulated result.</p></div><div><b>Mind the caveats</b><p>Thermal throttling, browser background tabs, device power mode and first-run compilation can affect timings. For better comparisons, run three repeats and compare medians.</p></div></div>
+      <div class="method-grid"><div><b>Same physics, different execution</b><p>JS + Worker run the same JavaScript D2Q9 code. Rust/WASM is a separate compiled implementation with matching equations, shape masks and warmup. Compare numerical differences as well as speed.</p></div><div><b>Keep tests comparable</b><p>Compare results collected on the same device, with identical grid, object, flow speed and measured steps. Changing resolution can also change the simulated result.</p></div><div><b>Mind the caveats</b><p>Thermal throttling, background tabs and device power mode affect timings. WASM download/compilation is excluded from solver time. Test both engines on the same device and compare three-run medians.</p></div></div>
     </section>
     <footer><span>Airflow Lab · Experimental performance research. Not calibrated aerodynamic measurements.</span><a href="./">Return to the student simulator →</a></footer>
   </main>
