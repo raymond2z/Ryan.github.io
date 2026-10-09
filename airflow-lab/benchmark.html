@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="benchmark.css">
   <script type="module" src="benchmark.mjs"></script>
   <script type="module" src="gpu-probe-ui.mjs"></script>
+  <script type="module" src="gpu-solver-ui.mjs"></script>
 </head>
 <body>
   <header class="topbar">
@@ -105,6 +106,46 @@
             <div class="stat"><span>CPU-reference maximum difference</span><strong id="gpuDifference">—</strong><small>max absolute error (all 9 populations)</small></div>
           </div>
           <div class="gpu-validation" id="gpuValidation">Run the compute probe to check output values against the CPU reference. Tests can run on the GPU Worker when supported, otherwise on the main thread.</div>
+        </div>
+      </div>
+    </section>
+    <section class="panel gpu-lab" aria-label="Full WebGPU D2Q9 flow solver research" id="gpuSolverLab">
+      <div class="result-head">
+        <div>
+          <span class="eyebrow">EXPERIMENT 03 / WEBGPU STAGE 2</span>
+          <h2>Real evolving fluid simulation on the GPU</h2>
+          <p>Unlike Experiment 02, this runs the complete D2Q9 <strong>regularized BGK collision + streaming + obstacle bounce-back</strong> loop.
+          Each displayed step contains two lattice half-steps. GPU populations stay resident until a single final readback.</p>
+        </div>
+        <span class="gpu-experiment-label">Full solver · experimental</span>
+      </div>
+      <div class="gpu-layout">
+        <div>
+          <p>Uses the same <strong>grid, shape, flow speed and step count</strong> selected in Experiment 01 above.
+          Each run starts with 8 warmup steps and a viscosity of 0.025. For numerical validation, an independent
+          JavaScript <em>f64</em> reference runs after the GPU measurement has finished.</p>
+          <div class="buttons gpu-actions">
+            <button id="gpuSolverRun" class="primary">Run complete GPU solver</button>
+            <button id="gpuSolverStop" class="danger" disabled>Stop</button>
+            <button id="gpuSolverExport" class="secondary" disabled>↓ Export solver JSON</button>
+          </div>
+          <p id="gpuSolverStatus" role="status" aria-live="polite">Select your simulation settings above, then run the GPU solver. Use 50 steps for the first test.</p>
+          <div class="gpu-validation" id="gpuSolverValidation">Numerical validation not run yet. GPU uses f32 and the reference uses f64, so differences are expected to grow during vortex evolution.</div>
+          <p class="gpu-hint">GPU Steps/s measures compute dispatch + queue completion (CPU-wall-clock), not pure hardware GPU timestamps.
+            The reference CPU time and GPU final readback are displayed separately. Results should be compared with Rust/WASM on the same device and settings, with repeats.</p>
+        </div>
+        <div>
+          <div class="gpu-stat-grid">
+            <div class="stat"><span>GPU full fluid Steps/s</span><strong id="gpuSolverRate">—</strong><small>two half-steps per simulated step</small></div>
+            <div class="stat"><span>GPU solver compute time</span><strong id="gpuSolverTime">—</strong><small>ms, CPU-wall-clock until queue completes</small></div>
+            <div class="stat"><span>Final GPU field readback</span><strong id="gpuSolverReadback">—</strong><small>ms, one readback at end of run</small></div>
+            <div class="stat"><span>CPU reference time</span><strong id="gpuSolverReference">—</strong><small>ms, f64 JS solver; NOT included in GPU throughput</small></div>
+          </div>
+          <div class="preview gpu-field-preview">
+            <div class="preview-head"><strong>GPU final simulated speed field</strong><span id="gpuSolverPreviewLabel">No result yet</span></div>
+            <canvas id="gpuSolverPreview" width="640" height="280" role="img" aria-label="Calculated GPU D2Q9 fluid speed field with solid obstacle"></canvas>
+            <p>Model units. Compare shapes under the same grid and speed; this remains a simplified 2D teaching model.</p>
+          </div>
         </div>
       </div>
     </section>
