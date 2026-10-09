@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0e1824">
+  <meta name="description" content="Compare real CPU simulation performance of JavaScript and Web Worker using the same Airflow Lab physics solver.">
+  <title>Benchmark Lab | Airflow Lab</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e1824'/%3E%3Cpath d='M4 9h12q8 0 12-4M4 16h9q6 0 9 4h6M4 23h10' fill='none' stroke='%235de4d1' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="benchmark.css">
+  <script type="module" src="benchmark.mjs"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="identity" href="./"><span class="logo">≋</span> Airflow <span class="light">Lab</span></a>
+    <nav aria-label="Site navigation"><a href="./">← Student Lab</a><span class="nav-current">Benchmark Lab</span></nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div><p class="eyebrow">ENGINE RESEARCH · EXPERIMENT 01</p><h1>How fast can the flow go?</h1>
+      <p>Measure simulation steps, not animation tricks. Compare two real CPU execution modes with identical physics and reproducible settings.</p></div>
+      <span class="tag">Research preview · v1</span>
+    </section>
+    <section class="notice" aria-label="Availability notice"><strong>Working today:</strong> JavaScript on the main thread and the same JavaScript solver inside a Web Worker.
+      <strong>Coming later:</strong> Rust/WASM and WebGPU compute engines. Browser support detection does not mean an engine is implemented.</section>
+    <div class="layout">
+      <section class="panel settings" aria-label="Benchmark settings">
+        <div class="panel-head"><span class="step">01</span><h2>Set up a fair test</h2></div>
+        <fieldset id="engines" class="engine-options">
+          <legend>Choose an engine</legend>
+          <label class="engine-card"><input type="radio" name="engine" value="javascript" checked><span><b>JavaScript</b><small>Original solver · main thread</small></span><span class="status working">Ready</span></label>
+          <label class="engine-card"><input type="radio" name="engine" value="worker"><span><b>JS + Web Worker</b><small>Same solver · background thread</small></span><span class="status working" id="workerSupport">Checking</span></label>
+          <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>Rust / WebAssembly</b><small>Solver not ported yet</small></span><span class="status">Planned</span></div>
+          <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>WebGPU / WGSL</b><small>Compute shader not built yet</small></span><span class="status">Planned</span></div>
+        </fieldset>
+        <div class="settings-grid">
+          <label>Grid resolution<select id="grid"><option value="fast">Fast · 168 × 72</option><option value="detail">Detailed · 240 × 104</option></select></label>
+          <label>Obstacle shape<select id="shape"><option value="circle">Circle</option><option value="block" selected>Block</option><option value="streamlined">Streamlined</option><option value="plate">Flat plate</option><option value="car">Car</option><option value="bird">Bird</option><option value="pikachu">Pikachu</option></select></label>
+          <label>Flow speed (simulation units)<select id="speed"><option value="0.04">0.040</option><option value="0.085" selected>0.085</option><option value="0.15">0.150</option></select></label>
+          <label>Measured simulation steps<select id="steps"><option value="50">50 · Quick</option><option value="150" selected>150 · Standard</option><option value="500">500 · Extended</option></select></label>
+          <label>Runs per engine<select id="repeats"><option value="1">1 run</option><option value="3" selected>3 runs (median)</option></select></label>
+        </div>
+        <p class="help">Each run starts from a new fluid field, performs 8 identical warmup steps, then times the selected number of steps. No random inputs are used. The benchmark uses a fixed viscosity of 0.025.</p>
+        <div class="buttons"><button id="runSelected" class="primary">Run selected engine</button><button id="compareCpu" class="secondary">Compare both CPU engines</button><button id="stopRun" class="danger" disabled>Stop</button></div>
+        <div id="progressArea" class="progress-area" hidden><div class="progress-header"><strong id="progressText">Preparing…</strong><span id="progressPercent">0%</span></div><progress id="progress" max="100" value="0"></progress></div>
+      </section>
+      <section class="panel telemetry" aria-label="Device and live preview">
+        <div class="panel-head"><span class="step">02</span><h2>Watch the measurements</h2></div>
+        <div class="device" id="deviceInfo">Checking device capabilities…</div>
+        <div class="stat-grid">
+          <div class="stat"><span>Compute throughput</span><strong id="liveThroughput">—</strong><small>steps/s (solver only)</small></div>
+          <div class="stat"><span>UI responsiveness</span><strong id="liveFps">—</strong><small>UI FPS during the run</small></div>
+          <div class="stat"><span>Worst frame interval</span><strong id="worstFrame">—</strong><small>ms between animation frames</small></div>
+          <div class="stat"><span>Solver time</span><strong id="liveCompute">—</strong><small>ms, excluding scheduled yields</small></div>
+        </div>
+        <div class="preview"><div class="preview-head"><strong>Final speed-field preview</strong><span id="previewLabel">No result yet</span></div><canvas id="fieldPreview" width="640" height="280" role="img" aria-label="Visualization of the final calculated speed field"></canvas><p>Colours show relative simulated speed; the bright shape is the obstacle. This is not a GPU-rendering benchmark.</p></div>
+        <div class="quality"><strong>Numerical agreement</strong><p id="agreement">Run both CPU modes with identical settings to check their density and velocity summaries against one another.</p></div>
+      </section>
+    </div>
+    <section class="panel results" aria-label="Recorded results">
+      <div class="result-head"><div><span class="eyebrow">03 / RESULTS</span><h2>Compare your runs</h2><p>Compute throughput measures the solver itself. UI FPS measures how responsive the page remains during a run. Faster FPS alone does not mean faster physics.</p></div><div class="result-actions"><button id="exportCsv" class="secondary" disabled>↓ Export CSV</button><button id="clearResults" class="quiet" disabled>Clear results</button></div></div>
+      <div class="table-scroll"><table><thead><tr><th>Engine</th><th>Grid / shape</th><th>Steps</th><th>Solver time (median)</th><th>Steps/s</th><th>UI FPS</th><th>Worst UI gap</th><th>Agreement</th></tr></thead><tbody id="resultsBody"><tr><td colspan="8" class="empty">No measured runs yet. Use “Compare both CPU engines” for a paired test.</td></tr></tbody></table></div>
+      <div id="bars" class="bars" hidden><h3>Compute throughput (higher is better)</h3><div id="barRows"></div></div>
+    </section>
+    <section class="method">
+      <h2>How to interpret these measurements</h2>
+      <div class="method-grid"><div><b>Same physics, different execution</b><p>Both working modes import the exact same D2Q9 JavaScript solver. A Worker moves the computation off the UI thread; it does not automatically make each step faster.</p></div><div><b>Keep tests comparable</b><p>Compare results collected on the same device, with identical grid, object, flow speed and measured steps. Changing resolution can also change the simulated result.</p></div><div><b>Mind the caveats</b><p>Thermal throttling, browser background tabs, device power mode and first-run compilation can affect timings. For better comparisons, run three repeats and compare medians.</p></div></div>
+    </section>
+    <footer><span>Airflow Lab · Experimental performance research. Not calibrated aerodynamic measurements.</span><a href="./">Return to the student simulator →</a></footer>
+  </main>
+  <div id="announcements" role="status" class="sr-only" aria-live="polite"></div>
+</body>
+</html>
