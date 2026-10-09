@@ -37,3 +37,12 @@ body[data-level=beginner] .advanced-only{display:none!important}
 @media(max-width:800px){.launch-strip{align-items:stretch}.launch-actions{flex:1 1 auto}.launch-actions button{flex:1}.mode-switch{margin-left:auto}}
 @media(max-width:520px){.launch-strip{padding:14px;gap:12px}.launch-copy{flex-basis:100%}.launch-actions{width:100%}.mode-switch{width:100%}.mode-switch button{flex:1}.transport button,.tool-buttons button,.view-switch button{min-height:44px}.launch-actions button{min-height:44px}.prediction-group select{font-size:16px}.reflection{padding:16px}.canvas-wrap canvas{min-height:155px}.experiment-section{margin-top:20px}}
 @media print{.launch-strip{display:none}.reflection textarea{border:0}}
+
+
+/* Fast mobile fluid grid / user-selectable quality */
+.quality-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#a4b8c7;font-size:13px}
+.quality-control select{color:#dae4ec;background:#192a38;border:1px solid #334553;border-radius:6px;padding:7px 8px;font-size:13px;min-height:40px;max-width:190px}
+.quality-control small{font-size:11px;color:#8ab2b8;white-space:nowrap}
+.quality-note{font-size:12px;color:#a4b8c7;line-height:1.5;margin:0;padding:0 24px 13px}
+@media(max-width:800px){.quality-note{padding:0 17px 13px}.quality-control{width:100%;justify-content:flex-end}}
+@media(max-width:520px){.quality-control{justify-content:space-between}.quality-control select{flex:1;min-width:140px}.quality-control small{width:100%;text-align:right}.quality-note{padding:0 14px 12px}}
