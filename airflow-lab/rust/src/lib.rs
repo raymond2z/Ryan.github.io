@@ -145,9 +145,9 @@ impl Solver {
     fn push(&mut self,x:f64,y:f64,dx:f64,dy:f64){
         if !x.is_finite()||!y.is_finite()||!dx.is_finite()||!dy.is_finite(){return;}
         let min_y=(y-6.0).floor().max(2.0) as usize;
-        let max_y=(y+6.0).min((self.h-2) as f64) as usize;
+        let max_y=(y+6.0).min((self.h-2) as f64).ceil() as usize;
         let min_x=(x-6.0).floor().max(2.0) as usize;
-        let max_x=(x+6.0).min((self.w-2) as f64) as usize;
+        let max_x=(x+6.0).min((self.w-2) as f64).ceil() as usize;
         for yy in min_y..max_y{
             for xx in min_x..max_x{
                 let i=xx+yy*self.w;if self.solid[i]!=0{continue;}
