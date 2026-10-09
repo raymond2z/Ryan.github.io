@@ -3,6 +3,11 @@
 import {loadRustWasm} from './wasm-engine.mjs';
 
 let exportsWasm=null,handle=0,width=0,height=0,revision=0;
+const freeBuffers=[];
+function fieldBuffer(n){
+  const buffer=freeBuffers.pop();
+  return new Float32Array(buffer&&buffer.byteLength===n*4?buffer:new ArrayBuffer(n*4));
+}
 const read=()=>({
   time:exportsWasm.solver_time(handle),
   inletSpeed:exportsWasm.solver_inlet_speed(handle),
@@ -12,14 +17,20 @@ const read=()=>({
 function publishFrame(requestId=0,steps=0){
   if(!handle)return;
   const e=exportsWasm,n=width*height,mem=e.memory.buffer;
-  const rho=new Float32Array(new Float64Array(mem,e.solver_rho_ptr(handle),n));
-  const ux=new Float32Array(new Float64Array(mem,e.solver_ux_ptr(handle),n));
-  const uy=new Float32Array(new Float64Array(mem,e.solver_uy_ptr(handle),n));
+  const rho=fieldBuffer(n),ux=fieldBuffer(n),uy=fieldBuffer(n);
+  rho.set(new Float64Array(mem,e.solver_rho_ptr(handle),n));
+  ux.set(new Float64Array(mem,e.solver_ux_ptr(handle),n));
+  uy.set(new Float64Array(mem,e.solver_uy_ptr(handle),n));
   self.postMessage({type:'frame',requestId,revision,steps,fields:{rho,ux,uy},...read()},
     [rho.buffer,ux.buffer,uy.buffer]);
 }
 self.onmessage=async({data})=>{
   try{
+    if(data.type==='recycle'){
+      for(const buffer of data.buffers||[])
+        if(buffer instanceof ArrayBuffer&&buffer.byteLength===width*height*4&&freeBuffers.length<9)freeBuffers.push(buffer);
+      return;
+    }
     if(data.type==='init'){
       exportsWasm=await loadRustWasm();
       width=data.width;height=data.height;
