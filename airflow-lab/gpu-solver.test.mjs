@@ -73,7 +73,7 @@ test('pull streaming with bounce-back is algebraically identical to CPU source p
   assert.deepEqual(pull,push);
 });
 test('WGSL implements all core physics passes and boundary conditions',()=>{
-  const shader=readFileSync(new URL('./d2q9-solver.wgsl',import.meta.url),'utf8');
+  const shader=readFileSync(new URL('./d2q9-solver-r2-20261010.wgsl',import.meta.url),'utf8');
   for(const token of [
     'fn collision(', 'fn streaming(', 'fn macroscopic(', 'fn gather(',
     'OP[q]*cfg.count+cellIndex', 'cfg.omega','pxx','pxy','pyy',
@@ -81,7 +81,11 @@ test('WGSL implements all core physics passes and boundary conditions',()=>{
     '@compute @workgroup_size(64)'
   ])assert.ok(shader.includes(token),'Missing critical shader part '+token);
   assert.doesNotMatch(shader,/atomicAdd/,'pull streaming must use disjoint writes');
-  assert.doesNotMatch(shader,/\\btarget\\b/,'WGSL reserved identifier must not be used');
+  assert.doesNotMatch(shader,/\btarget\b/,'WGSL reserved identifier must not be used');
+  assert.match(shader,/4\.0\/9\.0,1\.0\/9\.0,1\.0\/9\.0,1\.0\/9\.0,1\.0\/9\.0/,'All five D2Q9 axial weight entries present');
+  const loader=readFileSync(new URL('./gpu-solver.mjs',import.meta.url),'utf8');
+  assert.match(loader,/d2q9-solver-r2-20261010\.wgsl/,'Solver loads the corrected, versioned shader');
+  assert.match(loader,/cache:'no-store'/,'Disable stale browser cache for corrected shader');
 });
 test('Stage 2 DOM controls have matching selectors and a distinct scope',()=>{
   const html=readFileSync(new URL('./benchmark.html',import.meta.url),'utf8');
