@@ -209,7 +209,10 @@ function beginRustEngine(){
         if(data.requestId===workerInFlight)workerInFlight=0;
         if(data.revision!==engineRevision)return;
         // Float32 fields are for drawing only. The Rust solver remains f64.
+        const previous=[sim.rho,sim.ux,sim.uy];
         sim.rho=data.fields.rho;sim.ux=data.fields.ux;sim.uy=data.fields.uy;
+        const buffers=previous.filter(v=>v instanceof Float32Array&&v.length===sim.n).map(v=>v.buffer);
+        if(buffers.length===3)worker.postMessage({type:'recycle',buffers},buffers);
         sim.time=data.time;sim.inletSpeed=data.inletSpeed;
         sim.forceX=data.forceX;sim.forceY=data.forceY;
         simulatedSteps+=data.steps;
