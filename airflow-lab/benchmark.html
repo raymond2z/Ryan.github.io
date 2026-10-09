@@ -37,8 +37,8 @@
           <label>Grid resolution<select id="grid"><option value="fast">Fast · 168 × 72</option><option value="detail">Detailed · 240 × 104</option></select></label>
           <label>Obstacle shape<select id="shape"><option value="circle">Circle</option><option value="block" selected>Block</option><option value="streamlined">Streamlined</option><option value="plate">Flat plate</option><option value="car">Car</option><option value="bird">Bird</option><option value="pikachu">Pikachu</option></select></label>
           <label>Flow speed (simulation units)<select id="speed"><option value="0.04">0.040</option><option value="0.085" selected>0.085</option><option value="0.15">0.150</option></select></label>
-          <label>Measured simulation steps<select id="steps"><option value="50">50 · Quick</option><option value="150" selected>150 · Standard</option><option value="500">500 · Extended</option></select></label>
-          <label>Runs per engine<select id="repeats"><option value="1">1 run</option><option value="3" selected>3 runs (median)</option></select></label>
+          <label>Measured simulation steps<select id="steps"><option value="50" selected>50 · Quick (recommended first)</option><option value="150">150 · Standard</option><option value="500">500 · Extended</option></select></label>
+          <label>Runs per engine<select id="repeats"><option value="1" selected>1 run · First test</option><option value="3">3 runs · More reliable median</option></select></label>
         </div>
         <p class="help">Each run starts from a new fluid field, performs 8 identical warmup steps, then times the selected number of steps. No random inputs are used. The benchmark uses a fixed viscosity of 0.025.</p>
         <div class="buttons"><button id="runSelected" class="primary">Run selected engine</button><button id="compareCpu" class="secondary">Compare both CPU engines</button><button id="stopRun" class="danger" disabled>Stop</button></div>
