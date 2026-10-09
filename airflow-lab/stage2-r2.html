@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0e1824">
+  <meta name="description" content="Compare real CPU simulation performance of JavaScript and Web Worker using the same Airflow Lab physics solver.">
+  <title>Stage 2 r2 Test | Airflow Lab</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e1824'/%3E%3Cpath d='M4 9h12q8 0 12-4M4 16h9q6 0 9 4h6M4 23h10' fill='none' stroke='%235de4d1' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="benchmark.css">
+  <script type="module" src="benchmark.mjs"></script>
+  <script type="module" src="gpu-probe-ui.mjs"></script>
+  <script type="module" src="gpu-solver-ui.mjs?build=stage2-r2-20261010"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="identity" href="./"><span class="logo">≋</span> Airflow <span class="light">Lab</span></a>
+    <nav aria-label="Site navigation"><a href="./">← Student Lab</a><span class="nav-current">Benchmark Lab</span></nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div><p class="eyebrow">ENGINE RESEARCH · EXPERIMENTS 01–02</p><h1>How fast can the flow go?</h1>
+      <p>Measure simulation steps, not animation tricks. Compare working CPU solvers, then verify a separate experimental WebGPU compute kernel.</p></div>
+      <span class="tag">Research preview · v1</span>
+    </section>
+    <section class="notice" aria-label="Availability notice"><strong>Working today:</strong> JavaScript on the main thread and the same JavaScript solver inside a Web Worker.
+      <strong>New experimental engine:</strong> Rust/WebAssembly (compiled D2Q9 solver, running in a Worker).
+ <strong>New WebGPU probe:</strong> a real WGSL D2Q9 equilibrium kernel is available separately below. It is <em>not</em> a complete LBM solver and its throughput is not comparable to simulation Steps/s.</section>
+    <div class="layout">
+      <section class="panel settings" aria-label="Benchmark settings">
+        <div class="panel-head"><span class="step">01</span><h2>Set up a fair test</h2></div>
+        <fieldset id="engines" class="engine-options">
+          <legend>Choose an engine</legend>
+          <label class="engine-card"><input type="radio" name="engine" value="javascript" checked><span><b>JavaScript</b><small>Original solver · main thread</small></span><span class="status working">Ready</span></label>
+          <label class="engine-card"><input type="radio" name="engine" value="worker"><span><b>JS + Web Worker</b><small>Same solver · background thread</small></span><span class="status working" id="workerSupport">Checking</span></label>
+          <label class="engine-card" id="wasmEngineCard"><input type="radio" name="engine" value="wasm" disabled><span><b>Rust / WebAssembly</b><small>Compiled D2Q9 solver · Web Worker</small></span><span class="status" id="wasmSupport">Checking binary</span></label>
+          <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>WebGPU / WGSL</b><small>Equilibrium kernel probe ↓ · Full solver still in development</small></span><span class="status">Prototype</span></div>
+        </fieldset>
+        <div class="settings-grid">
+          <label>Grid resolution<select id="grid"><option value="fast">Fast · 168 × 72</option><option value="detail">Detailed · 240 × 104</option></select></label>
+          <label>Obstacle shape<select id="shape"><option value="circle">Circle</option><option value="block" selected>Block</option><option value="streamlined">Streamlined</option><option value="plate">Flat plate</option><option value="car">Car</option><option value="bird">Bird</option><option value="pikachu">Pikachu</option></select></label>
+          <label>Flow speed (simulation units)<select id="speed"><option value="0.04">0.040</option><option value="0.085" selected>0.085</option><option value="0.15">0.150</option></select></label>
+          <label>Measured simulation steps<select id="steps"><option value="50" selected>50 · Quick (recommended first)</option><option value="150">150 · Standard</option><option value="500">500 · Extended</option></select></label>
+          <label>Runs per engine<select id="repeats"><option value="1" selected>1 run · First test</option><option value="3">3 runs · More reliable median</option></select></label>
+        </div>
+        <p class="help">Each run starts from a new fluid field, performs 8 identical warmup steps, then times the selected number of steps. No random inputs are used. The benchmark uses a fixed viscosity of 0.025.</p>
+        <div class="buttons"><button id="runSelected" class="primary">Run selected engine</button><button id="compareCpu" class="secondary">Compare JS + Worker</button><button id="compareRust" class="secondary" disabled>Compare Worker + Rust</button><button id="stopRun" class="danger" disabled>Stop</button></div>
+        <div id="progressArea" class="progress-area" hidden><div class="progress-header"><strong id="progressText">Preparing…</strong><span id="progressPercent">0%</span></div><progress id="progress" max="100" value="0"></progress></div>
+      </section>
+      <section class="panel telemetry" aria-label="Device and live preview">
+        <div class="panel-head"><span class="step">02</span><h2>Watch the measurements</h2></div>
+        <div class="device" id="deviceInfo">Checking device capabilities…</div>
+        <div class="stat-grid">
+          <div class="stat"><span>Compute throughput</span><strong id="liveThroughput">—</strong><small>steps/s (solver only)</small></div>
+          <div class="stat"><span>UI responsiveness</span><strong id="liveFps">—</strong><small>UI FPS during the run</small></div>
+          <div class="stat"><span>Worst frame interval</span><strong id="worstFrame">—</strong><small>ms between animation frames</small></div>
+          <div class="stat"><span>Solver time</span><strong id="liveCompute">—</strong><small>ms, excluding scheduled yields</small></div>
+        </div>
+        <div class="preview"><div class="preview-head"><strong>Final speed-field preview</strong><span id="previewLabel">No result yet</span></div><canvas id="fieldPreview" width="640" height="280" role="img" aria-label="Visualization of the final calculated speed field"></canvas><p>Colours show relative simulated speed; the bright shape is the obstacle. This is not a GPU-rendering benchmark.</p></div>
+        <div class="quality"><strong>Numerical agreement</strong><p id="agreement">Run both CPU modes with identical settings to check their density and velocity summaries against one another.</p></div>
+      </section>
+    </div>
+    <section class="panel gpu-lab" aria-label="WebGPU capability and equilibrium kernel experiment" id="gpuLab">
+      <div class="result-head">
+        <div>
+          <span class="eyebrow">EXPERIMENT 02 / WEBGPU</span>
+          <h2>Can your device run a real GPU compute shader?</h2>
+          <p>GPU diagnostic and D2Q9 <strong>equilibrium-only</strong> kernel. This performs real WGSL work and compares every result to a JavaScript CPU reference.
+          No collision, streaming or boundary simulation yet: <strong>kernel evaluations/s are not fluid Steps/s.</strong></p>
+        </div>
+        <span class="gpu-experiment-label">Research prototype</span>
+      </div>
+      <div class="gpu-layout">
+        <div>
+          <div class="gpu-capability" id="gpuCapabilities" role="status" aria-live="polite">Checking GPU availability…</div>
+          <div class="gpu-inputs">
+            <label>GPU probe grid
+              <select id="gpuGrid">
+                <option value="fast">Fast · 168 × 72</option>
+                <option value="detail" selected>Detailed · 240 × 104</option>
+                <option value="large">Large · 480 × 208</option>
+              </select>
+            </label>
+            <label>Kernel dispatches
+              <select id="gpuDispatches">
+                <option value="8" selected>8 · Quick</option>
+                <option value="32">32 · Standard</option>
+                <option value="96">96 · Stress test</option>
+              </select>
+            </label>
+          </div>
+          <p class="gpu-hint">Shape and flow speed come from the CPU Benchmark settings above. Synthetic repeatable local velocity and density variations exercise the equation. Each dispatch overwrites the same output; this is <em>not</em> fluid evolution.</p>
+          <div class="buttons gpu-actions">
+            <button class="secondary" id="gpuDiagnose">Check GPU</button>
+            <button class="primary" id="gpuRun" disabled>Run WGSL kernel probe</button>
+            <button class="danger" id="gpuCancel" disabled>Stop probe</button>
+            <button class="secondary" id="gpuExport" disabled>↓ Export GPU JSON</button>
+          </div>
+          <p id="gpuStatus" class="gpu-status" role="status" aria-live="polite">Capability check has not finished.</p>
+        </div>
+        <div>
+          <div class="gpu-stat-grid">
+            <div class="stat"><span>Dispatch + queue completion</span><strong id="gpuDispatchTime">—</strong><small>ms, CPU wall-clock; not hardware GPU timestamps</small></div>
+            <div class="stat"><span>Data readback</span><strong id="gpuReadbackTime">—</strong><small>ms, copy + map to JavaScript</small></div>
+            <div class="stat"><span>GPU kernel cell evaluations</span><strong id="gpuThroughput">—</strong><small>million cells/s; not LBM steps/s</small></div>
+            <div class="stat"><span>CPU-reference maximum difference</span><strong id="gpuDifference">—</strong><small>max absolute error (all 9 populations)</small></div>
+          </div>
+          <div class="gpu-validation" id="gpuValidation">Run the compute probe to check output values against the CPU reference. Tests can run on the GPU Worker when supported, otherwise on the main thread.</div>
+        </div>
+      </div>
+    </section>
+    <section class="panel gpu-lab" aria-label="Full WebGPU D2Q9 flow solver research" id="gpuSolverLab">
+      <div class="result-head">
+        <div>
+          <span class="eyebrow">EXPERIMENT 03 / WEBGPU STAGE 2</span>
+          <h2>Real evolving fluid simulation on the GPU</h2>
+          <p>Unlike Experiment 02, this runs the complete D2Q9 <strong>regularized BGK collision + streaming + obstacle bounce-back</strong> loop.
+          Each displayed step contains two lattice half-steps. GPU populations stay resident until a single final readback.</p>
+        </div>
+        <span class="gpu-experiment-label">Stage 2 r2 · fresh-test page</span>
+      </div>
+      <div class="gpu-layout">
+        <div>
+          <p>Uses the same <strong>grid, shape, flow speed and step count</strong> selected in Experiment 01 above.
+          Each run starts with 8 warmup steps and a viscosity of 0.025. For numerical validation, an independent
+          JavaScript <em>f64</em> reference runs after the GPU measurement has finished.</p>
+          <div class="buttons gpu-actions">
+            <button id="gpuSolverRun" class="primary">Run complete GPU solver</button>
+            <button id="gpuSolverStop" class="danger" disabled>Stop</button>
+            <button id="gpuSolverExport" class="secondary" disabled>↓ Export solver JSON</button>
+          </div>
+          <p id="gpuSolverStatus" role="status" aria-live="polite">Stage 2 r2 loaded · select settings above, then run the GPU solver. Use 50 steps first.</p>
+          <div class="gpu-validation" id="gpuSolverValidation">Numerical validation not run yet. GPU uses f32 and the reference uses f64, so differences are expected to grow during vortex evolution.</div>
+          <p class="gpu-hint">GPU Steps/s measures compute dispatch + queue completion (CPU-wall-clock), not pure hardware GPU timestamps.
+            The reference CPU time and GPU final readback are displayed separately. Results should be compared with Rust/WASM on the same device and settings, with repeats.</p>
+        </div>
+        <div>
+          <div class="gpu-stat-grid">
+            <div class="stat"><span>GPU full fluid Steps/s</span><strong id="gpuSolverRate">—</strong><small>two half-steps per simulated step</small></div>
+            <div class="stat"><span>GPU solver compute time</span><strong id="gpuSolverTime">—</strong><small>ms, CPU-wall-clock until queue completes</small></div>
+            <div class="stat"><span>Final GPU field readback</span><strong id="gpuSolverReadback">—</strong><small>ms, one readback at end of run</small></div>
+            <div class="stat"><span>CPU reference time</span><strong id="gpuSolverReference">—</strong><small>ms, f64 JS solver; NOT included in GPU throughput</small></div>
+          </div>
+          <div class="preview gpu-field-preview">
+            <div class="preview-head"><strong>GPU final simulated speed field</strong><span id="gpuSolverPreviewLabel">No result yet</span></div>
+            <canvas id="gpuSolverPreview" width="640" height="280" role="img" aria-label="Calculated GPU D2Q9 fluid speed field with solid obstacle"></canvas>
+            <p>Model units. Compare shapes under the same grid and speed; this remains a simplified 2D teaching model.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="panel results" aria-label="Recorded results">
+      <div class="result-head"><div><span class="eyebrow">03 / RESULTS</span><h2>Compare your runs</h2><p>Compute throughput measures the solver itself. UI FPS measures how responsive the page remains during a run. Faster FPS alone does not mean faster physics.</p></div><div class="result-actions"><button id="exportCsv" class="secondary" disabled>↓ Export CSV</button><button id="clearResults" class="quiet" disabled>Clear results</button></div></div>
+      <div class="table-scroll"><table><thead><tr><th>Engine</th><th>Grid / shape</th><th>Steps</th><th>Solver time (median)</th><th>Steps/s</th><th>UI FPS</th><th>Worst UI gap</th><th>Agreement</th></tr></thead><tbody id="resultsBody"><tr><td colspan="8" class="empty">No measured runs yet. Use “Compare both CPU engines” for a paired test.</td></tr></tbody></table></div>
+      <div id="bars" class="bars" hidden><h3>Compute throughput (higher is better)</h3><div id="barRows"></div></div>
+    </section>
+    <section class="method">
+      <h2>How to interpret these measurements</h2>
+      <div class="method-grid"><div><b>Same physics, different execution</b><p>JS + Worker run the same JavaScript D2Q9 code. Rust/WASM is a separate compiled implementation with matching equations, shape masks and warmup. Compare numerical differences as well as speed.</p></div><div><b>Keep tests comparable</b><p>Compare results collected on the same device, with identical grid, object, flow speed and measured steps. Changing resolution can also change the simulated result.</p></div><div><b>Mind the caveats</b><p>Thermal throttling, background tabs and device power mode affect timings. WASM download/compilation is excluded from solver time. Test both engines on the same device and compare three-run medians.</p></div></div>
+    </section>
+    <footer><span>Airflow Lab · Experimental performance research. Not calibrated aerodynamic measurements.</span><a href="./">Return to the student simulator →</a></footer>
+  </main>
+  <div id="announcements" role="status" class="sr-only" aria-live="polite"></div>
+</body>
+</html>
