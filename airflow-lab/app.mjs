@@ -233,7 +233,8 @@ function frame(now) {
     const count=Math.floor(pendingSteps);
     if(wasmActive){
       if(count&&!workerInFlight&&now-lastWorkerRequest>=Math.max(1000/30,paintInterval)){
-        const budgetMs=useFastGrid?(superFast?18:9):(superFast?24:12);
+        // The Worker can use a longer compute slice without blocking the UI thread.
+        const budgetMs=useFastGrid?(superFast?34:25):(superFast?36:29);
         publishRustStep(count,budgetMs,now);
       }
     }else if(count){
@@ -343,6 +344,9 @@ function endPointer(event){
   const reset=['draw','erase'].includes(pointer.action)||(pointer.action==='move'&&pointer.moved);
   pointer=null;canvas.style.cursor=tool==='push'||tool==='move'?'grab':'crosshair';
   if(reset)flowReset();
+  // When paused, refresh the flow visualization after using Stir.
+  if(wasmActive&&tool==='push'&&!running&&!workerInFlight)
+    publishRustStep(0,0,performance.now());
 }
 canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('lostpointercapture',endPointer);
 canvas.addEventListener('keydown',event=>{
