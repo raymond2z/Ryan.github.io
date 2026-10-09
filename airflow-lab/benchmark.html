@@ -9,6 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e1824'/%3E%3Cpath d='M4 9h12q8 0 12-4M4 16h9q6 0 9 4h6M4 23h10' fill='none' stroke='%235de4d1' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="benchmark.css">
   <script type="module" src="benchmark.mjs"></script>
+  <script type="module" src="gpu-probe-ui.mjs"></script>
 </head>
 <body>
   <header class="topbar">
@@ -17,12 +18,13 @@
   </header>
   <main>
     <section class="hero">
-      <div><p class="eyebrow">ENGINE RESEARCH · EXPERIMENT 01</p><h1>How fast can the flow go?</h1>
-      <p>Measure simulation steps, not animation tricks. Compare two real CPU execution modes with identical physics and reproducible settings.</p></div>
+      <div><p class="eyebrow">ENGINE RESEARCH · EXPERIMENTS 01–02</p><h1>How fast can the flow go?</h1>
+      <p>Measure simulation steps, not animation tricks. Compare working CPU solvers, then verify a separate experimental WebGPU compute kernel.</p></div>
       <span class="tag">Research preview · v1</span>
     </section>
     <section class="notice" aria-label="Availability notice"><strong>Working today:</strong> JavaScript on the main thread and the same JavaScript solver inside a Web Worker.
-      <strong>New experimental engine:</strong> Rust/WebAssembly (runs in a Worker, compiled from the same D2Q9 mathematics). <strong>Coming later:</strong> WebGPU. Browser support detection does not mean an engine is implemented.</section>
+      <strong>New experimental engine:</strong> Rust/WebAssembly (compiled D2Q9 solver, running in a Worker).
+ <strong>New WebGPU probe:</strong> a real WGSL D2Q9 equilibrium kernel is available separately below. It is <em>not</em> a complete LBM solver and its throughput is not comparable to simulation Steps/s.</section>
     <div class="layout">
       <section class="panel settings" aria-label="Benchmark settings">
         <div class="panel-head"><span class="step">01</span><h2>Set up a fair test</h2></div>
@@ -31,7 +33,7 @@
           <label class="engine-card"><input type="radio" name="engine" value="javascript" checked><span><b>JavaScript</b><small>Original solver · main thread</small></span><span class="status working">Ready</span></label>
           <label class="engine-card"><input type="radio" name="engine" value="worker"><span><b>JS + Web Worker</b><small>Same solver · background thread</small></span><span class="status working" id="workerSupport">Checking</span></label>
           <label class="engine-card" id="wasmEngineCard"><input type="radio" name="engine" value="wasm" disabled><span><b>Rust / WebAssembly</b><small>Compiled D2Q9 solver · Web Worker</small></span><span class="status" id="wasmSupport">Checking binary</span></label>
-          <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>WebGPU / WGSL</b><small>Compute shader not built yet</small></span><span class="status">Planned</span></div>
+          <div class="engine-card pending" aria-disabled="true"><span class="empty-radio" aria-hidden="true"></span><span><b>WebGPU / WGSL</b><small>Equilibrium kernel probe ↓ · Full solver still in development</small></span><span class="status">Prototype</span></div>
         </fieldset>
         <div class="settings-grid">
           <label>Grid resolution<select id="grid"><option value="fast">Fast · 168 × 72</option><option value="detail">Detailed · 240 × 104</option></select></label>
@@ -57,6 +59,55 @@
         <div class="quality"><strong>Numerical agreement</strong><p id="agreement">Run both CPU modes with identical settings to check their density and velocity summaries against one another.</p></div>
       </section>
     </div>
+    <section class="panel gpu-lab" aria-label="WebGPU capability and equilibrium kernel experiment" id="gpuLab">
+      <div class="result-head">
+        <div>
+          <span class="eyebrow">EXPERIMENT 02 / WEBGPU</span>
+          <h2>Can your device run a real GPU compute shader?</h2>
+          <p>GPU diagnostic and D2Q9 <strong>equilibrium-only</strong> kernel. This performs real WGSL work and compares every result to a JavaScript CPU reference.
+          No collision, streaming or boundary simulation yet: <strong>kernel evaluations/s are not fluid Steps/s.</strong></p>
+        </div>
+        <span class="gpu-experiment-label">Research prototype</span>
+      </div>
+      <div class="gpu-layout">
+        <div>
+          <div class="gpu-capability" id="gpuCapabilities" role="status" aria-live="polite">Checking GPU availability…</div>
+          <div class="gpu-inputs">
+            <label>GPU probe grid
+              <select id="gpuGrid">
+                <option value="fast">Fast · 168 × 72</option>
+                <option value="detail" selected>Detailed · 240 × 104</option>
+                <option value="large">Large · 480 × 208</option>
+              </select>
+            </label>
+            <label>Kernel dispatches
+              <select id="gpuDispatches">
+                <option value="8" selected>8 · Quick</option>
+                <option value="32">32 · Standard</option>
+                <option value="96">96 · Stress test</option>
+              </select>
+            </label>
+          </div>
+          <p class="gpu-hint">Shape and flow speed come from the CPU Benchmark settings above. Synthetic repeatable local velocity and density variations exercise the equation. Each dispatch overwrites the same output; this is <em>not</em> fluid evolution.</p>
+          <div class="buttons gpu-actions">
+            <button class="secondary" id="gpuDiagnose">Check GPU</button>
+            <button class="primary" id="gpuRun" disabled>Run WGSL kernel probe</button>
+            <button class="danger" id="gpuCancel" disabled>Stop probe</button>
+            <button class="secondary" id="gpuExport" disabled>↓ Export GPU JSON</button>
+          </div>
+          <p id="gpuStatus" class="gpu-status" role="status" aria-live="polite">Capability check has not finished.</p>
+        </div>
+        <div>
+          <div class="gpu-stat-grid">
+            <div class="stat"><span>Dispatch + queue completion</span><strong id="gpuDispatchTime">—</strong><small>ms, CPU wall-clock; not hardware GPU timestamps</small></div>
+            <div class="stat"><span>Data readback</span><strong id="gpuReadbackTime">—</strong><small>ms, copy + map to JavaScript</small></div>
+            <div class="stat"><span>GPU kernel cell evaluations</span><strong id="gpuThroughput">—</strong><small>million cells/s; not LBM steps/s</small></div>
+            <div class="stat"><span>CPU-reference maximum difference</span><strong id="gpuDifference">—</strong><small>max absolute error (all 9 populations)</small></div>
+          </div>
+          <div class="gpu-validation" id="gpuValidation">Run the compute probe to check output values against the CPU reference. Tests can run on the GPU Worker when supported, otherwise on the main thread.</div>
+        </div>
+      </div>
+    </section>
     <section class="panel results" aria-label="Recorded results">
       <div class="result-head"><div><span class="eyebrow">03 / RESULTS</span><h2>Compare your runs</h2><p>Compute throughput measures the solver itself. UI FPS measures how responsive the page remains during a run. Faster FPS alone does not mean faster physics.</p></div><div class="result-actions"><button id="exportCsv" class="secondary" disabled>↓ Export CSV</button><button id="clearResults" class="quiet" disabled>Clear results</button></div></div>
       <div class="table-scroll"><table><thead><tr><th>Engine</th><th>Grid / shape</th><th>Steps</th><th>Solver time (median)</th><th>Steps/s</th><th>UI FPS</th><th>Worst UI gap</th><th>Agreement</th></tr></thead><tbody id="resultsBody"><tr><td colspan="8" class="empty">No measured runs yet. Use “Compare both CPU engines” for a paired test.</td></tr></tbody></table></div>
