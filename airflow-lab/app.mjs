@@ -213,6 +213,7 @@ function beginRustEngine(){
         sim.time=data.time;sim.inletSpeed=data.inletSpeed;
         sim.forceX=data.forceX;sim.forceY=data.forceY;
         simulatedSteps+=data.steps;
+        pendingSteps=Math.max(0,pendingSteps-data.steps);
         if(data.steps>0)moveParticles(data.steps);
         if(performance.now()-lastPaint>=paintInterval){paint();lastPaint=performance.now();}
       }
@@ -233,7 +234,6 @@ function frame(now) {
     if(wasmActive){
       if(count&&!workerInFlight&&now-lastWorkerRequest>=Math.max(1000/30,paintInterval)){
         const budgetMs=useFastGrid?(superFast?18:9):(superFast?24:12);
-        pendingSteps-=count;
         publishRustStep(count,budgetMs,now);
       }
     }else if(count){
