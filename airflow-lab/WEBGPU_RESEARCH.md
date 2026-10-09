@@ -32,7 +32,7 @@ Keep the screen awake and the browser tab foregrounded; thermal throttling, othe
 - A GPU dispatch command does not measure GPU work time exactly. This project reports `performance.now()` elapsed time until `queue.onSubmittedWorkDone()`, plus a **separately measured** buffer-copy/map readback phase. GPU timestamps would need separate optional API support and validation.
 - Real GPU execution cannot be verified in the headless GitHub Actions Node test environment. The CI tests check input generation, equation invariants, UI references, shader source structure and JavaScript syntax. Actual shader compilation and correctness need a WebGPU device.
 
-## Exit criteria before Stage 2 (full D2Q9 GPU solver)
+## Original Stage 1 exit criteria (historical)
 
 - Real GPU device on at least iPad or S24 Ultra can compile `d2q9.wgsl` and produce **PASS** with all 9 populations verified.
 - Collect device JSON for 8 and 32 dispatch workloads, ideally on both devices.
@@ -44,3 +44,43 @@ Keep the screen awake and the browser tab foregrounded; thermal throttling, othe
 
 - [WebGPU API — MDN](https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API)
 - [WebGPU in Web Workers — MDN](https://developer.mozilla.org/en-US/docs/Web/API/WorkerNavigator/gpu)
+
+## Stage 2 — Evolving D2Q9 f32 solver (experimental)
+
+Stage 2 now lives in **Experiment 03** of the same Benchmark Lab. It is a **real evolving flow-field solver** and not the repeated-equilibrium-kernel evaluation of Experiment 02.
+
+### Physics implementation
+
+- `d2q9-solver.wgsl` implements **regularized BGK collision**, the scalar positivity limiter, nine D2Q9 populations, pull-streaming with bounce-back against the **same JavaScript obstacle mask**, a fixed inlet and far-field boundary, and zero-gradient copy outflow.
+- One public simulation step contains **two** `dt=0.5` half-steps, as in the original JavaScript/Rust simulations.
+- Nine-population fields remain on the **GPU** in a ping-pong arrangement; two collision/stream passes execute per half-step. The final density and velocity are reduced on the GPU and copied to CPU once.
+- Test conditions: **Fast (168×72) and Detailed (240×104)**, 7 original benchmark shapes, wind speed 0.040/0.085/0.150, viscosity 0.025, 8 untimed evolving warmup steps, followed by **50/150/500** timed evolving steps.
+- The current solver reproduces the **flow-state evolution core**, but does not yet implement student UI interactions such as dynamic stirring, changing viscosity mid-run, force measurements or model drag. Do **not** replace the Student Lab Rust engine yet.
+
+### Numerical verification and honest performance measurement
+
+After GPU evolution, an **independent original JavaScript f64 reference simulation** executes the same total steps. Reference computation is explicitly **excluded** from measured GPU solver compute time.
+
+The results include:
+- GPU Steps/s (**complete evolving steps**, not kernel evaluations) and GPU compute-dispatch queue wall time
+- Final GPU macro-field readback duration
+- Original JavaScript f64 reference CPU duration (for context only; separately timed)
+- Full-field **RMS and maximum absolute deviations** for density, x and y velocities, plus nonfinite-cell and density-range checks
+- A final 64×28 simulated speed-field preview and exportable `airflow-webgpu-full-solver.json`
+
+The GPU uses `f32`, CPU uses `f64`. A provisional review heuristic flags RMS density `<0.01` and RMS component velocity `<0.03`, but these are **not physical calibration guarantees or proof of exact parity**. Vortices may diverge over hundreds of steps; report the actual errors, not just a PASS label.
+
+Measured GPU compute duration uses wall-clock time until `GPUQueue.onSubmittedWorkDone()` after each chunk of at most 8 public steps. It includes command encoding/submission/queue synchronization overhead and does **not** equal a precise GPU hardware timer. Shader compilation, GPU initialization, final field readback and CPU numerical validation are excluded from solver throughput. Warmup is also excluded.
+
+### Recommended device experiments
+
+1. In Benchmark Lab select **Detailed / Block / Speed 0.085 / 50 steps** and click **Run complete GPU solver**.
+2. Check the final field preview, error RMS and finiteness, and export the JSON. A failed numerical check is important feedback, not a successful performance result.
+3. Repeat at 150 and 500 steps only if the preceding run is stable. Try speed 0.150 afterward for a stronger wake.
+4. On the same device and with the same settings, measure Rust/WASM using Experiment 01 and compare **full simulation Steps/s**, not the earlier Stage 1 kernel throughput.
+5. Record results on both Galaxy S24 Ultra and iPad. Do at least three trials for meaningful device comparisons.
+
+### Verification status
+
+CI checks shader structure, CPU algorithm assumptions, initial conditions and obstacle masks, bounce-back streaming equivalence, macroscopic field consistency, selector wiring and JavaScript syntax. **GitHub Actions does not certify runtime WebGPU shader compilation or numerical results on physical devices.** Use the actual iPad and S24 Ultra outputs before claiming a GPU speedup or activating GPU in Student Lab.
+
