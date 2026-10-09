@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - airflow-lab-rust-wasm-engine-20261009
+      - airflow-lab-student-wasm-20261009
     paths:
       - 'airflow-lab/rust/src/**'
       - 'airflow-lab/rust/Cargo.toml'
