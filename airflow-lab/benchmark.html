@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="benchmark.css">
   <script type="module" src="benchmark.mjs"></script>
   <script type="module" src="gpu-probe-ui.mjs"></script>
-  <script type="module" src="gpu-solver-ui.mjs"></script>
+  <script type="module" src="gpu-solver-ui.mjs?build=stage2-r2-20261010"></script>
 </head>
 <body>
   <header class="topbar">
@@ -117,7 +117,7 @@
           <p>Unlike Experiment 02, this runs the complete D2Q9 <strong>regularized BGK collision + streaming + obstacle bounce-back</strong> loop.
           Each displayed step contains two lattice half-steps. GPU populations stay resident until a single final readback.</p>
         </div>
-        <span class="gpu-experiment-label">Full solver · experimental</span>
+        <span class="gpu-experiment-label">Stage 2 r2 · cache-safe</span>
       </div>
       <div class="gpu-layout">
         <div>
@@ -129,7 +129,7 @@
             <button id="gpuSolverStop" class="danger" disabled>Stop</button>
             <button id="gpuSolverExport" class="secondary" disabled>↓ Export solver JSON</button>
           </div>
-          <p id="gpuSolverStatus" role="status" aria-live="polite">Select your simulation settings above, then run the GPU solver. Use 50 steps for the first test.</p>
+          <p id="gpuSolverStatus" role="status" aria-live="polite">Stage 2 r2 loaded · select settings above, then run the GPU solver. Use 50 steps first.</p>
           <div class="gpu-validation" id="gpuSolverValidation">Numerical validation not run yet. GPU uses f32 and the reference uses f64, so differences are expected to grow during vortex evolution.</div>
           <p class="gpu-hint">GPU Steps/s measures compute dispatch + queue completion (CPU-wall-clock), not pure hardware GPU timestamps.
             The reference CPU time and GPU final readback are displayed separately. Results should be compared with Rust/WASM on the same device and settings, with repeats.</p>
