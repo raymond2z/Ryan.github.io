@@ -1,7 +1,11 @@
 import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 const $=id=>document.getElementById(id);
-const sim=new FluidSimulation();
+// Mobile-first performance selection. The user can explicitly choose a detailed grid.
+const qualityPreference=new URLSearchParams(location.search).get('quality');
+const qualityOption=['fast','detail'].includes(qualityPreference)?qualityPreference:'auto';
+const useFastGrid=qualityOption==='fast'||(qualityOption==='auto'&&(matchMedia('(pointer: coarse)').matches||innerWidth<700));
+const sim=new FluidSimulation(useFastGrid?168:240,useFastGrid?72:104);
 const canvas=$('tunnel'),ctx=canvas.getContext('2d',{alpha:false});
 const field=document.createElement('canvas');field.width=sim.width;field.height=sim.height;
 const fieldCtx=field.getContext('2d',{alpha:false});
@@ -16,7 +20,10 @@ for(const [key,value]of Object.entries(EXTRA_SHAPES))notes[key]=value.note;
 document.querySelectorAll('[data-shape-preview]').forEach(el=>el.innerHTML=shapePreview(el.dataset.shapePreview));
 let view='curl',tool='move',running=!matchMedia('(prefers-reduced-motion: reduce)').matches;
 let sensor=null,pointer=null,particles=[],captures=[],experiment='shapes',lastFrame=0,lastReadout=0,pendingSteps=0,toastTimer;
-const particleCount=matchMedia('(pointer:coarse)').matches||innerWidth<700?220:460;
+const particleCount=useFastGrid?190:460;
+const maxTrailPoints=useFastGrid?16:22;
+const paintInterval=useFastGrid?1000/30:0;
+let lastPaint=0;
 
 function makeParticle(startAnywhere=true) {
   let x=2,y=2;
@@ -99,7 +106,7 @@ function moveParticles(steps) {
   };
   const valid=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>=1&&x<W-2&&y>=2&&y<H-2&&!sim.solid[Math.floor(x)+Math.floor(y)*W];
   for(let j=0;j<particles.length;j++) {
-    const p=particles[j];p.trail.push([p.x,p.y]);if(p.trail.length>22)p.trail.shift();
+    const p=particles[j];p.trail.push([p.x,p.y]);if(p.trail.length>maxTrailPoints)p.trail.shift();
     for(let k=0;k<substeps;k++){
       if(!valid(p.x,p.y)){particles[j]=makeParticle(false);break;}
       const [u,v]=velocityAt(p.x,p.y),mx=p.x+u*dt*.5,my=p.y+v*dt*.5;
@@ -129,7 +136,11 @@ function frame(now) {
     const animation=Number($('animation').value),superFast=animation===24;
     pendingSteps=Math.min(superFast?48:18,pendingSteps+elapsed*animation*.03);
     const count=Math.floor(pendingSteps);
-    if(count){pendingSteps-=runSteps(count,superFast?36:12);paint();}
+    if(count){
+      const budgetMs=useFastGrid?(superFast?18:9):(superFast?36:12);
+      pendingSteps-=runSteps(count,budgetMs);
+      if(now-lastPaint>=paintInterval){paint();lastPaint=now;}
+    }
   }else pendingSteps=0;
   if(now-lastReadout>250&&!document.hidden){
     updateProbe();
@@ -242,6 +253,15 @@ $('clearButton').addEventListener('click',()=>shapeSelected('none',0));
 $('closeSensor').addEventListener('click',()=>{sensor=null;$('sensorReadout').hidden=true;paint();});
 $('angle').addEventListener('input',()=>shapeSelected(sim.shape,Number($('angle').value),true));
 $('animation').addEventListener('change',()=>{pendingSteps=0;});
+$('quality').value=qualityOption;
+$('qualityStatus').textContent=useFastGrid?'Fast grid · 168 × 72':'Detailed grid · 240 × 104';
+$('quality').addEventListener('change',()=>{
+  const next=$('quality').value;
+  const url=new URL(location.href);
+  if(next==='auto')url.searchParams.delete('quality');
+  else url.searchParams.set('quality',next);
+  location.assign(url.toString());
+});
 $('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);paint();});
 $('viscosity').addEventListener('input',()=>{sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);paint();});
 ['particles','vectors','force'].forEach(id=>$(id).addEventListener('change',paint));

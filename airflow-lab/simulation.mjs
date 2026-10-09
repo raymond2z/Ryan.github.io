@@ -10,6 +10,9 @@ const OP = [0,3,4,1,2,7,8,5,6];
 export class FluidSimulation {
   constructor(width=240,height=104) {
     this.width=width; this.height=height; this.n=width*height;
+    // Keep obstacle proportions consistent across fast and detailed grids.
+    // Both modes are qualitative and should not be mixed in quantitative comparisons.
+    this.shapeScale=width/240;
     // Two half-time steps keep lattice velocities low while preserving the
     // public velocity, viscosity and Reynolds number in simulation units.
     this.dt=.5;
@@ -39,7 +42,8 @@ export class FluidSimulation {
     this.centerX=centerX;this.centerY=centerY;
     const rad=angle*Math.PI/180,c=Math.cos(rad),s=Math.sin(rad);
     for(let y=3;y<this.height-3;y++) for(let x=3;x<this.width-3;x++) {
-      const dx=x-centerX,dy=y-centerY,px=dx*c+dy*s,py=-dx*s+dy*c;
+      const dx=x-centerX,dy=y-centerY;
+      const px=(dx*c+dy*s)/this.shapeScale,py=(-dx*s+dy*c)/this.shapeScale;
       let inside=false;
       if(shape==='circle') inside=px*px+py*py<=15*15;
       if(shape==='block') inside=Math.abs(px)<=15&&Math.abs(py)<=15;
