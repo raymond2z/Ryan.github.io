@@ -81,7 +81,7 @@ test('Stage 3.3 student controls keep fixed baseline and support adaptive/export
   assert.match(app,/student-gpu-worker-v3\.mjs/);
   assert.match(app,/tuningPreference==='adaptive'\?'adaptive':'fixed'/);
   assert.match(app,/sendCount=engineKind==='webgpu'/);
-  assert.match(app,/Math\.min\(count,adaptiveGpu\?stepper\.batch:STEP_FIXED\)/);
+  assert.match(app,/Math\.min\(count,adaptiveGpu\?adaptiveGpuBatch\(\):STEP_FIXED\)/);
   assert.match(app,/gpuPaintPacer\.shouldDraw/);
   assert.match(app,/gpuPaintPacer\.reset\(\)/);
   assert.match(app,/gpuFluidDirty=true/);
@@ -90,3 +90,4 @@ test('Stage 3.3 student controls keep fixed baseline and support adaptive/export
   assert.match(html,/GPU queue \+ readback wait/);
   assert.match(html,/Canvas FPS is NOT GPU solver Steps\/s/);
 });
+

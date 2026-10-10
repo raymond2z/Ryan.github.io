@@ -66,12 +66,12 @@ export function createStabilityRecorder({maxSamples=60000,maxEvents=2000}={}){
       if(gap>1000)event('worker_sample_gap',{gapMs:gap},now);
       append('workerSamples',{...copy(sample),elapsedMs:elapsed(now),gapMs:gap});
     },
-    paint(paintMs,now){
+    paint(paintMs,now,details={}){
       if(!accept(now))return;
       if(!Number.isFinite(paintMs)||paintMs<0){event('invalid_timing_sample',{},now);return;}
       const intervalMs=lastPaint===null?null:now-lastPaint;lastPaint=now;
       if(intervalMs>100)event('paint_gap',{gapMs:intervalMs},now);
-      append('paintSamples',{elapsedMs:elapsed(now),paintMs,intervalMs});
+      append('paintSamples',{...copy(details),elapsedMs:elapsed(now),paintMs,intervalMs});
     },
     rates(window,now){
       if(!accept(now))return;
@@ -97,6 +97,7 @@ export function createStabilityRecorder({maxSamples=60000,maxEvents=2000}={}){
         workerRoundTripMs:summarize(workers.map(s=>s.roundTripMs)),
         queueReadbackMs:summarize(workers.map(s=>s.queueReadbackMs)),
         paintMs:summarize(paints.map(s=>s.paintMs)),
+        visualWorkMs:summarize(paints.map(s=>s.visualWorkMs)),
         paintIntervalMs:summarize(paints.map(s=>s.intervalMs).filter(v=>v!==null)),
         firstThirdFlowStepsPerSecond:earlyRate,lastThirdFlowStepsPerSecond:lateRate,
         throughputChangePercent:earlyRate>0&&lateRate!==null?(lateRate/earlyRate-1)*100:null,

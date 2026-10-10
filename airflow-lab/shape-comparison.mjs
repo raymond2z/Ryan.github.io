@@ -64,6 +64,7 @@ export function comparisonDifferences(a,b){
   if(a.sizeMode!==b.sizeMode)differences.push('size method');
   if(variable!=='shape'&&a.geometryScale!==b.geometryScale)differences.push('object size');
   if(a.experiment!==b.experiment)differences.push('different questions');
+  if(JSON.stringify(a.performanceExperiment)!==JSON.stringify(b.performanceExperiment))differences.push('performance experiment');
   if(a.position?.x!==b.position?.x||a.position?.y!==b.position?.y)differences.push('object position');
   if(a.grid?.width!==b.grid?.width||a.grid?.height!==b.grid?.height)differences.push('grid');
   if(Math.abs(a.inletSpeed-a.speed)>.0003||Math.abs(b.inletSpeed-b.speed)>.0003)differences.push('flow still adjusting');

@@ -19,6 +19,20 @@ test('P95 uses exact nearest rank and separates frame cadence from work time',()
   assert.equal(s.paintIntervalMs.p95,33);assert.equal(s.paintMs.p95,2);
   assert.equal(s.workerRoundTripMs.p95,22);
 });
+
+test('research records visual work separately and retain adaptation events and policy per rate window',()=>{
+  const r=start();
+  for(let i=1;i<=20;i++)r.paint(1,1000+i*17,{visualWorkMs:7,reusedRaster:i%2===0});
+  r.event('load_adjustment',{control:'updateHz',from:30,to:40},1400);
+  r.rates({durationMs:1000,steps:700,paints:60,snapshots:30,...activity,experimentPolicy:{paintHz:60,updateHz:40,batch:8},tracerDroppedSteps:12},2000);
+  const report=r.report(2100);
+  assert.equal(report.summary.paintMs.p95,1);assert.equal(report.summary.visualWorkMs.p95,7);
+  assert.equal(report.paintSamples.filter(s=>s.reusedRaster).length,10);
+  assert.equal(report.rateWindows[0].experimentPolicy.updateHz,40);
+  assert.equal(report.rateWindows[0].tracerDroppedSteps,12);
+  assert.equal(report.summary.eventCounts.load_adjustment,1);
+  assert.equal(report.summary.eventCounts.settings_changed,undefined,'normal auto adaptation is not a user setting change');
+});
 test('all duration choices finish automatically without changing simulation settings',()=>{
   for(const minutes of [2,5,10]){
     const r=start(minutes);assert.equal(r.tick(1000+minutes*60000-1,'before'),true);

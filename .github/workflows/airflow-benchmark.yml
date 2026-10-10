@@ -36,6 +36,7 @@ jobs:
           node --check airflow-lab/student-gpu-worker-v2.mjs
           node --check airflow-lab/student-gpu-worker-v3.mjs
           node --check airflow-lab/live-performance.mjs
+          node --check airflow-lab/gpu-experiment.mjs
           node --check airflow-lab/stability-recorder.mjs
           node --check airflow-lab/shape-comparison.mjs
           node --check airflow-lab/learning-record.mjs
@@ -48,6 +49,8 @@ jobs:
         run: node --test airflow-lab/gpu-solver.test.mjs
       - name: Live adaptive-batching and render scheduler tests
         run: node --test airflow-lab/live-performance.test.mjs
+      - name: GPU experiment cadence and load governor regressions
+        run: node --test airflow-lab/gpu-experiment.test.mjs
       - name: Stability recorder regressions
         run: node --test airflow-lab/stability-recorder.test.mjs
       - name: Matched classroom comparison and application protocol tests

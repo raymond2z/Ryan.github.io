@@ -1,5 +1,12 @@
 # Stage 3.4A — Timed stability recording
 
+Stage 3.4B now has a separate [GPU scheduling experiment page](https://raymond2z.github.io/Ryan.github.io/airflow-lab/performance.html?engine=webgpu).
+See [GPU_EXPERIMENTS.md](GPU_EXPERIMENTS.md) for 30/60 paint/flow profiles,
+two-times demand and bounded automatic load control. They are opt-in research;
+the Student Lab and this stability page keep their prior runtime defaults.
+Recorder exports additionally retain visual-work timing and experimental policy
+events when used on that page. This does not establish new physical device results.
+
 The latest Stage 3.3 solver, 30 FPS paint pacing and fixed/adaptive batch defaults are retained. This update adds opt-in recording and removes engine/FPS/diagnostic controls from Beginner mode; it does not raise the GPU step limit or render rate.
 
 ## Use
@@ -30,7 +37,7 @@ The supplied desktop report `airflow-stage3-3-live-performance(1).json`, collect
 
 1. Add this recording tool without changing the validated solver or default workload.
 2. Prioritize classroom interaction and fair comparison evidence. Keep engine, grid and conditions fixed within an experiment and compare similar simulation step counts. Do not automatically change grid resolution mid-comparison.
-3. Treat 60 FPS Canvas with 30 fresh flow updates/s as optional research. Repainting or tracer interpolation is not a new numerical fluid field. Defer raising GPU update rates unless measured interaction quality warrants it; bounded batch adaptation already exists.
+3. Treat 60 FPS Canvas and higher fresh-flow update targets as optional research in the separate experiment page. Repainting and tracer animation are not new numerical fluid fields. Compare measured rates and stability before promoting either experiment; the ordinary Student Lab retains its earlier fixed/adaptive controller.
 4. Promoting Adaptive to the ordinary Student Lab default remains a separate decision after reviewing a representative complete stability report.
 
 Documentation and teaching-text edits need no repeated physical-device benchmarks. Routine code changes use relevant automated checks; do not request fresh desktop, iPad and S24 Ultra results after every incremental update. Consolidated device acceptance is warranted for substantial solver/shader, Worker transport, renderer, resolution, default-workload or fallback changes, or an actual device-specific regression. Stage 3.4A uses synthetic-clock recorder and existing scheduling/integration regressions; it does not claim a new five-minute physical GPU stability result.

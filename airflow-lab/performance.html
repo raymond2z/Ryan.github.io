@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Airflow Lab — Stability Recording</title>
+  <title>Airflow Lab — GPU Scheduling Experiments</title>
   <meta name="description" content="Explore airflow in an interactive 2D wind tunnel. Change shapes, draw barriers, follow particles, and compare observations in simple classroom experiments.">
   <meta name="theme-color" content="#0e1824">
   <meta property="og:type" content="website">
@@ -21,11 +21,11 @@
 <body>
   <header class="header">
     <a class="brand" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 9h12q9 0 14-5M3 16h10q6 0 10 5h6M3 24h11"/></svg><span>Airflow<span class="brand-light"> Lab</span></span></a>
-    <span class="header-label">THE INTERACTIVE WIND TUNNEL</span>
+    <span class="header-label">GPU SCHEDULING EXPERIMENTS</span>
     <div class="header-actions"><button id="guideButton" class="text-button">How to use</button><button id="fullscreenButton" class="icon-button" aria-label="Toggle fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main>
-    <div class="intro"><div><span class="eyebrow">EXPLORE · TEST · DISCOVER</span><h1>Make the invisible visible.</h1><p>Change a shape. Follow the flow. What happens behind it?</p></div><span class="model-pill">2D learning model</span></div>
+    <div class="intro"><div><span class="eyebrow">EXPLORE · TEST · DISCOVER</span><h1>Measure what gets smoother.</h1><p>Compare drawing cadence, fresh fields and actual simulation throughput.</p></div><span class="model-pill">2D learning model</span></div>
     <section id="gpuExperimentPanel" class="gpu-experiment-panel advanced-only" aria-labelledby="gpuExperimentTitle" hidden>
       <div class="gpu-experiment-heading"><div><span class="eyebrow">RESEARCH · STAGE 3.4B</span><h2 id="gpuExperimentTitle">Display smoothness and fresh flow updates</h2></div><a href="./">Student Lab →</a></div>
       <p>Compare profiles on the same device and grid. Paints show the latest field; only a new GPU snapshot counts as a fresh flow update. No profile promises 60 FPS.</p>
