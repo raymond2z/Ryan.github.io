@@ -73,13 +73,13 @@ test('Student worker timing separates CPU encoding from combined GPU queue/readb
     assert.ok(worker.includes(part),'Missing live worker instrumentation: '+part);
   assert.ok(worker.includes('student-gpu-v3'));
 });
-test('Stage 3.3 student controls keep fixed baseline and support adaptive/export',()=>{
+test('student controls default to classroom Auto and retain explicit Fixed/export controls',()=>{
   const html=get('index.html'),app=get('app.mjs');
   for(const id of ['batchMode','resetPerformance','exportPerformance','perfPaint',
     'perfEncode','perfWait','perfUnpack','perfRoundTrip','perfSnapshots','perfBatch','perfStatus'])
     assert.ok(html.includes('id="'+id+'"'), 'Missing diagnostic control '+id);
   assert.match(app,/student-gpu-worker-v3\.mjs/);
-  assert.match(app,/tuningPreference==='adaptive'\?'adaptive':'fixed'/);
+  assert.match(app,/classroomGpuPage&&tuningPreference!=='fixed'/);
   assert.match(app,/sendCount=engineKind==='webgpu'/);
   assert.match(app,/Math\.min\(count,adaptiveGpu\?adaptiveGpuBatch\(\):STEP_FIXED\)/);
   assert.match(app,/gpuPaintPacer\.shouldDraw/);

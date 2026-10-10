@@ -4,12 +4,19 @@ import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,force
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs?build=gpu-cadence-feedback-20261010';
 import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=gpu-cadence-20261010';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs?build=stage4c-20261010';
-import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs?build=gpu-smooth-auto-20261010';
+import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs?build=gpu-classroom-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
 const gpuExperimentPage=location.pathname.endsWith('/performance.html');
 const researchPage=location.pathname.endsWith('/stability.html')||gpuExperimentPage;
+const classroomGpuPage=!researchPage;
+const gpuSchedulingPage=gpuExperimentPage||classroomGpuPage;
+let classroomComparisonPolicy=null;
+const classroomGuidePolicy={paintHz:30,updateHz:30,batch:8};
+function autoGpuScheduling(){return classroomGpuPage||(gpuExperimentPage&&experimentProfile==='auto60');}
+function tuneGpuLoad(){return autoGpuScheduling()&&!classroomComparisonPolicy;}
+function adaptiveTracerPresentation(){return autoGpuScheduling()&&(classroomGpuPage?!classroomComparisonPolicy:comparison.phase==='idle');}
 const experimentPreferences=experimentSettings({enabled:gpuExperimentPage,search:location.search});
 let experimentProfile=experimentPreferences.profile,flowPaceMultiplier=experimentPreferences.paceMultiplier;
 function stabilityConfig(){
@@ -19,7 +26,7 @@ function stabilityConfig(){
     position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,viscosity:sim.viscosity,
     animation:$('animation').value,batchMode:$('batchMode').value,
     forceEnabled:$('force').checked,particles:$('particles').checked,
-    vectors:$('vectors').checked,view,interfaceBuild:'stage4c-20261010',
+    vectors:$('vectors').checked,view,interfaceBuild:'classroom-auto-20261010',
     sizeMode:shapeAppearance?.sizeMode??'preset',geometryScale:shapeAppearance?.scale??sim.shapeScale,
     performanceExperiment:experimentConfiguration()};
 }
@@ -69,7 +76,7 @@ let wasmActive=false,wasmStarting=false,wasmWorker=null,workerRequest=0,workerIn
 let engineRevision=0,lastWorkerRequest=0,manualSteps=0,gpuForceValid=false;
 const stepper=makeAdaptiveStepper({targetMs:30});
 let gpuPaintPacer=createGpuPaintPacer();
-const gpuRequestPacer=createGpuRequestPacer(),gpuLoadGovernor=createGpuLoadGovernor();
+const gpuRequestPacer=createGpuRequestPacer(),gpuLoadGovernor=createGpuLoadGovernor({paintCeilingHz:classroomGpuPage?30:60});
 const gpuFlowLoop=createGpuFlowLoop({tick:researchFlowTick});
 let researchDemandClock=null,windowGpuRequests=0,windowAnimationFrames=0,lastCallbackHz=0;
 let windowPolicyChanged=false,windowInterrupted=false,windowTracerDropStart=0,lastDeliveryWindow=null;
@@ -77,17 +84,18 @@ const gpuExperimentChanges=[];
 let tracerDroppedSteps=0,lastTracerDropEvent=0,lastReusedPaintHz=0,windowReusedPaints=0;
 function experimentConfiguration(){
   return {enabled:gpuExperimentPage,build:GPU_EXPERIMENT_BUILD,
-    profile:gpuExperimentPage?experimentProfile:'classroom',paceMultiplier:gpuExperimentPage?flowPaceMultiplier:1,
+    profile:gpuExperimentPage?experimentProfile:classroomGpuPage?'classroom-auto':'classroom',paceMultiplier:gpuExperimentPage?flowPaceMultiplier:1,
     requestedPaintHz:gpuExperimentPage?GPU_PROFILES[experimentProfile].paintHz:30,
-    requestedUpdateHz:gpuExperimentPage?(experimentProfile==='auto60'?'auto 15–60':GPU_PROFILES[experimentProfile].updateHz):'classroom scheduler',
-    flowScheduler:gpuExperimentPage?'independent timer + Worker completion':'classroom animation callback',
-    optimizationObjective:gpuExperimentPage&&experimentProfile==='auto60'?'measured solver steps/s':null,
-    markerPolicy:gpuExperimentPage&&experimentProfile==='auto60'?'adaptive visual density':'fixed marker density'};
+    requestedUpdateHz:classroomGpuPage?'auto 15–60':gpuExperimentPage?(experimentProfile==='auto60'?'auto 15–60':GPU_PROFILES[experimentProfile].updateHz):'classroom scheduler',
+    flowScheduler:gpuSchedulingPage?'independent timer + Worker completion':'classroom animation callback',
+    optimizationObjective:autoGpuScheduling()?'measured solver steps/s':null,
+    markerPolicy:autoGpuScheduling()?'adaptive exploration; fixed guided comparison':'fixed marker density',
+    classroomOptimizations:classroomGpuPage,comparisonPolicy:classroomGpuPage?classroomComparisonPolicy:null};
 }
-function experimentPolicy(){return experimentProfile==='auto60'?gpuLoadGovernor.state:GPU_PROFILES[experimentProfile];}
-function adaptiveGpuBatch(){return gpuExperimentPage&&experimentProfile==='auto60'?gpuLoadGovernor.state.batch:stepper.batch;}
+function experimentPolicy(){return classroomComparisonPolicy||(autoGpuScheduling()?gpuLoadGovernor.state:GPU_PROFILES[experimentProfile]);}
+function adaptiveGpuBatch(){return autoGpuScheduling()?experimentPolicy().batch:stepper.batch;}
 function syncExperimentPacing(){
-  if(!gpuExperimentPage)return;
+  if(!gpuSchedulingPage)return;
   const policy=experimentPolicy();gpuRequestPacer.setRate(policy.updateHz);
   gpuPaintPacer=createGpuPaintPacer({intervalMs:1000/policy.paintHz});
   windowPolicyChanged=true;gpuFlowLoop.wake();
@@ -98,7 +106,7 @@ function resetExperimentPacing(){
   researchDemandClock=null;syncResearchFlow();
 }
 function researchFlowEnabled(){
-  return gpuExperimentPage&&wasmActive&&engineKind==='webgpu'&&running&&!document.hidden&&
+  return gpuSchedulingPage&&wasmActive&&engineKind==='webgpu'&&running&&!document.hidden&&
     !(pointer&&['draw','erase','move'].includes(pointer.action));
 }
 function syncResearchFlow(){
@@ -139,6 +147,12 @@ function refreshPerformance(){
   $('perfStatus').textContent=gpu
     ?Math.round(lastCanvasFps)+' paints/s vs '+Math.round(lastSnapshotHz)+' new fields/s'
     :'GPU timing shown only while WebGPU runs';
+  if(classroomGpuPage){
+    const policy=experimentPolicy();
+    $('perfClassroomStatus').textContent=!gpu?'Active only with WebGPU':classroomComparisonPolicy
+      ?'Matched guide · 30 flow/s · 8 steps · fixed markers'
+      :`Auto · ${policy.updateHz} flow/s ceiling · 30 paint/s ceiling · ${gpuLoadGovernor.optimization.phase}`;
+  }
   if(gpuExperimentPage){
     const policy=experimentPolicy();
     $('gpuExperimentStatus').textContent=gpu
@@ -171,12 +185,12 @@ function exportPerformance(){
     adaptiveBatch:adaptiveGpuBatch(),liveCanvasFps:lastCanvasFps,
     liveGpuSnapshotsHz:lastSnapshotHz,liveFlowStepsPerSecond:lastFlowRate,
     performanceSamples:gpuSamples,paintSamples,
-    experiment:{...experimentConfiguration(),active:wasmActive&&engineKind==='webgpu'&&gpuExperimentPage,
-      currentPolicy:gpuExperimentPage?experimentPolicy():null,adjustments:gpuExperimentChanges,
-      optimization:gpuExperimentPage&&experimentProfile==='auto60'?gpuLoadGovernor.optimization:null,
+    experiment:{...experimentConfiguration(),active:wasmActive&&engineKind==='webgpu'&&gpuSchedulingPage,
+      currentPolicy:gpuSchedulingPage?experimentPolicy():null,adjustments:gpuExperimentChanges,
+      optimization:autoGpuScheduling()?gpuLoadGovernor.optimization:null,
       tracerPresentation:{activeCount:activeTracerCount,nominalCount:particleCount,
-        maxAdvectionPortion:gpuExperimentPage&&experimentProfile==='auto60'&&comparison.phase==='idle'?64:24},
-      deliveredWindow:gpuExperimentPage?lastDeliveryWindow:null,
+        maxAdvectionPortion:adaptiveTracerPresentation()?64:24},
+      deliveredWindow:gpuSchedulingPage?lastDeliveryWindow:null,
       reusedRasterPaintsHz:lastReusedPaintHz,tracerDroppedSteps},
     note:'Queue/readback wait includes GPU execution and synchronization; independent fluid frames/s are not Canvas FPS.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));
@@ -275,6 +289,9 @@ function startComparison(){
 }
 function beginComparisonRun(){
   const plan=comparison.plan;
+  if(classroomGpuPage&&engineKind==='webgpu'){
+    classroomComparisonPolicy={...classroomGuidePolicy};resetExperimentPacing();
+  }
   sim.speed=plan.speed;sim.viscosity=plan.viscosity;
   $('speed').value=plan.speed;$('speedValue').textContent=plan.speed.toFixed(3);
   $('viscosity').value=plan.viscosity;$('viscosityValue').textContent=plan.viscosity.toFixed(3);
@@ -412,11 +429,9 @@ function paint(reuseGpuRaster=false,visualStarted=null) {
   if($('force').checked) {
     let x=0,y=0,count=0;for(let i=0;i<sim.n;i++)if(sim.solid[i]){x+=i%W;y+=Math.floor(i/W);count++;}
     if(count) {
-      ctx.strokeStyle='#b4f89d';ctx.lineWidth=3;
       const length=Math.min(120,Math.hypot(sim.forceX,sim.forceY)*160);
       const direction=Math.atan2(sim.forceY,sim.forceX);
-      arrow(x/count*SX,y/count*SY,length*Math.cos(direction),length*Math.sin(direction));
-      ctx.fillStyle='#b4f89d';ctx.font='16px system-ui';ctx.fillText('Model force',x/count*SX+12,y/count*SY-20);
+      drawForceArrow(x/count*SX,y/count*SY,length*Math.cos(direction),length*Math.sin(direction));
     }
   }
   if(sensor) {
@@ -427,13 +442,24 @@ function paint(reuseGpuRaster=false,visualStarted=null) {
   const visualWorkMs=visualStarted===null?null:forceFrameTiming(performance.now()-visualStarted);
   bounded(paintSamples,{paintMs,visualWorkMs,reusedRaster:reuse});
   stability.paint(paintMs,performance.now(),{visualWorkMs,reusedRaster:reuse});
-  if(gpuExperimentPage&&experimentProfile==='auto60'&&running&&!document.hidden&&!pointer&&visualWorkMs!==null)
+  if(tuneGpuLoad()&&running&&!document.hidden&&!pointer&&visualWorkMs!==null)
     gpuLoadGovernor.observeVisual(visualWorkMs);
 }
-function arrow(x,y,dx,dy) {
+function arrow(x,y,dx,dy,headLimit=6) {
   if(Math.hypot(dx,dy)<1)return;
-  const a=Math.atan2(dy,dx),head=Math.min(6,Math.hypot(dx,dy)*.4),ex=x+dx,ey=y+dy;
+  const a=Math.atan2(dy,dx),head=Math.min(headLimit,Math.hypot(dx,dy)*.4),ex=x+dx,ey=y+dy;
   ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.moveTo(ex-head*Math.cos(a-.5),ey-head*Math.sin(a-.5));ctx.lineTo(ex,ey);ctx.lineTo(ex-head*Math.cos(a+.5),ey-head*Math.sin(a+.5));ctx.stroke();
+}
+function drawForceArrow(x,y,dx,dy){
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  for(const [colour,width]of [['#101521',12],['#ff3bc8',8],['#ffffff',4]]){
+    ctx.strokeStyle=colour;ctx.lineWidth=width;arrow(x,y,dx,dy,10);
+  }
+  const label='Model force';ctx.font='bold 16px system-ui';
+  const labelX=Math.max(8,Math.min(canvas.width-ctx.measureText(label).width-8,x+12));
+  const labelY=Math.max(24,Math.min(canvas.height-10,y+(dy<0?30:-24)));
+  ctx.strokeStyle='#101521';ctx.lineWidth=5;ctx.strokeText(label,labelX,labelY);
+  ctx.fillStyle='#ffffff';ctx.fillText(label,labelX,labelY);ctx.restore();
 }
 function moveParticles(steps) {
   // Short midpoint steps follow curved paths and avoid jumping through thin barriers.
@@ -528,7 +554,7 @@ function publishRustStep(count,budgetMs,now){
   count=comparison.limit(count,sim.time);
   workerInFlight=++workerRequest;
   lastWorkerRequest=now;
-  if(gpuExperimentPage&&engineKind==='webgpu')windowGpuRequests++;
+  if(gpuSchedulingPage&&engineKind==='webgpu')windowGpuRequests++;
   wasmWorker.postMessage({type:'step',revision:engineRevision,
     requestId:workerInFlight,count,budgetMs});
 }
@@ -611,9 +637,9 @@ function beginRustEngine(override=null){
             roundTripMs:forceFrameTiming(performance.now()-lastWorkerRequest),
             forceEnabled:data.perf.forceEnabled};
           bounded(gpuSamples,sample);stability.worker(sample,performance.now());windowGpuSnapshots++;
-          if(gpuExperimentPage&&experimentProfile==='auto60'&&running&&!document.hidden&&!pointer)
+          if(tuneGpuLoad()&&running&&!document.hidden&&!pointer)
             gpuLoadGovernor.observeWorker({steps:data.steps,workerMs:data.perf.workerMs,roundTripMs:performance.now()-lastWorkerRequest});
-          if($('batchMode').value==='adaptive'&&!(gpuExperimentPage&&experimentProfile==='auto60'))
+          if($('batchMode').value==='adaptive'&&!autoGpuScheduling())
             stepper.observe({steps:data.steps,workerMs:data.perf.workerMs});
         }
         // Float32 fields are for drawing only. Rust/JS populations remain f64;
@@ -630,7 +656,7 @@ function beginRustEngine(override=null){
         pendingSteps=Math.max(0,pendingSteps-data.steps);
         if(engineKind==='webgpu'){
           if(data.steps>0){
-            if(gpuExperimentPage){
+            if(gpuSchedulingPage){
               const dropped=Math.max(0,gpuParticleDebt+data.steps-MAX_TRACER_DEBT);
               tracerDroppedSteps+=dropped;
               if(dropped&&performance.now()-lastTracerDropEvent>=1000){lastTracerDropEvent=performance.now();stabilityEvent('tracer_backlog_capped',{totalDroppedSteps:tracerDroppedSteps});}
@@ -656,8 +682,8 @@ function frame(now) {
   windowAnimationFrames++;
   const elapsed=lastFrame?Math.min(100,now-lastFrame):0;lastFrame=now;
   const drawing=pointer&&['draw','erase','move'].includes(pointer.action);
-  const researchGpu=gpuExperimentPage&&wasmActive&&engineKind==='webgpu';
-  if(researchGpu&&experimentProfile==='auto60'&&running&&!document.hidden&&!drawing){
+  const researchGpu=gpuSchedulingPage&&wasmActive&&engineKind==='webgpu';
+  if(researchGpu&&tuneGpuLoad()&&running&&!document.hidden&&!drawing){
     const changes=gpuLoadGovernor.evaluate(now,{allowBatch:$('batchMode').value==='adaptive'});
     for(const change of changes){
       const entry={...change,timestamp:Date.now(),description:`${change.control}: ${change.from} → ${change.to} · ${change.reason}`};
@@ -702,7 +728,7 @@ function frame(now) {
       // Divide bursts across frames for smoother tracers, but catch up to the
       // actual solver when GPU snapshots arrive faster than Canvas refreshes.
       let portion=Math.min(24,Math.ceil(gpuParticleDebt/2));
-      if(researchGpu&&experimentProfile==='auto60'&&comparison.phase==='idle'){
+      if(researchGpu&&adaptiveTracerPresentation()){
         const policy=experimentPolicy(),deliveryHz=lastSnapshotHz||policy.updateHz;
         const split=policy.paintHz>=deliveryHz*1.5&&(lastCallbackHz||policy.paintHz)>=deliveryHz*1.5;
         const budget=gpuTracerBudget.next({debt:gpuParticleDebt,split,now});portion=budget.portion;
@@ -726,7 +752,7 @@ function frame(now) {
     const deliveredWindow={durationMs:now-performanceWindow,paints:paintedFrames,
       steps:simulatedSteps,snapshots:windowGpuSnapshots,...stabilityActivity(),
       experimentPolicy:researchGpu?experimentPolicy():null,tracerDroppedSteps,
-      optimization:researchGpu&&experimentProfile==='auto60'?gpuLoadGovernor.optimization:null,
+      optimization:researchGpu&&autoGpuScheduling()?gpuLoadGovernor.optimization:null,
       tracerCount:activeTracerCount,tracerNominalCount:particleCount,
       animationFrames:windowAnimationFrames,requests:windowGpuRequests,
       demandStepsPerSecond:Number($('animation').value)*30*(researchGpu?flowPaceMultiplier:1),
@@ -735,7 +761,7 @@ function frame(now) {
     stability.rates(deliveredWindow,now);
     if(researchGpu){
       lastDeliveryWindow=deliveredWindow;
-      if(experimentProfile==='auto60')gpuLoadGovernor.observeRates(deliveredWindow,now);
+      if(tuneGpuLoad())gpuLoadGovernor.observeRates(deliveredWindow,now);
     }
     windowGpuRequests=0;windowAnimationFrames=0;windowPolicyChanged=false;windowInterrupted=false;windowTracerDropStart=tracerDroppedSteps;
     windowGpuSnapshots=0;
@@ -759,6 +785,9 @@ function updateRunStatus() {
   $('speedValue').title=settling?`Current inlet: ${sim.inletSpeed.toFixed(3)}; target: ${sim.speed.toFixed(3)}`:'Inlet flow speed';
 }
 function syncRunning() {
+  if(classroomComparisonPolicy&&(!comparison.active&&(running||comparison.phase==='cancelled'))){
+    classroomComparisonPolicy=null;syncExperimentPacing();
+  }
   if(!running){pendingSteps=0;windowInterrupted=true;}
   syncResearchFlow();
   if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
@@ -775,6 +804,7 @@ function setView(next) {
   $('legendLow').textContent=info[0];$('legendHigh').textContent=info[1];$('legendNote').textContent=info[2];$('legendGradient').style.background=info[3];paint();
 }
 function shapeSelected(shape,angle=0,preservePosition=false) {
+  if(!comparison.active)classroomComparisonPolicy=null;
   shapeAppearance=null;
   sim.setShape(shape,angle,preservePosition?{x:sim.centerX,y:sim.centerY}:null);resetParticles();press('shape',shape);$('angle').value=angle;$('angleValue').textContent=`${angle}°`;
   const disabled=['custom','none'].includes(shape);$('angle').disabled=disabled;
@@ -782,7 +812,7 @@ function shapeSelected(shape,angle=0,preservePosition=false) {
   if(shape!=='none'&&!preservePosition)toolSelected('move');
   pendingSteps=0;resetRustField();updateRunStatus();updateProbe();paint();
 }
-function flowReset(){if(!wasmActive)stabilityEvent('flow_reset',{engine:engineKind});sim.reset();pendingSteps=0;resetParticles();resetRustField();updateRunStatus();updateProbe();paint();}
+function flowReset(){if(!comparison.active)classroomComparisonPolicy=null;if(!wasmActive)stabilityEvent('flow_reset',{engine:engineKind});sim.reset();pendingSteps=0;resetParticles();resetRustField();updateRunStatus();updateProbe();paint();}
 function toolSelected(next) {
   tool=next;press('tool',tool);
   $('toolHint').textContent={move:'Drag the object to reposition it. Release to restart the flow. Arrow keys move it too.',probe:'Click anywhere in the flow to measure its speed.',draw:'Drag to draw a barrier. Leave space for the flow to go around it.',erase:'Drag across a barrier to erase it.',push:'Drag gently through the fluid to create a small disturbance.'}[tool];
@@ -880,7 +910,7 @@ $('clearButton').addEventListener('click',()=>shapeSelected('none',0));
 $('closeSensor').addEventListener('click',()=>{sensor=null;$('sensorReadout').hidden=true;paint();});
 $('angle').addEventListener('input',()=>shapeSelected(sim.shape,Number($('angle').value),true));
 $('animation').addEventListener('change',()=>{pendingSteps=0;researchDemandClock=null;windowInterrupted=true;gpuFlowLoop.wake();});
-$('batchMode').value=tuningPreference==='adaptive'?'adaptive':'fixed';
+$('batchMode').value=tuningPreference==='adaptive'||(classroomGpuPage&&tuningPreference!=='fixed')?'adaptive':'fixed';
 $('batchMode').addEventListener('change',()=>{
   gpuParticleDebt=0;resetPerformance();
   notify('Workload mode changed · allow 5 seconds before comparing readings.');
@@ -917,7 +947,7 @@ $('startStability')?.addEventListener('click',()=>{
   }
   stability.start({durationMinutes:Number($('stabilityDuration').value),config:stabilityConfig(),
     now:performance.now(),wallTime:new Date().toISOString()});
-  if(gpuExperimentPage)stabilityEvent('experiment_policy_snapshot',{build:GPU_EXPERIMENT_BUILD,policy:experimentPolicy(),optimization:gpuLoadGovernor.optimization});
+  if(gpuSchedulingPage)stabilityEvent('experiment_policy_snapshot',{build:GPU_EXPERIMENT_BUILD,policy:experimentPolicy(),optimization:gpuLoadGovernor.optimization});
   stabilityFinishedShown=false;refreshStability();
   stabilityTimer=setInterval(refreshStability,250);
 });
@@ -925,7 +955,7 @@ $('stopStability')?.addEventListener('click',()=>{stability.stop(performance.now
 $('exportStability')?.addEventListener('click',exportStability);
 document.addEventListener('visibilitychange',()=>{
   stabilityEvent('visibility',{hidden:document.hidden});if(stability.active)refreshStability();
-  if(gpuExperimentPage){pendingSteps=0;gpuParticleDebt=0;lastFrame=0;windowInterrupted=true;resetExperimentPacing();}
+  if(gpuSchedulingPage){pendingSteps=0;gpuParticleDebt=0;lastFrame=0;windowInterrupted=true;resetExperimentPacing();}
 });
 document.addEventListener('input',event=>{
   if(gpuExperimentPage)windowInterrupted=true;
@@ -958,10 +988,11 @@ $('quality').addEventListener('change',()=>{
   else url.searchParams.set('quality',next);
   location.assign(url.toString());
 });
-$('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);updateRustParameters();updateRunStatus();paint();});
-$('viscosity').addEventListener('input',()=>{sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);updateRustParameters();paint();});
-['particles','vectors'].forEach(id=>$(id).addEventListener('change',paint));
+$('speed').addEventListener('input',()=>{windowInterrupted=true;sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);updateRustParameters();updateRunStatus();paint();});
+$('viscosity').addEventListener('input',()=>{windowInterrupted=true;sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);updateRustParameters();paint();});
+['particles','vectors'].forEach(id=>$(id).addEventListener('change',()=>{windowInterrupted=true;paint();}));
 $('force').addEventListener('change',()=>{
+  windowInterrupted=true;
   gpuForceValid=false;
   syncGpuForce();
   if(!$('force').checked){sim.forceX=0;sim.forceY=0;}

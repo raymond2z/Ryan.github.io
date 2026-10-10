@@ -280,3 +280,14 @@ test('user activity cancels a throughput trial so new conditions cannot validate
   assert.equal(gov.state.batch,8);assert.equal(gov.optimization.phase,'holding');
   assert.match(gov.optimization.lastTrial.reason,/user activity/);
 });
+
+test('the classroom paint ceiling stays at 30 while throughput trials fulfill one-times demand',()=>{
+  const gov=createGpuLoadGovernor({paintCeilingHz:30});gov.evaluate(0);
+  for(let i=1;i<=100;i++){
+    window(gov,i,{demandStepsPerSecond:720});assert.equal(gov.state.paintHz,30);
+  }
+  assert.deepEqual(gov.optimization.acceptedPolicy,{updateHz:30,batch:24});
+  assert.equal(gov.optimization.phase,'holding');
+  gov.reset();assert.deepEqual(gov.state,{paintHz:30,updateHz:30,batch:8});
+  assert.throws(()=>createGpuLoadGovernor({paintCeilingHz:120}));
+});

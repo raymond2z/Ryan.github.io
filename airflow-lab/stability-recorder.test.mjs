@@ -116,7 +116,7 @@ test('student/research wiring preserves batching and hides diagnostics in Beginn
   assert.match(html,/class="student-engine-row advanced-only"/);
   assert.match(html,/class="perf-diagnostics advanced-only"/);
   assert.match(research,/id="performancePanel" open/);
-  assert.match(app,/tuningPreference==='adaptive'\?'adaptive':'fixed'/);
+  assert.match(app,/classroomGpuPage&&tuningPreference!=='fixed'/);
   assert.match(app,/setLevel\(researchPage\?'advanced':'beginner'\)/);
   for(const id of ['startStability','stopStability','exportStability','stabilityDuration','stabilityStatus','stabilityDevice']){
     assert.ok(html.includes('id="'+id+'"'));assert.ok(research.includes('id="'+id+'"'));

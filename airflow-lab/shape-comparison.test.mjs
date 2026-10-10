@@ -245,7 +245,7 @@ test('repeating restores original conditions and retains previous notes without 
   app.ids.get('comparisonShapeA').value='bird';app.ids.get('comparisonShapeB').value='plate';app.ids.get('matchShapeHeight').checked=false;
   app.click('repeatComparison');
   assert.equal(app.ids.get('comparisonShapeA').value,'car');assert.equal(app.ids.get('comparisonShapeB').value,'pikachu');
-  assert.equal(app.ids.get('matchShapeHeight').checked,true);assert.equal(app.ids.get('animation').value,'7');assert.equal(app.ids.get('batchMode').value,'fixed');
+  assert.equal(app.ids.get('matchShapeHeight').checked,true);assert.equal(app.ids.get('animation').value,'7');assert.equal(app.ids.get('batchMode').value,'adaptive');
   assert.equal(app.run('sim.speed'),first[0].speed);assert.equal(app.run('sim.viscosity'),first[0].viscosity);
   assert.equal(app.run('previousComparison.captures[0].note'),'A wide wake');
   assert.equal(app.run('previousComparison.conclusion'),'My first explanation');
@@ -306,7 +306,91 @@ test('classroom query strings cannot activate GPU experiments or double student 
   const app=appHarness('webgpu',{search:'&profile=flow60&pace=2'});app.workers[0].ready();
   assert.equal(app.ids.get('gpuExperimentPanel').hidden,true);
   assert.equal(app.run('experimentConfiguration().enabled'),false);
-  assert.equal(app.run('flowPaceMultiplier'),1);assert.equal(app.ids.get('batchMode').value,'fixed');
+  assert.equal(app.run('flowPaceMultiplier'),1);assert.equal(app.ids.get('batchMode').value,'adaptive');
+});
+
+test('classroom flow requests are independent of callbacks and stop on pause, hide, drag and fallback',()=>{
+  const app=appHarness('webgpu',{search:'&profile=auto60&pace=2',workerDelay:2});
+  app.workers[0].ready();app.ids.get('animation').value='24';
+  const start=app.run('performance.now()'),worker=app.workers[0];app.advance(start+5000);
+  const count=()=>worker.messages.filter(m=>m.type==='step').length;
+  assert.ok(count()>=145&&count()<=152,`30 classroom requests without callbacks: ${count()}`);
+  assert.equal(app.run('windowAnimationFrames'),0);assert.equal(app.run('flowPaceMultiplier'),1);
+  app.click('playButton');const paused=count();app.advance(start+10000);assert.equal(count(),paused);
+  app.click('playButton');app.advance(start+11000);assert.ok(count()>paused);
+  app.run('document.hidden=true');app.fireDocument('visibilitychange');const hidden=count();app.advance(start+16000);assert.equal(count(),hidden);
+  app.run('document.hidden=false');app.fireDocument('visibilitychange');app.advance(start+17000);assert.ok(count()>hidden);
+  const center=app.run('({x:sim.centerX/W*1200,y:sim.centerY/H*520})');
+  app.ids.get('tunnel').fire('pointerdown',{pointerId:5,clientX:center.x,clientY:center.y,pointerType:'mouse'});
+  const dragging=count();app.advance(start+22000);assert.equal(count(),dragging);
+  app.ids.get('tunnel').fire('pointerup',{pointerId:5});app.advance(start+23000);assert.ok(count()>dragging);
+  worker.onmessage({data:{type:'error',message:'device lost'}});const ended=count();app.advance(start+28000);assert.equal(count(),ended);
+  assert.equal(app.run('gpuFlowLoop.active'),false);assert.equal(app.run('engineKind'),'wasm');
+});
+
+test('classroom Auto fulfills one-times demand with slow callbacks, then fixes scheduling and markers for both guided views',()=>{
+  const app=appHarness('webgpu',{search:'&profile=flow60&pace=2',workerDelay:2});
+  app.workers[0].ready();app.ids.get('animation').value='24';
+  const start=app.run('performance.now()');
+  for(let i=1;i<=24*45;i++){
+    const time=start+i*1000/24;app.advance(time);app.run(`frame(${time})`);
+  }
+  assert.equal(app.run('gpuLoadGovernor.state.paintHz'),30);
+  assert.equal(app.run('flowPaceMultiplier'),1);
+  assert.ok(app.run('lastFlowRate')>=680&&app.run('lastFlowRate')<=760);
+  assert.ok(app.run('activeTracerCount')<190);assert.equal(app.run('tracerDroppedSteps'),0);
+  app.ids.get('prediction').value='unsure';app.click('startComparison');
+  const guideStart=app.run('performance.now()'),requestsBefore=app.workers[0].messages.length;
+  for(let i=1;i<=24*10&&app.state().phase==='running-a';i++){
+    const time=guideStart+i*1000/24;app.advance(time);app.run(`frame(${time})`);
+    assert.equal(app.run('activeTracerCount'),190);
+    assert.deepEqual({...app.run('experimentPolicy()')},{paintHz:30,updateHz:30,batch:8});
+  }
+  assert.equal(app.state().phase,'ready-b');app.click('nextComparison');
+  const secondStart=app.run('performance.now()');
+  for(let i=1;i<=24*10&&app.state().phase==='running-b';i++){
+    const time=secondStart+i*1000/24;app.advance(time);app.run(`frame(${time})`);
+    assert.equal(app.run('activeTracerCount'),190);
+  }
+  assert.equal(app.state().phase,'done');assert.deepEqual(app.state().captures.map(r=>r.steps),[2000,2000]);
+  assert.deepEqual(comparisonDifferences(...app.state().captures),[]);
+  assert.ok(app.workers[0].messages.slice(requestsBefore).filter(m=>m.type==='step').every(m=>m.count<=8));
+  assert.deepEqual(app.state().captures[0].performanceExperiment.comparisonPolicy,{paintHz:30,updateHz:30,batch:8});
+  app.click('playButton');assert.equal(app.run('classroomComparisonPolicy'),null);
+});
+
+test('classroom diagnostic exports identify scheduling, demand and density while Fixed mode remains available',async()=>{
+  const app=appHarness('webgpu',{search:'&tune=fixed&pace=2'});app.workers[0].ready();
+  assert.equal(app.ids.get('batchMode').value,'fixed');assert.equal(app.run('adaptiveGpuBatch()'),8);
+  app.click('exportPerformance');const report=JSON.parse(await app.blobs.at(-1).text());
+  assert.equal(report.experiment.classroomOptimizations,true);assert.equal(report.experiment.enabled,false);
+  assert.equal(report.experiment.active,true);assert.equal(report.experiment.paceMultiplier,1);
+  assert.equal(report.experiment.currentPolicy.paintHz,30);
+  assert.equal(report.experiment.flowScheduler,'independent timer + Worker completion');
+  assert.equal(report.experiment.tracerPresentation.nominalCount,190);
+  const legacy=appHarness('webgpu',{path:'/airflow-lab/stability.html',page:'stability.html'});legacy.workers[0].ready();
+  assert.equal(legacy.ids.get('batchMode').value,'fixed');assert.equal(legacy.run('gpuFlowLoop.active'),false);
+  assert.equal(legacy.run('experimentConfiguration().flowScheduler'),'classroom animation callback');
+});
+
+test('classroom control changes cancel an active trial before new conditions can validate its baseline',()=>{
+  for(const control of ['speed','viscosity','force','particles','vectors']){
+    const app=appHarness();app.workers[0].ready();
+    app.run(`gpuLoadGovernor.evaluate(0);
+      for(let second=1;second<=3;second++){
+        const policy=gpuLoadGovernor.state;
+        for(let i=0;i<30;i++){gpuLoadGovernor.observeWorker({steps:policy.batch,workerMs:2,roundTripMs:3});gpuLoadGovernor.observeVisual(1);}
+        gpuLoadGovernor.observeRates({durationMs:1000,paints:30,snapshots:30,steps:policy.batch*30,animationFrames:60,demandStepsPerSecond:720,particlesEnabled:true,tracerDroppedStepsDelta:0,running:true,hidden:false,interacting:false,experimentPolicy:policy},second*1000);
+        gpuLoadGovernor.evaluate(second*1000);
+      }`);
+    assert.equal(app.run('gpuLoadGovernor.optimization.phase'),'measuring trial');
+    app.run('windowInterrupted=false');
+    app.ids.get(control).fire(['speed','viscosity'].includes(control)?'input':'change');
+    assert.equal(app.run('windowInterrupted'),true,control);
+    app.run('gpuLoadGovernor.observeRates({running:true,hidden:false,interacting:false,interrupted:windowInterrupted},4000);gpuLoadGovernor.evaluate(4000);');
+    assert.equal(app.run('gpuLoadGovernor.state.batch'),8,control);
+    assert.equal(app.run('gpuLoadGovernor.optimization.lastTrial.decision'),'restored',control);
+  }
 });
 
 test('actual experiment frame loop separates 60 paints from 30 new fields and never queues extra steps',()=>{

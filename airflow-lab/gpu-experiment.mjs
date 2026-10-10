@@ -1,5 +1,5 @@
-// Opt-in scheduling experiments. The numerical solver, grid and Worker cap stay fixed.
-export const GPU_EXPERIMENT_BUILD='gpu-smooth-auto-20261010';
+// Shared classroom scheduling and opt-in research profiles. Solver math, grid and Worker cap stay fixed.
+export const GPU_EXPERIMENT_BUILD='gpu-classroom-20261010';
 export const GPU_PROFILES={
   baseline:{label:'30 paint / 30 flow',paintHz:30,updateHz:30},
   display60:{label:'60 paint / 30 flow',paintHz:60,updateHz:30},
@@ -61,8 +61,9 @@ const weighted=(samples,key)=>samples.length?samples.reduce((n,s)=>n+s[key]*s.se
 // Keep one accepted numerical policy. Change one variable, measure three clean
 // windows, then retain a real throughput gain or restore the accepted policy.
 // Presentation pressure never directly shrinks a solver batch.
-export function createGpuLoadGovernor(){
-  let paintHz=60,updateHz=30,batch=8,worker=[],visual=[],delivery=null,lastWindow=null;
+export function createGpuLoadGovernor({paintCeilingHz=60}={}){
+  if(![30,60].includes(paintCeilingHz))throw Error('Invalid paint ceiling');
+  let paintHz=paintCeilingHz,updateHz=30,batch=8,worker=[],visual=[],delivery=null,lastWindow=null;
   let badPaint=0,badFlow=0,goodPaint=0,paintRecoveryAfter=0,settled=[],probe=null;
   let nextTrialAfter=0,lastTrial=null,accepted={updateHz:30,batch:8},interrupted=false;
   const blocked=new Map();
@@ -73,7 +74,7 @@ export function createGpuLoadGovernor(){
       acceptedPolicy:{...accepted},candidatePolicy:probe?{...probe.candidate}:null,
       referenceStepsPerSecond:probe?.reference??weighted(settled,'stepsHz'),
       validTrialWindows:probe?.samples.length??0,lastTrial:structuredClone(lastTrial)};},
-    reset(){paintHz=60;updateHz=30;batch=8;clearEvidence();lastWindow=null;probe=null;
+    reset(){paintHz=paintCeilingHz;updateHz=30;batch=8;clearEvidence();lastWindow=null;probe=null;
       nextTrialAfter=0;lastTrial=null;accepted={updateHz:30,batch:8};blocked.clear();paintRecoveryAfter=0;},
     observeWorker({steps,workerMs,roundTripMs}){
       if(!Number.isInteger(steps)||steps<1||steps>24||!valid(workerMs)||!valid(roundTripMs)||roundTripMs<workerMs)return;
@@ -149,7 +150,7 @@ export function createGpuLoadGovernor(){
           settled=[];
         }
         paintRecoveryAfter=now+15000;goodPaint=0;
-      }else if(paintHz===30){
+      }else if(paintHz===30&&paintCeilingHz===60){
         goodPaint=paintDelivered&&r.callbackHz>=55&&visualP95<6&&now>=paintRecoveryAfter?goodPaint+1:0;
         if(goodPaint>=3){
           finishTrial(false,'drawing policy changed; recalibrate throughput');

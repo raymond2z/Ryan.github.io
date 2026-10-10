@@ -1,11 +1,44 @@
-# Stage 3.4B-3 — Steadier markers and faster measured Auto trials
+# Classroom Auto and high-contrast model force
 
-Build: `gpu-smooth-auto-20261010`.
+Build: `gpu-classroom-20261010`.
 
 Open [GPU scheduling experiments](https://raymond2z.github.io/Ryan.github.io/airflow-lab/performance.html?engine=webgpu).
 This dedicated page starts in Advanced mode with the research controls visible.
-Student Lab and the original stability page retain their classroom scheduling
-and defaults. Profile and pace query parameters are ignored on those pages.
+Student Lab now uses conservative Classroom Auto when WebGPU is active.
+The original stability page retains its legacy callback scheduler for reference.
+Research profile and pace query parameters are ignored on both those pages.
+
+## Student Lab defaults
+
+- Keep the existing Normal/Fast/Super fast animation choices and **1× demand**.
+  Normal requests about 210 public steps/s and Super fast about 720; these are
+  demand ceilings, not measured hardware guarantees. Research 2× remains separate.
+- Draw at a **30 FPS ceiling**. A separate timer and Worker-completion wakeup
+  request new fields independently of animation callbacks, at an Auto ceiling
+  between 15 and 60 requests/s. The classroom governor never raises painting to 60.
+- Default to measured Adaptive batches, bounded to 4–24 steps with the same
+  clean-window validation and rollback. Advanced users can still select Fixed 8.
+- Adapt visual marker density only in free exploration. Keep the numerical grid,
+  solver math, inlet speed and viscosity under the existing controls.
+- Guided A/B comparisons use **fixed 30/s requests, 8-step batches and nominal
+  seeded marker density** for both shapes. Auto trials are suspended. Both views
+  still stop at exactly 2,000 steps, and repeated rounds use the same policy.
+  Playing or resetting after the completed guide restores free-exploration Auto.
+- Pause, hidden tabs, object drag and GPU fallback cancel the timer. Changes to
+  wind, viscosity, Force, particles and vectors invalidate trial evidence; the
+  new conditions cannot validate a preceding baseline.
+- Preserve Auto engine selection and GPU → Rust/WASM → JavaScript fallback,
+  existing grid selection and Beginner/Advanced interfaces. Diagnostics remain
+  in Advanced mode. Live JSON identifies the classroom policy, 1× demand, actual
+  delivery, trial history and marker density. Research experiment `enabled`
+  remains false on Student Lab; `classroomOptimizations` and `active` identify
+  the shared scheduler separately.
+
+The Force overlay on all three pages now uses a white arrow centre, magenta
+edge and dark outer outline, with a larger arrowhead and outlined white label.
+The label is placed on the opposite vertical side from the arrow and kept inside
+the canvas. Force computation, scaling, direction and units are unchanged;
+the overlay remains opt-in and experimental for WebGPU.
 
 ## Profiles
 
@@ -15,6 +48,7 @@ and defaults. Profile and pace query parameters are ignored on those pages.
 | Display | 60/s | 30/s | Smoother tracer presentation over the latest field |
 | Flow probe | 60/s | 60/s | Attempt more fresh fields without a request backlog |
 | Auto load | 30 or 60/s | 15, 20, 30, 40 or 60/s | Measure solver throughput; validate and restore trials |
+| Classroom Auto (Student Lab) | 30/s | 15, 20, 30, 40 or 60/s | Conservative 1× demand; fixed guided comparisons |
 
 These are targets/ceilings, not measured performance guarantees. Request delivery
 is limited by timer scheduling, main-thread work, demand and Worker completion.
@@ -23,7 +57,7 @@ one. A separate, cancellable timer waits for absolute request deadlines, and
 Worker completion wakes it when the in-flight slot becomes free.
 Devices can remain below the target, including below Auto's lowest setting.
 
-The research request scheduler uses absolute deadlines. It skips missed
+The shared request scheduler uses absolute deadlines. It skips missed
 deadlines rather than sending a catch-up burst, and the app sends no second
 step request while one is in flight in the current field revision. There is
 only one flow timer; a busy Worker suspends it until completion. Demand is
@@ -54,11 +88,11 @@ and GPU → Rust/WASM → JavaScript fallback remain intact.
    for a promising candidate or a substantial problem. No repeated desktop,
    phone and tablet benchmark is required for routine text or teaching changes.
 
-The current small update provides updated experiments and automated regression
+The current classroom migration provides updated scheduling and automated regression
 evidence. Previous builds have representative device recordings (below);
 this update has **not** been benchmarked on those physical devices.
-Promoting a research configuration to the classroom defaults remains a separate
-decision based on representative device evidence and interaction quality.
+The classroom migration uses a 30 FPS paint ceiling and 1× demand; the research
+60-paint profiles and 2× probe are not classroom defaults.
 
 ## What 60 paint means
 
@@ -206,15 +240,29 @@ between 172 and 296 of 460 nominal markers. Repeated recovery followed by immedi
 reduction motivates this small update's continuous-headroom recovery rule.
 Browser callbacks were also near 60/s, versus mostly 24/s in the preceding S24 run;
 the whole improvement cannot be attributed to the controller alone. This report
-is evidence for the **previous** build, not a physical benchmark of
-`gpu-smooth-auto-20261010`.
+is evidence for `gpu-throughput-20261010`, not a physical benchmark of the current build.
 
-Keep classroom defaults. No repeated three-device benchmark is requested for
-this small update. Further physical testing needs a specific unresolved concern.
+The following `gpu-smooth-auto-20261010` two-minute S24 recording also completed
+without interruptions, missing report samples or capped tracer debt. Whole-run
+averages were **24.98 paints/s, 50.16 fresh fields/s and 1,124.48 solver steps/s**;
+the last approximately 30 seconds measured **24.03 paints/s, 59.93 fresh fields/s
+and 1,438.25 steps/s**. A 60-request/24-step policy was confirmed approximately
+45 seconds after recording began, then held to completion. Recording began
+with the first 8→10-step trial already accepted, so comparison with the previous
+94-second convergence is not a controlled equal-start timing comparison.
+There were 10 visual adjustments, versus 42 in the preceding recording, with
+172 markers held from about 38 seconds onward. Late callbacks were about 24/s;
+flow throughput remained near the 1,440-step/s research demand ceiling.
+This supports the independent scheduler and marker recovery, but is not a
+physical benchmark of the new 1× classroom configuration.
+
+Keep classroom demand, grid selection and teaching controls. No repeated
+three-device benchmark is requested for this migration. Further physical testing
+needs a specific unresolved concern.
 
 ## Validation
 
-The 81-test related suite covers real application frame/input/export
+The 86-test related suite covers real application frame/input/export
 handlers with asynchronous Worker doubles and simulated cancellable timers,
 flow requests without animation callbacks, stop/resume/backpressure and late
 deadlines, numerical final-step clamping,
@@ -223,7 +271,9 @@ cached raster work, backpressure, bounded overload/recovery, invalid/sparse/stal
 samples, retained/restored throughput trials, fixed-overhead regressions,
 slower high-frequency candidates, timeouts, activity invalidation, demand
 exclusions, marker-work bounds, sustained recovery, recurring bursts and pause
-invalidation, wider-trial fallback, classroom isolation, repeat restoration,
+invalidation, wider-trial fallback, classroom 30 FPS ceiling, 1× query isolation,
+actual classroom timer cancellation/fallback, one-times demand under slow
+callbacks, frozen guided policy/density, control-change invalidation, repeat restoration,
 fallback and duration-weighted recorder data.
 In the same synthetic healthy-load fixture, the accepted 60-request/24-step
 configuration is reached after 32 seconds versus 60 with the preceding governor.
@@ -233,7 +283,9 @@ The asynchronous application-loop test also confirms full-demand acceptance
 within 50 simulated seconds while maintaining bounded requests and no capped
 visual debt. These are regression fixtures, not predictions of hardware gains.
 
-These checks are not physical GPU benchmarks. Existing GitHub workflows also
+The actual Force drawing functions were rendered locally on six dark/light,
+warm/cool backgrounds to verify outline and label visibility. These checks
+are not physical GPU benchmarks. Existing GitHub workflows also
 run the full solver/benchmark/WASM checks.
 
 ```sh
