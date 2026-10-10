@@ -187,12 +187,17 @@ function beginRustEngine(override=null){
     engineLabel('JavaScript · selected');
     return;
   }
-  if(typeof Worker==='undefined'||typeof WebAssembly==='undefined'){
-    engineLabel('JavaScript fallback · Rust not supported',true);
-    return;
+  if(typeof Worker==='undefined'){
+    endRustEngine('Web Workers unavailable');return;
+  }
+  if((override==='wasm'||engineChoice==='wasm')&&typeof WebAssembly==='undefined'){
+    endRustEngine('WebAssembly unavailable');return;
   }
   engineKind=override||(engineChoice==='wasm'?'wasm':'webgpu');
   if(engineKind==='webgpu'&&!navigator.gpu)engineKind='wasm';
+  if(engineKind==='wasm'&&typeof WebAssembly==='undefined'){
+    endRustEngine('WebAssembly unavailable');return;
+  }
   wasmStarting=true;
   engineLabel('Loading '+(engineKind==='webgpu'?'WebGPU':'Rust/WASM')+'…');
   try{
@@ -223,7 +228,8 @@ function beginRustEngine(override=null){
       }else if(data.type==='frame'){
         if(data.requestId===workerInFlight)workerInFlight=0;
         if(data.revision!==engineRevision)return;
-        // Float32 fields are for drawing only. The Rust solver remains f64.
+        // Float32 fields are for drawing only. Rust/JS populations remain f64;
+        // WebGPU retains f32 distributions in GPU buffers.
         const previous=[sim.rho,sim.ux,sim.uy];
         sim.rho=data.fields.rho;sim.ux=data.fields.ux;sim.uy=data.fields.uy;
         const buffers=previous.filter(v=>v instanceof Float32Array&&v.length===sim.n).map(v=>v.buffer);
@@ -540,6 +546,7 @@ if(modelContext?.registerTool) {
     if(input.angle!==undefined&&['custom','none'].includes(input.shape??sim.shape))throw new Error('Choose a preset shape before setting its angle.');
     if(input.speed!==undefined){sim.speed=input.speed;$('speed').value=input.speed;$('speedValue').textContent=input.speed.toFixed(3);}
     if(input.viscosity!==undefined){sim.viscosity=input.viscosity;$('viscosity').value=input.viscosity;$('viscosityValue').textContent=input.viscosity.toFixed(3);}
+    if(input.speed!==undefined||input.viscosity!==undefined)updateRustParameters();
     if(input.shape!==undefined||input.angle!==undefined)shapeSelected(input.shape??sim.shape,input.angle??sim.angle,input.shape===undefined);
     if(input.animation!==undefined){$('animation').value=animationModes[input.animation];pendingSteps=0;}
     if(input.view!==undefined)setView(input.view);
