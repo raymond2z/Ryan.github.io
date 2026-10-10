@@ -1,7 +1,53 @@
 import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
+import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
 const $=id=>document.getElementById(id);
+const stability=createStabilityRecorder();
+let stabilityTimer=null,stabilityFinishedShown=false;
+const researchPage=location.pathname.endsWith('/stability.html');
+function stabilityConfig(){
+  return {build:STABILITY_BUILD,sourceBaseline:'e644e248b6ff24b4b73dd50b7fbfa9dd4fadd596',
+    deviceLabel:$('stabilityDevice')?.value.trim()||'Unspecified',engine:engineKind,
+    grid:{width:W,height:H,quality:qualityOption},shape:sim.shape,angle:sim.angle,
+    position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,viscosity:sim.viscosity,
+    animation:$('animation').value,batchMode:$('batchMode').value,
+    forceEnabled:$('force').checked,particles:$('particles').checked,
+    vectors:$('vectors').checked,view};
+}
+function stabilityActivity(){
+  return {running,hidden:document.hidden,interacting:Boolean(pointer)};
+}
+function stabilityEvent(kind,details={}){stability.event(kind,details,performance.now());}
+function refreshStability(){
+  if(!$('stabilityStatus'))return;
+  const now=performance.now();stability.observeState(stabilityConfig(),stabilityActivity(),now);
+  stability.tick(now,new Date().toISOString());
+  const progress=stability.progress(now);
+  $('startStability').disabled=stability.active;
+  $('stopStability').disabled=!stability.active;
+  $('exportStability').disabled=!stability.hasReport;
+  $('stabilityDuration').disabled=stability.active;$('stabilityDevice').disabled=stability.active;
+  // Engine/detail switches reload the document and would discard the active run.
+  $('engine').disabled=stability.active;$('quality').disabled=stability.active;
+  if(!progress)return;
+  if(stability.active){
+    const remaining=Math.max(0,Math.ceil((progress.requestedDurationMs-progress.elapsedMs)/1000));
+    $('stabilityStatus').textContent=`Recording · ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')} remaining · ${progress.paints} paints · ${progress.events} events`;
+  }else if(!stabilityFinishedShown){
+    stabilityFinishedShown=true;
+    const report=stability.report(now),summary=report.summary;
+    $('stabilityStatus').textContent=`${progress.status==='completed'?'Timer completed':'Recording stopped'} · Paint interval P95 ${ms(summary.paintIntervalMs.p95)} · Worker round-trip P95 ${ms(summary.workerRoundTripMs.p95)} · ${report.assessment.needsReview?'Events need review':'Review the JSON before judging stability'}`;
+    clearInterval(stabilityTimer);stabilityTimer=null;
+  }
+}
+function exportStability(){
+  refreshStability();const record=stability.report(performance.now());if(!record)return;
+  const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='airflow-stage3-4a-stability.json';
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+
 // Mobile-first performance selection. The user can explicitly choose a detailed grid.
 const qualityPreference=new URLSearchParams(location.search).get('quality');
 const qualityOption=['fast','detail'].includes(qualityPreference)?qualityPreference:'auto';
@@ -140,7 +186,8 @@ function paint() {
     ctx.strokeStyle='#fff';ctx.lineWidth=2;const x=sensor.x*SX,y=sensor.y*SY;
     ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.moveTo(x-14,y);ctx.lineTo(x-5,y);ctx.moveTo(x+5,y);ctx.lineTo(x+14,y);ctx.moveTo(x,y-14);ctx.lineTo(x,y-5);ctx.moveTo(x,y+5);ctx.lineTo(x,y+14);ctx.stroke();
   }
-  bounded(paintSamples,{paintMs:forceFrameTiming(performance.now()-paintStarted)});
+  const paintMs=forceFrameTiming(performance.now()-paintStarted);
+  bounded(paintSamples,{paintMs});stability.paint(paintMs,performance.now());
 }
 function arrow(x,y,dx,dy) {
   if(Math.hypot(dx,dy)<1)return;
@@ -178,7 +225,7 @@ function runSteps(count,budgetMs=Infinity) {
     while(completed<count){sim.step();completed++;if(performance.now()-start>=budgetMs)break;}
     moveParticles(completed);simulatedSteps+=completed;return completed;
   }
-  catch{running=false;sim.reset();resetParticles();syncRunning();notify('The flow became unstable and was reset. Try a gentler speed or higher viscosity.');return 0;}
+  catch{stabilityEvent('engine_error',{engine:'javascript',reason:'unstable flow'});running=false;sim.reset();resetParticles();syncRunning();notify('The flow became unstable and was reset. Try a gentler speed or higher viscosity.');return 0;}
 }
 
 function engineLabel(message,fallback=false){
@@ -186,6 +233,7 @@ function engineLabel(message,fallback=false){
   $('engineStatus').dataset.fallback=String(fallback);
 }
 function resetRustField(){
+  stabilityEvent('flow_reset',{engine:engineKind});
   if(!wasmActive||!wasmWorker)return;
   engineRevision++;
   workerInFlight=0;gpuFluidDirty=true;gpuParticleDebt=0;stepper.reset();gpuPaintPacer.reset();
@@ -211,6 +259,7 @@ function updateRustParameters(){
   });
 }
 function endRustEngine(reason){
+  stabilityEvent('fallback',{from:engineKind,reason});
   const wasGpu=engineKind==='webgpu';
   if(wasmWorker){wasmWorker.terminate();wasmWorker=null;}
   wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;gpuParticleDebt=0;gpuFluidDirty=false;gpuPaintPacer.reset();
@@ -286,6 +335,7 @@ function beginRustEngine(override=null){
           $('force').disabled=false;
           $('force').title='GPU-relative force active · simulation units, not newtons';
         }else if(!data.available){
+          stabilityEvent('force_error',{reason:data.message||'Force unavailable'});
           gpuForceValid=false;
           $('force').checked=false;
           $('force').disabled=true;
@@ -298,6 +348,7 @@ function beginRustEngine(override=null){
           sim.forceX=0;sim.forceY=0;showForceReadout();paint();
         }
       }else if(data.type==='error'){
+        stabilityEvent('engine_error',{engine:engineKind,reason:data.message||'Worker error'});
         endRustEngine('simulation error');
       }else if(data.type==='skipped'){
         if(data.requestId===workerInFlight)workerInFlight=0;
@@ -312,7 +363,7 @@ function beginRustEngine(override=null){
             workerMs:forceFrameTiming(data.perf.workerMs),
             roundTripMs:forceFrameTiming(performance.now()-lastWorkerRequest),
             forceEnabled:data.perf.forceEnabled};
-          bounded(gpuSamples,sample);windowGpuSnapshots++;
+          bounded(gpuSamples,sample);stability.worker(sample,performance.now());windowGpuSnapshots++;
           if($('batchMode').value==='adaptive')
             stepper.observe({steps:data.steps,workerMs:data.perf.workerMs});
         }
@@ -388,6 +439,8 @@ function frame(now) {
     lastCanvasFps=paintedFrames/seconds;
     lastFlowRate=simulatedSteps/seconds;
     lastSnapshotHz=windowGpuSnapshots/seconds;
+    stability.rates({durationMs:now-performanceWindow,paints:paintedFrames,
+      steps:simulatedSteps,snapshots:windowGpuSnapshots,...stabilityActivity()},now);
     windowGpuSnapshots=0;
     $('livePerformance').textContent=(wasmActive?(engineKind==='webgpu'?'WebGPU':'Rust/WASM'):'JS')+' · Canvas: '+Math.round(paintedFrames/seconds)+
       ' fps · Flow: '+Math.round(simulatedSteps/seconds)+' steps/s';
@@ -409,6 +462,7 @@ function updateRunStatus() {
 }
 function syncRunning() {
   if(!running)pendingSteps=0;
+  if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
   $('playButton').querySelector('span').textContent=running?'Pause':'Play';
   $('playIcon').innerHTML=running?'<path d="M6 4v12M14 4v12"/>':'<path d="m6 3 10 7-10 7V3Z"/>';
   $('runDot').classList.toggle('paused',!running);updateRunStatus();
@@ -427,7 +481,7 @@ function shapeSelected(shape,angle=0,preservePosition=false) {
   if(shape!=='none'&&!preservePosition)toolSelected('move');
   pendingSteps=0;resetRustField();updateRunStatus();updateProbe();paint();
 }
-function flowReset(){sim.reset();pendingSteps=0;resetParticles();resetRustField();updateRunStatus();updateProbe();paint();}
+function flowReset(){if(!wasmActive)stabilityEvent('flow_reset',{engine:engineKind});sim.reset();pendingSteps=0;resetParticles();resetRustField();updateRunStatus();updateProbe();paint();}
 function toolSelected(next) {
   tool=next;press('tool',tool);
   $('toolHint').textContent={move:'Drag the object to reposition it. Release to restart the flow. Arrow keys move it too.',probe:'Click anywhere in the flow to measure its speed.',draw:'Drag to draw a barrier. Leave space for the flow to go around it.',erase:'Drag across a barrier to erase it.',push:'Drag gently through the fluid to create a small disturbance.'}[tool];
@@ -457,6 +511,7 @@ canvas.addEventListener('pointerdown',event=>{
   const p=position(event);
   if(tool==='move'&&!hitObject(p,event.pointerType==='touch'?7:4)){notify('Drag the object itself. Choose a shape first if the tunnel is empty.');return;}
   pointer={...p,id:event.pointerId,action:tool};
+  if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
   if(tool==='move'){
     pointer.start={...p};pointer.origin={x:sim.centerX,y:sim.centerY};pointer.mask=sim.solid.slice();pointer.moved=false;
     canvas.style.cursor='grabbing';pendingSteps=0;
@@ -483,7 +538,9 @@ canvas.addEventListener('pointermove',event=>{
 function endPointer(event){
   if(!pointer||event.pointerId!==pointer.id)return;
   const reset=['draw','erase'].includes(pointer.action)||(pointer.action==='move'&&pointer.moved);
-  pointer=null;canvas.style.cursor=tool==='push'||tool==='move'?'grab':'crosshair';
+  pointer=null;
+  if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
+  canvas.style.cursor=tool==='push'||tool==='move'?'grab':'crosshair';
   if(reset)flowReset();
   // When paused, refresh the flow visualization after using Stir.
   if(wasmActive&&tool==='push'&&!running&&!workerInFlight)
@@ -522,6 +579,32 @@ $('batchMode').addEventListener('change',()=>{
   notify('Workload mode changed · allow 5 seconds before comparing readings.');
 });
 $('resetPerformance').addEventListener('click',resetPerformance);
+$('startStability')?.addEventListener('click',()=>{
+  if(!running||document.hidden||wasmStarting||!wasmActive||engineKind!=='webgpu'){
+    notify('Start the recording after WebGPU is active, the flow is running and this tab is visible.');return;
+  }
+  stability.start({durationMinutes:Number($('stabilityDuration').value),config:stabilityConfig(),
+    now:performance.now(),wallTime:new Date().toISOString()});
+  stabilityFinishedShown=false;refreshStability();
+  stabilityTimer=setInterval(refreshStability,250);
+});
+$('stopStability')?.addEventListener('click',()=>{stability.stop(performance.now(),new Date().toISOString());refreshStability();});
+$('exportStability')?.addEventListener('click',exportStability);
+document.addEventListener('visibilitychange',()=>{
+  stabilityEvent('visibility',{hidden:document.hidden});if(stability.active)refreshStability();
+});
+document.addEventListener('input',event=>{
+  if(stability.active&&event.target!==$('stabilityDevice'))
+    stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
+});
+document.addEventListener('change',()=>{
+  if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
+});
+window.addEventListener('pagehide',()=>{
+  stabilityEvent('page_exit');stability.stop(performance.now(),new Date().toISOString());
+  clearInterval(stabilityTimer);
+},{once:true});
+
 $('exportPerformance').addEventListener('click',exportPerformance);
 $('quality').value=qualityOption;
 $('engine').value=engineChoice;
@@ -566,6 +649,7 @@ document.addEventListener('keydown',event=>{
 showForceReadout();
 let demoPhase=0;
 function setLevel(level){
+  stabilityEvent('interface_mode',{level});
   document.body.dataset.level=level;press('level',level);
   if(level==='beginner'){toolSelected('move');if(view==='density')setView('curl');$('vectors').checked=false;$('force').checked=false;gpuForceValid=false;syncGpuForce();showForceReadout();paint();}
 }
@@ -699,5 +783,6 @@ if(modelContext?.registerTool) {
   register({name:'capture_wind_tunnel_view',description:'Capture the current rendered view for the visible two-view comparison. Fails when both slots are occupied.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>{if(captures.length>=2)throw new Error('Both comparison slots are full.');return capture();}});
   window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
-setLevel('beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);
+setLevel(researchPage?'advanced':'beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);
 window.addEventListener('pagehide',()=>{if(wasmWorker)wasmWorker.terminate();},{once:true});
+

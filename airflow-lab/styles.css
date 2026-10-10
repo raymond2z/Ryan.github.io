@@ -80,3 +80,10 @@ body[data-level="beginner"] .gpu-force-readout{display:none}
 .perf-footnote{font-size:11px}
 @media(max-width:800px){.perf-measures{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-diagnostics>summary{padding:11px 16px}.perf-body{padding:0 16px 14px}}
 @media(max-width:520px){.perf-measures strong{font-size:13px}.perf-control-row{align-items:stretch}.perf-control-row label{width:100%}.perf-control-row select{min-width:100%}.perf-control-row button{flex:1}}
+
+
+/* Stage 3.4A: opt-in research recording, hidden in Beginner mode. */
+.stability-controls{border:1px solid #496474;border-radius:9px;padding:14px;margin:12px 0 18px;background:#0f202e}
+.stability-controls h3{margin:0 0 8px;font-size:15px}.stability-controls p{font-size:12px;line-height:1.6}
+.stability-controls input{font:inherit;min-height:40px;max-width:220px;background:#1b303d;color:#e1f1f2;border:1px solid #607887;border-radius:6px;padding:8px}
+#stabilityStatus{display:block;line-height:1.6;margin-top:10px;font-variant-numeric:tabular-nums}

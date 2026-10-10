@@ -36,6 +36,7 @@ jobs:
           node --check airflow-lab/student-gpu-worker-v2.mjs
           node --check airflow-lab/student-gpu-worker-v3.mjs
           node --check airflow-lab/live-performance.mjs
+          node --check airflow-lab/stability-recorder.mjs
           node --check airflow-lab/app.mjs
       - name: Run benchmark tests
         run: node --test airflow-lab/benchmark.test.mjs
@@ -45,6 +46,8 @@ jobs:
         run: node --test airflow-lab/gpu-solver.test.mjs
       - name: Live adaptive-batching and render scheduler tests
         run: node --test airflow-lab/live-performance.test.mjs
+      - name: Stability recorder regressions
+        run: node --test airflow-lab/stability-recorder.test.mjs
       - name: Student WebGPU integration regressions
         run: node --test airflow-lab/student-gpu-integration.test.mjs
       - name: Verify GPU relative force and independent Rust WASM reference
@@ -56,3 +59,4 @@ jobs:
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9-solver-r2-20261010.wgsl
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/student-gpu-stir-v1.wgsl
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/gpu-relative-force-v1.wgsl
+
