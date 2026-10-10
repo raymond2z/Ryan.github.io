@@ -18,7 +18,7 @@ test('Student Lab offers WebGPU, Rust, JavaScript and Auto choices',()=>{
 });
 
 test('GPU worker uses persistent D2Q9 ping-pong fields and serialized messages',()=>{
-  const s=get('student-gpu-worker-v2.mjs');
+  const s=get('student-gpu-worker-v3.mjs');
   for(const snippet of [
     'd2q9-solver-r2-20261010.wgsl',
     'student-gpu-stir-v1.wgsl',
@@ -29,6 +29,7 @@ test('GPU worker uses persistent D2Q9 ping-pong fields and serialized messages',
     "msg.type===\'recycle\'",
     'type:\'skipped\'',
     'Math.min(STEP_LIMIT',
+    'queueReadbackMs', 'encodeMs', 'workerMs', 'perf:{encodeMs,queueReadbackMs,unpackMs,workerMs,forceEnabled}',
     "if(forceEnabled&&forceController)forceController.encodeHalfStep(encoder)",
     "if(forceEnabled&&forceController)forceController.encodeReadback(encoder)",
     "const forcePending=forceEnabled&&forceController",
