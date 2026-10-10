@@ -4,6 +4,8 @@
 // CPU f64 reference runs AFTER timings and is reported separately.
 import {FluidSimulation} from './simulation.mjs';
 import {validateConfig,summarize} from './benchmark-core.mjs';
+import {createGpuForceController,relativeForceResult} from './gpu-relative-force.mjs';
+import {loadRustWasm} from './wasm-engine.mjs';
 const MAX_CHUNK=8;
 
 export function validateSolverSettings(raw){
@@ -106,6 +108,10 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
     const coll=[pair(collision,fieldA,post),pair(collision,fieldB,post)];
     const stream=[pair(streaming,post,fieldB),pair(streaming,post,fieldA)];
     const macroBind=pair(macroscopic,fieldA,macro);
+    const force=await createGpuForceController({
+      device,post,solid:obstacle,width:config.width,height:config.height,
+      trackBuffer:buffer=>buffers.push(buffer)
+    });
     const groups=Math.ceil(n/64);
     if(groups>device.limits.maxComputeWorkgroupsPerDimension)
       throw new Error('Grid exceeds available workgroup dimension');
@@ -120,6 +126,8 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
           let pass=encoder.beginComputePass();
           dispatch(pass,collision,coll[half]);
           pass.end();
+          // Force contribution from collision output, before boundary bounce-back.
+          force.encodeHalfStep(encoder);
           pass=encoder.beginComputePass();
           dispatch(pass,streaming,stream[half]);
           pass.end();
@@ -149,8 +157,9 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
     let encoder=device.createCommandEncoder(),pass=encoder.beginComputePass();
     dispatch(pass,macroscopic,macroBind);pass.end();
     encoder.copyBufferToBuffer(macro,0,readback,0,macroBytes);
+    force.encodeReadback(encoder);
     device.queue.submit([encoder.finish()]);
-    await readback.mapAsync(GPUMapMode.READ);
+    const [,relativeForce]=await Promise.all([readback.mapAsync(GPUMapMode.READ),force.read()]);
     const packed=new Float32Array(readback.getMappedRange().slice(0));
     readback.unmap();
     const readbackMs=performance.now()-readStart;
@@ -166,6 +175,29 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
         onProgress({phase:'reference',done:k+1,total:config.warmup+config.steps});
     }
     const referenceMs=performance.now()-referenceStart;
+    const javascriptForce=relativeForceResult(reference.forceX,reference.forceY);
+    // Independent compiled Rust f64 force comparison: not included in GPU timing.
+    const rustStart=performance.now();
+    const rust=await loadRustWasm();
+    const handle=rust.solver_create(config.width,config.height,config.speed,config.viscosity);
+    if(!handle)throw new Error('Cannot allocate Rust force verification');
+    let rustForce;
+    try{
+      new Uint8Array(rust.memory.buffer,rust.solver_solid_ptr(handle),n).set(reference.solid);
+      if(rust.solver_reset(handle)!==1)throw new Error('Cannot reset Rust force reference');
+      let complete=0,total=config.steps+config.warmup;
+      while(complete<total){
+        if(checkCancelled())throw new Error('Cancelled');
+        const batch=Math.min(8,total-complete);
+        if(rust.solver_step_many(handle,batch)!==batch)throw new Error('Rust force reference unstable');
+        complete+=batch;
+      }
+      rustForce=relativeForceResult(rust.solver_force_x(handle),rust.solver_force_y(handle));
+    }finally{rust.solver_free(handle);}
+    const rustReferenceMs=performance.now()-rustStart;
+    const absDifference={drag:Math.abs(relativeForce.drag-rustForce.drag),
+      lift:Math.abs(relativeForce.lift-rustForce.lift),
+      resultant:Math.abs(relativeForce.resultant-rustForce.resultant)};
     const fullField=compareFullFields(actual,reference);
     const referenceSummary=summarize(reference);
     const stability={finite:actual.invalid===0,densityInRange:actual.densityOutOfRange===0,
@@ -175,6 +207,8 @@ export async function runWebGpuSolver(raw,{env=navigator,onProgress=()=>{},check
       computeMs,wallMs,readbackMs,referenceMs,
       stepsPerSecond:1000*config.steps/Math.max(.001,computeMs),
       ...summary,referenceMetrics:referenceSummary.metrics,fullField,stability,
+      relativeForce,rustForce,javascriptForce,forceAbsoluteDifference:absDifference,
+      rustReferenceMs,forceComparisonStatus:'experimental: compare GPU f32 vs Rust f64',
       finishedAt:new Date().toISOString(),
       workerContext:typeof WorkerGlobalScope!=='undefined'&&self instanceof WorkerGlobalScope};
   }finally{
