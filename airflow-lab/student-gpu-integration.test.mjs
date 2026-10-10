@@ -61,13 +61,17 @@ test('Student Lab controls preserve drawing, reset, probe and performance report
     assert.ok(s.includes(phrase),'Missing UI integration '+phrase);
 });
 
-test('HTML references required controls and marks GPU as experimental',()=>{
-  const html=get('index.html'),app=get('app.mjs');
+test('HTML references shared and research-only controls and marks GPU as experimental',()=>{
+  const html=get('index.html'),research=get('performance.html'),app=get('app.mjs');
   assert.match(html,/WebGPU \(experimental\)/);
   assert.match(html,/id="forceReadout"/);
   assert.match(html,/id="forceNote"/);
   assert.match(app,/gpuForceValid/);
   assert.match(app,/force:\$\('force'\)\.checked/,'A\/B captures may include force snapshots');
-  for(const id of new Set([...app.matchAll(/\$\('([a-zA-Z][a-zA-Z0-9]*)'\)/g)].map(m=>m[1])))
-    assert.ok(html.includes('id="'+id+'"'),'Missing #'+id);
+  for(const id of new Set([...app.matchAll(/\$\('([a-zA-Z][a-zA-Z0-9]*)'\)/g)].map(m=>m[1]))){
+    const page=id==='perfTracerCount'?research:html;
+    assert.ok(page.includes('id="'+id+'"'),'Missing #'+id);
+  }
+  assert.ok(!html.includes('id="perfTracerCount"'),'Adaptive tracer diagnostics belong to the research page');
 });
+

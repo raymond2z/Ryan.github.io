@@ -8,7 +8,7 @@ import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,force
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
 import {createMatchedComparison,comparisonPlan,comparisonDifferences,setComparisonShape,COMPARISON_SHAPES,seededRandom} from './shape-comparison.mjs';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs';
-import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop} from './gpu-experiment.mjs';
+import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs';
 
 const settings={grid:{width:240,height:104},position:{x:72,y:52},speed:.085,viscosity:.025};
 test('every batch size reaches exactly the same observation point for A and B',()=>{
@@ -126,7 +126,7 @@ function appHarness(engine='webgpu',{path='/airflow-lab/',search='',page='index.
   }
   class Image{set src(value){this.onload();}}
   class TestURL extends URL{static createObjectURL(blob){blobs.push(blob);return 'blob:test';}static revokeObjectURL(){}}
-  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,learningChecks,makeLearningRecord,GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop:(options)=>createGpuFlowLoop({...options,clock:()=>now,schedule,cancel:id=>timers.delete(id)}),
+  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,learningChecks,makeLearningRecord,GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuTracerBudget,createGpuFlowLoop:(options)=>createGpuFlowLoop({...options,clock:()=>now,schedule,cancel:id=>timers.delete(id)}),
     document,navigator:{gpu:{}},location:{pathname:path,search:'?quality=fast&engine='+engine+search,href:'https://example.test'+path},
     window:{addEventListener(){}},innerWidth:1200,matchMedia:()=>({matches:false}),Worker,WebAssembly,URL:TestURL,URLSearchParams,Image,Blob,
     performance:{now:()=>now++},Float32Array,Float64Array,Uint8ClampedArray,Math,Date,structuredClone,AbortController,
@@ -399,4 +399,21 @@ test('recorded delivery windows distinguish request targets, callbacks and fresh
   assert.ok(window.snapshots>=28&&window.snapshots<=32);
   assert.equal(window.demandStepsPerSecond,1440);
   assert.match(app.ids.get('gpuExperimentStatus').textContent,/Browser callbacks:/);
+});
+
+test('Auto on slow animation callbacks budgets visual markers while preserving numerical throughput and exact comparison density',()=>{
+  const app=appHarness('webgpu',{path:'/airflow-lab/performance.html',page:'performance.html',search:'&profile=auto60&pace=2',workerDelay:2});
+  app.workers[0].ready();app.click('gpuBenchmarkPreset');const start=app.run('performance.now()');
+  for(let i=1;i<=24*55;i++){
+    const time=start+i*1000/24;app.advance(time);app.run(`frame(${time})`);
+  }
+  assert.ok(app.run('gpuLoadGovernor.optimization.acceptedPolicy.batch')>=18);
+  assert.ok(app.run('lastFlowRate')>500,'Auto must not settle at the 60 × 4 regression');
+  assert.ok(app.run('activeTracerCount')<app.run('particleCount'));
+  assert.ok(app.run('activeTracerCount')>=60);assert.ok(app.run('gpuParticleDebt')<=96);
+  assert.match(app.ids.get('perfTracerCount').textContent,/\d+ \/ 190/);
+  app.ids.get('prediction').value='unsure';app.click('startComparison');
+  assert.equal(app.run('activeTracerCount'),190);finishWorkerPair(app);
+  assert.deepEqual(app.state().captures.map(r=>r.steps),[2000,2000]);
+  assert.equal(app.run('activeTracerCount'),190);
 });

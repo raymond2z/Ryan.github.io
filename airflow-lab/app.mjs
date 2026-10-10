@@ -4,7 +4,7 @@ import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,force
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs?build=gpu-cadence-feedback-20261010';
 import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=gpu-cadence-20261010';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs?build=stage4c-20261010';
-import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop} from './gpu-experiment.mjs?build=gpu-cadence-feedback-20261010';
+import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs?build=gpu-throughput-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
@@ -80,7 +80,9 @@ function experimentConfiguration(){
     profile:gpuExperimentPage?experimentProfile:'classroom',paceMultiplier:gpuExperimentPage?flowPaceMultiplier:1,
     requestedPaintHz:gpuExperimentPage?GPU_PROFILES[experimentProfile].paintHz:30,
     requestedUpdateHz:gpuExperimentPage?(experimentProfile==='auto60'?'auto 15–60':GPU_PROFILES[experimentProfile].updateHz):'classroom scheduler',
-    flowScheduler:gpuExperimentPage?'independent timer + Worker completion':'classroom animation callback'};
+    flowScheduler:gpuExperimentPage?'independent timer + Worker completion':'classroom animation callback',
+    optimizationObjective:gpuExperimentPage&&experimentProfile==='auto60'?'measured solver steps/s':null,
+    markerPolicy:gpuExperimentPage&&experimentProfile==='auto60'?'adaptive visual density':'fixed marker density'};
 }
 function experimentPolicy(){return experimentProfile==='auto60'?gpuLoadGovernor.state:GPU_PROFILES[experimentProfile];}
 function adaptiveGpuBatch(){return gpuExperimentPage&&experimentProfile==='auto60'?gpuLoadGovernor.state.batch:stepper.batch;}
@@ -145,14 +147,16 @@ function refreshPerformance(){
     $('perfVisual').textContent=ms(recentMean(paintSamples,'visualWorkMs'));
     $('perfReused').textContent=lastReusedPaintHz.toFixed(0)+' /s';
     $('perfTracerDrops').textContent=tracerDroppedSteps.toFixed(0)+' visual steps';
+    $('perfTracerCount').textContent=activeTracerCount+' / '+particleCount;
     $('gpuAdjustmentStatus').textContent=experimentProfile==='auto60'
-      ?gpuExperimentChanges.at(-1)?.description||'Auto starts at 60 paint / 30 flow / 8 steps. It checks actual delivery and work time before increasing load.'
+      ?(gpuExperimentChanges.at(-1)?.description||'Auto starts at 60 paint / 30 flow / 8 steps.')+' · '+gpuLoadGovernor.optimization.phase+' · objective: solver steps/s'
       :'Cadence targets fixed for this profile. The GPU workload selector controls fixed/adaptive batches.';
   }
 }
 function resetPerformance(){
   gpuSamples.length=0;paintSamples.length=0;stepper.reset();resetExperimentPacing();
   gpuExperimentChanges.length=0;tracerDroppedSteps=0;lastTracerDropEvent=0;windowReusedPaints=0;lastReusedPaintHz=0;
+  gpuTracerBudget.reset();activeTracerCount=particleCount;
   lastSnapshotHz=0;lastCanvasFps=0;lastFlowRate=0;lastCallbackHz=0;lastDeliveryWindow=null;
   windowGpuRequests=0;windowAnimationFrames=0;windowPolicyChanged=false;windowInterrupted=false;windowTracerDropStart=0;
   windowGpuSnapshots=0;performanceWindow=performance.now();paintedFrames=0;simulatedSteps=0;
@@ -169,6 +173,9 @@ function exportPerformance(){
     performanceSamples:gpuSamples,paintSamples,
     experiment:{...experimentConfiguration(),active:wasmActive&&engineKind==='webgpu'&&gpuExperimentPage,
       currentPolicy:gpuExperimentPage?experimentPolicy():null,adjustments:gpuExperimentChanges,
+      optimization:gpuExperimentPage&&experimentProfile==='auto60'?gpuLoadGovernor.optimization:null,
+      tracerPresentation:{activeCount:activeTracerCount,nominalCount:particleCount,
+        maxAdvectionPortion:gpuExperimentPage&&experimentProfile==='auto60'&&comparison.phase==='idle'?64:24},
       deliveredWindow:gpuExperimentPage?lastDeliveryWindow:null,
       reusedRasterPaintsHz:lastReusedPaintHz,tracerDroppedSteps},
     note:'Queue/readback wait includes GPU execution and synchronization; independent fluid frames/s are not Canvas FPS.'};
@@ -336,6 +343,8 @@ function finishComparisonTrial(){
   }
 }
 const particleCount=useFastGrid?190:460;
+const gpuTracerBudget=createGpuTracerBudget({baseCount:particleCount});
+let activeTracerCount=particleCount;
 const maxTrailPoints=useFastGrid?16:22;
 const paintInterval=useFastGrid?1000/30:0;
 let lastPaint=0;
@@ -348,7 +357,7 @@ function makeParticle(startAnywhere=true) {
   }
   return {x,y,trail:[]};
 }
-function resetParticles(){particles=Array.from({length:particleCount},()=>makeParticle());}
+function resetParticles(){particles=Array.from({length:particleCount},()=>makeParticle());activeTracerCount=particleCount;gpuTracerBudget.reset();}
 function notify(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
 function paint(reuseGpuRaster=false,visualStarted=null) {
   const paintStarted=performance.now();
@@ -390,10 +399,11 @@ function paint(reuseGpuRaster=false,visualStarted=null) {
   for(let y=0;y<H;y+=20){ctx.moveTo(0,y*SY);ctx.lineTo(canvas.width,y*SY);}ctx.stroke();
   if($('particles').checked) {
     ctx.strokeStyle='rgba(236,255,255,.26)';ctx.lineWidth=1.1;ctx.beginPath();
-    for(const p of particles) {
+    for(let j=0;j<Math.min(activeTracerCount,particles.length);j++) {
+      const p=particles[j];
       if(p.trail.length){ctx.moveTo(p.trail[0][0]*SX,p.trail[0][1]*SY);for(const pos of p.trail)ctx.lineTo(pos[0]*SX,pos[1]*SY);ctx.lineTo(p.x*SX,p.y*SY);}
     }ctx.stroke();ctx.fillStyle='rgba(230,253,255,.82)';
-    ctx.beginPath();for(const p of particles){ctx.moveTo(p.x*SX+1.6,p.y*SY);ctx.arc(p.x*SX,p.y*SY,1.6,0,Math.PI*2);}ctx.fill();
+    ctx.beginPath();for(let j=0;j<Math.min(activeTracerCount,particles.length);j++){const p=particles[j];ctx.moveTo(p.x*SX+1.6,p.y*SY);ctx.arc(p.x*SX,p.y*SY,1.6,0,Math.PI*2);}ctx.fill();
   }
   if($('vectors').checked) {
     ctx.strokeStyle='rgba(224,248,252,.6)';ctx.lineWidth=1.4;
@@ -434,7 +444,7 @@ function moveParticles(steps) {
     return [interpolate(sim.ux),interpolate(sim.uy)];
   };
   const valid=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>=1&&x<W-2&&y>=2&&y<H-2&&!sim.solid[Math.floor(x)+Math.floor(y)*W];
-  for(let j=0;j<particles.length;j++) {
+  for(let j=0;j<Math.min(activeTracerCount,particles.length);j++) {
     const p=particles[j];p.trail.push([p.x,p.y]);if(p.trail.length>maxTrailPoints)p.trail.shift();
     for(let k=0;k<substeps;k++){
       if(!valid(p.x,p.y)){particles[j]=makeParticle(false);break;}
@@ -653,7 +663,8 @@ function frame(now) {
       const entry={...change,timestamp:Date.now(),description:`${change.control}: ${change.from} → ${change.to} · ${change.reason}`};
       bounded(gpuExperimentChanges,entry);stabilityEvent('load_adjustment',entry);
     }
-    if(changes.some(c=>c.control!=='batch'))syncExperimentPacing();
+    if(changes.some(c=>['paintHz','updateHz','batch'].includes(c.control)))windowPolicyChanged=true;
+    if(changes.some(c=>['paintHz','updateHz'].includes(c.control)))syncExperimentPacing();
   }
   if(running&&!document.hidden&&!drawing){
     const animation=Number($('animation').value),superFast=animation===24;
@@ -690,7 +701,17 @@ function frame(now) {
     if($('particles').checked&&gpuParticleDebt>0){
       // Divide bursts across frames for smoother tracers, but catch up to the
       // actual solver when GPU snapshots arrive faster than Canvas refreshes.
-      const portion=Math.min(24,Math.ceil(gpuParticleDebt/2));
+      let portion=Math.min(24,Math.ceil(gpuParticleDebt/2));
+      if(researchGpu&&experimentProfile==='auto60'&&comparison.phase==='idle'){
+        const policy=experimentPolicy(),deliveryHz=lastSnapshotHz||policy.updateHz;
+        const split=policy.paintHz>=deliveryHz*1.5&&(lastCallbackHz||policy.paintHz)>=deliveryHz*1.5;
+        const budget=gpuTracerBudget.next({debt:gpuParticleDebt,split,now});portion=budget.portion;
+        if(budget.changed){
+          for(let j=activeTracerCount;j<budget.count;j++)particles[j]=makeParticle();
+          stabilityEvent('visual_adjustment',{from:activeTracerCount,to:budget.count,reason:'bounded tracer integration cost; solver unchanged'});
+        }
+        activeTracerCount=budget.count;
+      }else activeTracerCount=particleCount;
       moveParticles(portion);gpuParticleDebt-=portion;
     }else if(!$('particles').checked)gpuParticleDebt=0;
     paint(reuseRaster,visualStarted);gpuFluidDirty=false;lastPaint=now;
@@ -705,6 +726,8 @@ function frame(now) {
     const deliveredWindow={durationMs:now-performanceWindow,paints:paintedFrames,
       steps:simulatedSteps,snapshots:windowGpuSnapshots,...stabilityActivity(),
       experimentPolicy:researchGpu?experimentPolicy():null,tracerDroppedSteps,
+      optimization:researchGpu&&experimentProfile==='auto60'?gpuLoadGovernor.optimization:null,
+      tracerCount:activeTracerCount,tracerNominalCount:particleCount,
       animationFrames:windowAnimationFrames,requests:windowGpuRequests,
       demandStepsPerSecond:Number($('animation').value)*30*(researchGpu?flowPaceMultiplier:1),
       particlesEnabled:$('particles').checked,interrupted:windowInterrupted,policyChanged:windowPolicyChanged,
@@ -873,7 +896,7 @@ function changeGpuExperiment(){
 $('gpuProfile').value=experimentProfile;$('gpuDemand').value=String(flowPaceMultiplier);
 $('gpuExperimentPanel').hidden=!gpuExperimentPage;
 $('gpuExperimentMetrics').hidden=!gpuExperimentPage;
-if(gpuExperimentPage)$('perfSchedulingNote').textContent='Flow requests use a separate timer and Worker completion. Browser callbacks still limit drawing. Extra tracer paints reuse the latest field raster. Auto checks actual delivery, work time and tracer backlog; sustained shortfalls reduce load. Recovery needs measured headroom. Grid, wind and shape remain your choices.';
+if(gpuExperimentPage)$('perfSchedulingNote').textContent='Auto measures solver steps/s before retaining each batch or cadence trial; slower trials restore the previous settings. Marker density adapts separately to keep visual work bounded. Grid, wind, shape and numerical solver steps are unchanged. Compare visible markers, fresh fields and simulation throughput separately.';
 ['gpuProfile','gpuDemand'].forEach(id=>$(id).addEventListener('change',changeGpuExperiment));
 $('gpuBenchmarkPreset').addEventListener('click',()=>{
   if(!gpuExperimentPage||comparison.active||stability.active)return;
@@ -894,7 +917,7 @@ $('startStability')?.addEventListener('click',()=>{
   }
   stability.start({durationMinutes:Number($('stabilityDuration').value),config:stabilityConfig(),
     now:performance.now(),wallTime:new Date().toISOString()});
-  if(gpuExperimentPage)stabilityEvent('experiment_policy_snapshot',{build:GPU_EXPERIMENT_BUILD,policy:experimentPolicy()});
+  if(gpuExperimentPage)stabilityEvent('experiment_policy_snapshot',{build:GPU_EXPERIMENT_BUILD,policy:experimentPolicy(),optimization:gpuLoadGovernor.optimization});
   stabilityFinishedShown=false;refreshStability();
   stabilityTimer=setInterval(refreshStability,250);
 });

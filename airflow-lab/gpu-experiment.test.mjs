@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop} from './gpu-experiment.mjs';
+import {experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs';
 import {createGpuPaintPacer} from './live-performance.mjs';
 
 test('profiles and increased demand require the dedicated experiment page',()=>{
@@ -34,28 +34,31 @@ test('60 Hz paint deadlines work independently from 30 Hz flow delivery',()=>{
     assert.ok(Math.abs(paints-600)<=2,`${displayHz} Hz paints: ${paints}`);
   }
 });
-function window(governor,second,{workerMs=3,visualMs=1,steps=24,allowBatch=true,paints=governor.state.paintHz,snapshots=governor.state.updateHz,animationFrames=60,demandStepsPerSecond=1440,particlesEnabled=true,tracerDroppedStepsDelta=0,rates=true}={}){
-  for(let i=0;i<30;i++){governor.observeWorker({steps,workerMs,roundTripMs:workerMs+1});governor.observeVisual(visualMs);}
-  if(rates)governor.observeRates({durationMs:1000,paints,snapshots,animationFrames,demandStepsPerSecond,particlesEnabled,
+function window(governor,second,{workerMs=3,roundTripMs=workerMs+1,visualMs=1,steps=governor.state.batch,totalSteps=null,allowBatch=true,paints=governor.state.paintHz,snapshots=governor.state.updateHz,animationFrames=60,demandStepsPerSecond=1440,particlesEnabled=true,tracerDroppedStepsDelta=0,rates=true}={}){
+  for(let i=0;i<30;i++){governor.observeWorker({steps,workerMs,roundTripMs});governor.observeVisual(visualMs);}
+  if(rates)governor.observeRates({durationMs:1000,paints,snapshots,steps:totalSteps??steps*snapshots,animationFrames,demandStepsPerSecond,particlesEnabled,
     tracerDroppedStepsDelta,running:true,hidden:false,interacting:false,experimentPolicy:governor.state},second*1000);
   return governor.evaluate(second*1000,{allowBatch});
 }
-test('auto requires three good windows, uses headroom and stays within 15–60 Hz and 4–24 steps',()=>{
-  const gov=createGpuLoadGovernor();gov.evaluate(0);
-  window(gov,1);window(gov,2);assert.equal(gov.state.updateHz,30);
-  const changes=window(gov,3);assert.equal(gov.state.updateHz,40);assert.ok(changes.some(c=>c.control==='updateHz'));
-  for(let i=4;i<=40;i++)window(gov,i);
+test('healthy hardware measures each candidate before retaining throughput gains and fulfills demand',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);let decisions=0;
+  for(let i=1;i<=160;i++){
+    const changes=window(gov,i);decisions+=changes.filter(c=>c.control==='throughputTrial').length;
+    assert.ok(gov.state.updateHz>=15&&gov.state.updateHz<=60);
+    assert.ok(gov.state.batch>=4&&gov.state.batch<=24);
+  }
   assert.deepEqual(gov.state,{paintHz:60,updateHz:60,batch:24});
-  for(let i=41;i<=80;i++)window(gov,i,{workerMs:120,visualMs:40});
-  assert.deepEqual(gov.state,{paintHz:30,updateHz:15,batch:4});
+  assert.equal(gov.optimization.phase,'holding');assert.ok(decisions>=8);
   gov.reset();assert.deepEqual(gov.state,{paintHz:60,updateHz:30,batch:8});
 });
-test('visual overload lowers painting, request cadence and adaptive advection demand; fixed batches stay fixed',()=>{
+test('visual overload reduces drawing separately and fixed batches remain fixed',()=>{
   const gov=createGpuLoadGovernor();gov.evaluate(0);const changes=window(gov,1,{visualMs:25});
-  assert.deepEqual(gov.state,{paintHz:30,updateHz:20,batch:6});assert.ok(changes.every(c=>c.workerP95===4&&c.visualP95===25));
-  const fixed=createGpuLoadGovernor();fixed.evaluate(0);for(let i=1;i<=8;i++)window(fixed,i,{workerMs:100,visualMs:30,allowBatch:false});
+  assert.deepEqual(gov.state,{paintHz:30,updateHz:30,batch:8});
+  assert.ok(changes.some(c=>c.control==='paintHz'));assert.ok(!changes.some(c=>c.control==='batch'));
+  const fixed=createGpuLoadGovernor();fixed.evaluate(0);
+  for(let i=1;i<=8;i++)window(fixed,i,{workerMs:100,visualMs:30,snapshots:5,allowBatch:false});
   assert.equal(fixed.state.batch,8);
-  for(let i=9;i<=28;i++)window(fixed,i,{allowBatch:false});assert.equal(fixed.state.paintHz,60);
+  for(let i=9;i<=45;i++)window(fixed,i,{allowBatch:false});assert.equal(fixed.state.paintHz,60);assert.equal(fixed.state.batch,8);
 });
 test('invalid or sparse timing and partial demand packets do not manufacture adaptation evidence',()=>{
   const gov=createGpuLoadGovernor();gov.evaluate(0);
@@ -66,26 +69,26 @@ test('invalid or sparse timing and partial demand packets do not manufacture ada
   assert.deepEqual(gov.evaluate(1999),[]);assert.deepEqual(gov.evaluate(NaN),[]);
 });
 
-test('long pauses discard old timing and restart the headroom observation window',()=>{
-  const gov=createGpuLoadGovernor();gov.evaluate(0);window(gov,1);window(gov,2);
-  for(let i=0;i<30;i++){gov.observeWorker({steps:24,workerMs:3,roundTripMs:4});gov.observeVisual(1);}
-  assert.deepEqual(gov.evaluate(100000),[]);assert.equal(gov.state.updateHz,30);
-  window(gov,101);window(gov,102);assert.equal(gov.state.updateHz,30);
-  window(gov,103);assert.equal(gov.state.updateHz,40);
+test('a long pause restores the accepted policy and fresh evidence is required before another trial',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);window(gov,1);window(gov,2);window(gov,3);
+  assert.equal(gov.optimization.phase,'measuring trial');assert.equal(gov.state.batch,10);
+  const changes=gov.evaluate(100000);
+  assert.equal(gov.state.batch,8);assert.equal(gov.optimization.phase,'holding');
+  assert.ok(changes.some(c=>c.reason.includes('timing interrupted')));
+  window(gov,101);window(gov,102);assert.equal(gov.optimization.phase,'holding');
+  for(let i=103;i<=109;i++)window(gov,i);assert.equal(gov.optimization.phase,'holding');
+  window(gov,110);assert.equal(gov.optimization.phase,'measuring trial');
 });
 
-test('three sustained delivery shortfalls lower targets even when per-work timings look healthy',()=>{
+test('sustained delivery shortfalls lower ceilings without collapsing the accepted batch',()=>{
   const gov=createGpuLoadGovernor();gov.evaluate(0);
-  for(let i=1;i<=3;i++)window(gov,i);
-  assert.equal(gov.state.updateHz,40);
-  let changes;
-  for(let i=4;i<=6;i++)changes=window(gov,i,{paints:24,snapshots:24,animationFrames:24,workerMs:11,visualMs:6.6});
-  assert.equal(gov.state.paintHz,30);assert.equal(gov.state.updateHz,30);
+  const changes=[];
+  for(let i=1;i<=3;i++)changes.push(...window(gov,i,{paints:24,snapshots:18,animationFrames:24,workerMs:11,visualMs:6.6}));
+  assert.equal(gov.state.paintHz,30);assert.equal(gov.state.updateHz,20);assert.equal(gov.state.batch,8);
   assert.ok(changes.some(c=>c.reason.includes('measured paint')));
-  assert.ok(changes.some(c=>c.reason.includes('measured flow')));
-  assert.equal(changes[0].measuredPaintHz,24);
-  for(let i=7;i<=40;i++)window(gov,i,{paints:24,snapshots:30,animationFrames:24,workerMs:11,visualMs:4});
-  assert.equal(gov.state.paintHz,30,'a 24 Hz callback stream cannot justify a 60 Hz recovery');
+  assert.ok(changes.some(c=>c.reason.includes('preserve batch')));
+  for(let i=4;i<=40;i++)window(gov,i,{paints:24,snapshots:gov.state.updateHz,animationFrames:24,workerMs:11,visualMs:4});
+  assert.equal(gov.state.paintHz,30,'a 24 Hz callback stream cannot justify 60 Hz recovery');
 });
 test('one slow delivery window is tolerated; paint recovery needs cooldown and real delivery',()=>{
   const gov=createGpuLoadGovernor();gov.evaluate(0);
@@ -108,7 +111,7 @@ test('missing, interrupted, mixed-policy and stale rates cannot justify load inc
     for(let second=1;second<=8;second++){
       const now=second*1000;
       if(mode!=='missing'){
-        const r={durationMs:1000,paints:60,snapshots:30,animationFrames:60,demandStepsPerSecond:1440,
+        const r={durationMs:1000,paints:60,snapshots:30,steps:240,animationFrames:60,demandStepsPerSecond:1440,
           tracerDroppedStepsDelta:0,particlesEnabled:true,running:true,hidden:false,interacting:false,experimentPolicy:gov.state};
         if(['hidden','interacting','interrupted','policyChanged'].includes(mode))r[mode]=true;
         if(mode==='mismatched')r.experimentPolicy={paintHz:30,updateHz:60};
@@ -120,13 +123,12 @@ test('missing, interrupted, mixed-policy and stale rates cannot justify load inc
     assert.equal(gov.state.updateHz,30,mode);assert.equal(gov.state.batch,8,mode);
   }
 });
-test('sustained capped tracer backlog reduces adaptive batches while fixed mode stays fixed',()=>{
+test('tracer backlog is presentation evidence and cannot directly cut numerical batches',()=>{
   for(const allowBatch of [true,false]){
     const gov=createGpuLoadGovernor();gov.evaluate(0);
     window(gov,1,{tracerDroppedStepsDelta:20,allowBatch});
     const changes=window(gov,2,{tracerDroppedStepsDelta:20,allowBatch});
-    assert.equal(gov.state.batch,allowBatch?6:8);
-    assert.equal(changes.some(c=>c.reason.includes('tracer backlog')),allowBatch);
+    assert.equal(gov.state.batch,8);assert.ok(!changes.some(c=>c.control==='batch'));
   }
 });
 test('independent flow loop owns one timer, waits for completion and cancels stale wakes',()=>{
@@ -141,4 +143,81 @@ test('independent flow loop owns one timer, waits for completion and cancels sta
   busy=true;fire();assert.equal(timers.size,0);
   busy=false;loop.wake();fire();assert.equal(timers.size,1);
   loop.stop();assert.equal(loop.active,false);assert.equal(timers.size,0);stale();assert.equal(ticks,3);
+});
+
+test('a slower larger-batch trial restores the accepted batch after two regressing windows',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);for(let i=1;i<=3;i++)window(gov,i);
+  assert.equal(gov.state.batch,10);
+  window(gov,4,{snapshots:16,workerMs:50});
+  const changes=window(gov,5,{snapshots:16,workerMs:50});
+  assert.deepEqual(gov.optimization.acceptedPolicy,{updateHz:30,batch:8});
+  assert.equal(gov.state.batch,8);assert.equal(gov.optimization.phase,'holding');
+  assert.equal(gov.optimization.lastTrial.validWindows,2);
+  assert.ok(gov.optimization.lastTrial.changePercent<-30);
+  assert.ok(changes.some(c=>c.control==='throughputTrial'&&c.trial.decision==='restored'));
+});
+test('a fixed 14.8 ms delivery floor cannot drive progressively smaller batches at 60 Hz',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);
+  for(let i=1;i<=160;i++)window(gov,i,{workerMs:6+gov.state.batch*.1,roundTripMs:14.8,
+    paints:24,animationFrames:24,tracerDroppedStepsDelta:20});
+  assert.deepEqual(gov.optimization.acceptedPolicy,{updateHz:60,batch:24});
+  assert.equal(gov.state.batch,24);assert.equal(gov.state.paintHz,30);
+  assert.equal(gov.optimization.referenceStepsPerSecond,1440);
+});
+test('high cadence that loses solver throughput is rejected without shrinking the accepted batch',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);const decisions=[];
+  for(let i=1;i<=160;i++){
+    const snapshots=gov.state.updateHz===60?35:gov.state.updateHz;
+    decisions.push(...window(gov,i,{snapshots,workerMs:7,roundTripMs:14.8,paints:24,animationFrames:24}));
+  }
+  assert.deepEqual(gov.optimization.acceptedPolicy,{updateHz:40,batch:24});
+  assert.ok(decisions.some(c=>c.control==='throughputTrial'&&c.trial.candidate.updateHz===60&&c.trial.decision==='restored'));
+  assert.ok(gov.state.batch>=22,'only a reversible two-step trial may differ from accepted batch');
+});
+test('fixed overhead favors a larger batch and a lower request rate rather than chasing 60 fields',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);
+  for(let i=1;i<=180;i++)window(gov,i,{snapshots:Math.min(gov.state.updateHz,28),workerMs:7,roundTripMs:35,
+    paints:24,animationFrames:24});
+  assert.deepEqual(gov.optimization.acceptedPolicy,{updateHz:30,batch:24});
+  assert.ok(gov.optimization.referenceStepsPerSecond>=600);
+});
+test('three clean same-batch windows are required and a failed trial cannot accept mixed-policy evidence',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);for(let i=1;i<=3;i++)window(gov,i);
+  for(let i=4;i<=7;i++){
+    const rate={durationMs:1000,paints:60,snapshots:30,steps:1000,animationFrames:60,demandStepsPerSecond:1440,
+      tracerDroppedStepsDelta:0,particlesEnabled:true,running:true,hidden:false,interacting:false,
+      experimentPolicy:{...gov.state,batch:8}};
+    gov.observeRates(rate,i*1000);window(gov,i,{rates:false});
+  }
+  assert.equal(gov.optimization.validTrialWindows,0);
+  for(let i=8;i<=10;i++)window(gov,i);
+  assert.equal(gov.optimization.lastTrial.decision,'retained');
+  assert.equal(gov.optimization.lastTrial.validWindows,3);
+  assert.equal(gov.optimization.lastTrial.trialStepsPerSecond,300);
+});
+test('a stalled trial times out and restores the checkpoint without fabricated throughput',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);for(let i=1;i<=3;i++)window(gov,i);
+  for(let i=4;i<=19;i++)window(gov,i,{rates:false});
+  assert.equal(gov.state.batch,8);assert.equal(gov.optimization.lastTrial.decision,'restored');
+  assert.equal(gov.optimization.lastTrial.trialStepsPerSecond,null);
+});
+test('tracer budgeting advances larger debt with bounded work and gradual marker recovery',()=>{
+  for(const baseCount of [64,190,460]){
+    const tracer=createGpuTracerBudget({baseCount});
+    let result=tracer.next({debt:24,now:0});assert.equal(result.count,baseCount);assert.equal(result.portion,24);
+    result=tracer.next({debt:96,now:1000});assert.equal(result.portion,64);
+    assert.ok(result.count*Math.ceil(result.portion/2)<=baseCount*12);
+    const reduced=result.count;result=tracer.next({debt:12,now:2000});assert.equal(result.count,reduced);
+    result=tracer.next({debt:12,now:5000});assert.ok(result.count>=reduced&&result.count<=baseCount);
+    tracer.reset();assert.equal(tracer.count,baseCount);
+    result=tracer.next({debt:24,split:true,now:6000});assert.equal(result.portion,12);assert.equal(result.count,baseCount);
+  }
+});
+
+test('user activity cancels a throughput trial so new conditions cannot validate its old baseline',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);for(let i=1;i<=3;i++)window(gov,i);
+  gov.observeRates({running:true,hidden:false,interacting:false,interrupted:true},4000);
+  window(gov,4,{rates:false});
+  assert.equal(gov.state.batch,8);assert.equal(gov.optimization.phase,'holding');
+  assert.match(gov.optimization.lastTrial.reason,/user activity/);
 });
