@@ -15,8 +15,8 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://raymond2z.github.io/Ryan.github.io/airflow-lab/social-preview.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e1824'/%3E%3Cpath d='M4 9h12q8 0 12-4M4 16h9q6 0 9 4h6M4 23h10' fill='none' stroke='%235de4d1' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?build=stage3-2-force-20261010">
-  <script type="module" src="app.mjs?build=stage3-2-force-20261010"></script>
+  <link rel="stylesheet" href="styles.css?build=stage3-3-perf-20261010">
+  <script type="module" src="app.mjs?build=stage3-3-perf-20261010"></script>
 </head>
 <body>
   <header class="header">
@@ -44,6 +44,35 @@
   <span id="engineStatus" role="status" aria-live="polite">Selecting the best available engine…</span>
   <span id="livePerformance" aria-label="Live performance estimate">Live performance: measuring…</span>
 </div>
+<details class="perf-diagnostics" id="performancePanel">
+  <summary>Performance diagnostics <span class="perf-experimental">Stage 3.3 · experimental</span></summary>
+  <div class="perf-body">
+    <p>Measure the real display pipeline. <strong>Canvas FPS is NOT GPU solver Steps/s.</strong>
+      Timing uses browser wall clocks (not hardware GPU timestamps). GPU queue + readback wait are combined.</p>
+    <div class="perf-control-row">
+      <label for="batchMode">GPU workload</label>
+      <select id="batchMode">
+        <option value="fixed">Fixed 8 steps · previous behavior</option>
+        <option value="adaptive">Adaptive · 4–24 steps per update</option>
+      </select>
+      <button type="button" class="secondary-button" id="resetPerformance">Reset readings</button>
+      <button type="button" class="secondary-button" id="exportPerformance">Export diagnostics JSON</button>
+    </div>
+    <div class="perf-measures">
+      <div><span>Canvas paint</span><strong id="perfPaint">—</strong></div>
+      <div><span>GPU encode / dispatch</span><strong id="perfEncode">—</strong></div>
+      <div><span>GPU queue + readback wait</span><strong id="perfWait">—</strong></div>
+      <div><span>GPU unpack to fields</span><strong id="perfUnpack">—</strong></div>
+      <div><span>Worker round trip</span><strong id="perfRoundTrip">—</strong></div>
+      <div><span>Unique GPU frames/s</span><strong id="perfSnapshots">—</strong></div>
+      <div><span>Batch size</span><strong id="perfBatch">—</strong></div>
+      <div><span>Frame painting vs samples</span><strong id="perfStatus">Waiting…</strong></div>
+    </div>
+    <p class="perf-footnote">Adaptive batches target a bounded Worker turnaround rather than maximum raw throughput.
+      Rendering uses the latest fluid fields with a capped 30 FPS Canvas schedule; extra paint frames may animate tracers
+      without a new GPU snapshot. Use the same grid, wind speed, force setting, and device for Fixed vs Adaptive comparisons.</p>
+  </div>
+</details>
 <p class="quality-note">Fast mode uses a smaller simulation grid for smoother mobile operation. Detailed mode retains the original grid. Switching modes reloads the page and clears captured views. Results may differ between modes; compare shapes within the same mode. Animation pace changes how quickly steps are calculated, not wind speed.</p><div class="tools-row"><div class="tool-buttons" role="group" aria-label="Canvas tool"><button data-tool="move" aria-pressed="true" title="Drag the object to a new position"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M8 7l4-4 4 4M8 17l4 4 4-4M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>Move</button><button class="advanced-only" data-tool="probe" aria-pressed="false" title="Click the flow to take a reading"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>Probe</button><button class="advanced-only" data-tool="draw" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m4 16 12-12 4 4-12 12-5 1 1-5Zm10-10 4 4"/></svg>Draw</button><button class="advanced-only" data-tool="erase" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m3 14 11-11 7 7-11 11H8l-5-7Zm5-5 7 7m-5 5h12"/></svg>Erase</button><button class="advanced-only" data-tool="push" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 7h12q5 0 5-4M3 12h17M3 17h12q5 0 5 4"/></svg>Stir</button></div><button id="clearButton" class="text-button">Clear shapes</button></div>
         <div class="canvas-help" id="toolHint">Drag the object to reposition it. Release to restart the flow. Arrow keys move it too.</div>
       </section>
