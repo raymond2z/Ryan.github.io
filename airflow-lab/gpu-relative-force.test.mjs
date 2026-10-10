@@ -82,6 +82,14 @@ test('benchmark routes GPU force through Rust parity independently of Student UI
   assert.match(core,/javascriptForce/);
   for(const id of new Set([...ui.matchAll(/\$\('([A-Za-z][A-Za-z0-9]*)'\)/g)].map(m=>m[1])))
     assert.ok(html.includes('id="'+id+'"'),'Missing benchmark HTML #'+id);
-  const student=readFileSync(new URL('./student-gpu-worker-v1.mjs',import.meta.url),'utf8');
-  assert.doesNotMatch(student,/gpu-relative-force/,'Student Lab must not incur unvalidated force overhead');
+  const student=readFileSync(new URL('./student-gpu-worker-v2.mjs',import.meta.url),'utf8');
+  assert.match(student,/createGpuForceController/,'Stage 3.2 may opt in to verified GPU force math');
+  assert.match(student,/if\(forceEnabled&&forceController\)forceController.encodeHalfStep\(encoder\)/,
+    'Student Lab must not incur force passes when toggle is off');
+  assert.match(student,/if\(forceEnabled&&forceController\)forceController.encodeReadback\(encoder\)/,
+    'GPU force readback only while explicitly enabled');
+  assert.match(student,/type:'forceStatus',enabled:false,available:false/,
+    'Force setup errors must be isolated from the flow solver');
+  assert.doesNotMatch(student,/new Float32Array\(.*post.*\)/,
+    'Force must remain GPU-resident rather than downloading nine distributions per step');
 });
