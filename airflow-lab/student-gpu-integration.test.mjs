@@ -9,7 +9,7 @@ test('Student Lab offers WebGPU, Rust, JavaScript and Auto choices',()=>{
   for(const name of ['auto','webgpu','wasm','javascript'])
     assert.ok(html.includes('value="'+name+'"'),'Missing engine '+name);
   assert.match(app,/engineChoice=\['javascript','wasm','webgpu'\]/);
-  assert.match(app,/engineKind==='webgpu'\?'\.\/student-gpu-worker-v2\.mjs'/);
+  assert.match(app,/engineKind==='webgpu'\?'\.\/student-gpu-worker-v3\.mjs'/);
   assert.match(app,/const wasGpu=engineKind==='webgpu'/);
   assert.match(app,/beginRustEngine\('wasm'\)/,'Rust must be fallback if GPU cannot initialize or compute');
   assert.match(app,/data\.forceOptIn/,'GPU force must be explicitly supported by the worker');
