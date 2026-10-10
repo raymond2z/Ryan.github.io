@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {makeAdaptiveStepper,STEP_FIXED,STEP_MIN,STEP_MAX,MAX_TRACER_DEBT,
-  RENDER_INTERVAL_MS,shouldDrawGpuFrame,forceFrameTiming} from './live-performance.mjs';
+  RENDER_INTERVAL_MS,shouldDrawGpuFrame,createGpuPaintPacer,FRAME_ALIGNMENT_MARGIN_MS,forceFrameTiming} from './live-performance.mjs';
 const get=name=>readFileSync(new URL('./'+name,import.meta.url),'utf8');
 
 test('batch cap is bounded and begins with legacy 8-step workload',()=>{
@@ -33,6 +33,32 @@ test('Canvas paint is capped and independent of GPU sample delivery',()=>{
   assert.equal(shouldDrawGpuFrame({...base,lastPaint:950,fluidDirty:false,particlesEnabled:false}),false);
   assert.equal(shouldDrawGpuFrame({...base,lastPaint:950,fluidDirty:true,running:false}),true);
 });
+test('absolute-time paint scheduler achieves ~30 fps on 60/90/120 Hz requestAnimationFrame',()=>{
+  assert.ok(FRAME_ALIGNMENT_MARGIN_MS>=1&&FRAME_ALIGNMENT_MARGIN_MS<3);
+  for(const hz of [60,90,120]){
+    const pace=createGpuPaintPacer(),n=10*hz;
+    let paints=0;
+    for(let i=0;i<n;i++)if(pace.shouldDraw({
+      now:i*1000/hz,fluidDirty:true,tracerDebt:0,running:true,particlesEnabled:false
+    }))paints++;
+    assert.ok(paints>=295&&paints<=305,
+      hz+' Hz led to '+paints+' paints in 10 seconds; expected approximately 300');
+  }
+});
+test('GPU paint pacer skips unchanged fields and recovers after delayed/paused callbacks',()=>{
+  const pace=createGpuPaintPacer();
+  const o={now:1000,fluidDirty:false,tracerDebt:0,running:true,particlesEnabled:true};
+  assert.equal(pace.shouldDraw(o),false);
+  assert.equal(pace.nextDue,null);
+  assert.equal(pace.shouldDraw({...o,fluidDirty:true}),true);
+  assert.equal(pace.shouldDraw({...o,now:1017,fluidDirty:true}),false);
+  assert.equal(pace.shouldDraw({...o,now:1033.2,fluidDirty:true}),true);
+  assert.equal(pace.shouldDraw({...o,now:1034,fluidDirty:true}),false);
+  assert.equal(pace.shouldDraw({...o,now:1600,fluidDirty:true}),true);
+  assert.equal(pace.shouldDraw({...o,now:1617,fluidDirty:false,tracerDebt:0}),false);
+  pace.reset();assert.equal(pace.nextDue,null);
+  assert.equal(pace.shouldDraw({...o,now:2000,fluidDirty:false,tracerDebt:2}),true);
+});
 test('diagnostic display rounds actual elapsed wall-clock values',()=>{
   assert.equal(forceFrameTiming(12.36),12.4);
   assert.equal(forceFrameTiming(NaN),null);
@@ -56,7 +82,8 @@ test('Stage 3.3 student controls keep fixed baseline and support adaptive/export
   assert.match(app,/tuningPreference==='adaptive'\?'adaptive':'fixed'/);
   assert.match(app,/sendCount=engineKind==='webgpu'/);
   assert.match(app,/Math\.min\(count,adaptiveGpu\?stepper\.batch:STEP_FIXED\)/);
-  assert.match(app,/shouldDrawGpuFrame/);
+  assert.match(app,/gpuPaintPacer\.shouldDraw/);
+  assert.match(app,/gpuPaintPacer\.reset\(\)/);
   assert.match(app,/gpuFluidDirty=true/);
   assert.match(app,/gpuParticleDebt=0/);
   assert.match(app,/performanceSamples:gpuSamples,paintSamples/);
