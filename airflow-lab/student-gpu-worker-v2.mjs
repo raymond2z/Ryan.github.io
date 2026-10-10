@@ -189,7 +189,14 @@ async function step(msg){
   if(forceEnabled&&forceController)forceController.encodeReadback(encoder);
   device.queue.submit([encoder.finish()]);
   const readPending=readback.mapAsync(GPUMapMode.READ);
-  const forcePending=forceEnabled&&forceController?forceController.read():Promise.resolve(null);
+  const forcePending=forceEnabled&&forceController
+    ?forceController.read().catch(error=>{
+      // The optional force buffer must not take down the main fluid animation.
+      forceEnabled=false;forceController=null;
+      self.postMessage({type:'forceStatus',enabled:false,available:false,
+        message:'GPU force readback failed; fluid animation continues: '+String(error?.message||error)});
+      return null;
+    }):Promise.resolve(null);
   const [,forceReading]=await Promise.all([readPending,forcePending]);
   const packed=new Float32Array(readback.getMappedRange().slice(0));
   readback.unmap();
