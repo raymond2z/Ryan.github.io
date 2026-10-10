@@ -56,7 +56,7 @@ test('Student Lab controls preserve drawing, reset, probe and performance report
   const s=get('app.mjs');
   for(const phrase of ['resetRustField()','updateRustParameters()','sim.translateMask(',
     "type:'push'","type:'step'","type:'params'",
-    "'GPU'","manualSteps","workerInFlight","sim.rho=data.fields.rho"])
+    "'WebGPU'","manualSteps","workerInFlight","sim.rho=data.fields.rho"])
     assert.ok(s.includes(phrase),'Missing UI integration '+phrase);
 });
 
