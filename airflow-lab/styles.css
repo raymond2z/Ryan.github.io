@@ -106,3 +106,12 @@ body[data-level="beginner"] .gpu-force-readout{display:none}
 .comparison-size{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:#315d54}.comparison-size input{width:18px;height:18px;accent-color:#0d7568}
 .previous-comparison{margin:0 26px 20px;border:1px solid #cedddf;border-radius:10px;background:#f6fafb;padding:14px 16px}.previous-comparison>summary{cursor:pointer;font-weight:650;color:#315761;font-size:14px;min-height:28px}.previous-comparison>p{font-size:13px;color:#607787;line-height:1.6}.previous-captures{border:0;padding:8px 0 16px}.previous-comparison .secondary-button{font-size:13px}.repeat-reflection select{max-width:420px}
 @media(max-width:520px){.comparison-options select,.repeat-reflection select{font-size:16px}.previous-comparison{margin:0 18px 16px;padding:12px}.comparison-size{min-height:40px}.previous-captures{grid-template-columns:1fr}}
+
+/* Stage 4C: compact evidence prompts and a record the student can keep. */
+.observation-hint{display:block;font-size:12px;line-height:1.5;color:#587381;font-weight:400;margin-top:5px}
+.learning-progress{margin:0 26px 24px;padding:18px 20px;background:#f3f9f8;border:1px solid #c5dcd6;border-radius:12px;color:#163445}
+.learning-progress h3{font-size:18px;margin:0 0 12px}.fair-review{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;line-height:1.5}.fair-review input{width:20px;height:20px;flex-shrink:0;accent-color:#0d7568}
+.learning-checks{padding:0;list-style:none;display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.learning-checks li{font-size:12px;padding:7px 10px;background:#fff;border:1px solid #cedcde;border-radius:7px;color:#617782}.learning-checks li[data-done=true]{color:#145e54;background:#e3f4ee;border-color:#b0d7c9}
+#learningNext{margin:12px 0 6px;font-weight:650;font-size:14px;line-height:1.6}.learning-progress small{display:block;font-size:12px;line-height:1.6;color:#587381}
+.learning-download{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:16px}.learning-download button{min-height:44px}.learning-download span{flex:1;min-width:200px;font-size:12px;line-height:1.6;color:#587381}.previous-comparison>.secondary-button{margin:6px 10px 0 0}
+@media(max-width:520px){.learning-progress{margin:0 18px 20px;padding:14px}.fair-review{font-size:13px}.learning-download button{width:100%}.learning-download span{min-width:0;flex-basis:100%}}

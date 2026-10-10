@@ -7,6 +7,7 @@ import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs';
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
 import {createMatchedComparison,comparisonPlan,comparisonDifferences,setComparisonShape,COMPARISON_SHAPES,seededRandom} from './shape-comparison.mjs';
+import {learningChecks,makeLearningRecord} from './learning-record.mjs';
 
 const settings={grid:{width:240,height:104},position:{x:72,y:52},speed:.085,viscosity:.025};
 test('every batch size reaches exactly the same observation point for A and B',()=>{
@@ -64,7 +65,7 @@ test('manual speed and angle experiments recognize the chosen variable instead o
 // Worker protocol double; no browser, GPU adapter or changed solver is required.
 function appHarness(engine='webgpu'){
   const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
-  const drawCalls=[];
+  const drawCalls=[],blobs=[];
   const draw=new Proxy({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),measureText:t=>({width:t.length*9}),fillText:t=>drawCalls.push(t)},{get:(o,k)=>o[k]??(()=>{})});
   class Element{
     constructor(tag='div'){this.tagName=tag.toUpperCase();this.dataset={};this.style={};this.disabled=false;this.hidden=false;this.checked=false;this.value='';this.textContent='';this.children=[];this.listeners={};this.attributes={};this.options=[];this.classList={toggle(){}};this.width=1200;this.height=520;}
@@ -110,15 +111,15 @@ function appHarness(engine='webgpu'){
     }
   }
   class Image{set src(value){this.onload();}}
-  class TestURL extends URL{static createObjectURL(){return 'blob:test';}static revokeObjectURL(){}}
-  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,
+  class TestURL extends URL{static createObjectURL(blob){blobs.push(blob);return 'blob:test';}static revokeObjectURL(){}}
+  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,learningChecks,makeLearningRecord,
     document,navigator:{gpu:{}},location:{pathname:'/airflow-lab/',search:'?quality=fast&engine='+engine,href:'https://example.test/airflow-lab/'},
     window:{addEventListener(){}},innerWidth:1200,matchMedia:()=>({matches:false}),Worker,WebAssembly,URL:TestURL,URLSearchParams,Image,Blob,
     performance:{now:()=>now++},Float32Array,Float64Array,Uint8ClampedArray,Math,Date,structuredClone,AbortController,
     requestAnimationFrame(){},setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},console});
   const source=readFileSync(new URL('./app.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replaceAll('import.meta.url',"'https://example.test/airflow-lab/app.mjs'");
   vm.runInContext(source,context);
-  return {ids,workers,drawCalls,run:s=>vm.runInContext(s,context),click:id=>ids.get(id).fire('click'),state:()=>structuredClone(vm.runInContext('({phase:comparison.phase,active:comparison.active,running,steps:sim.time,shape:sim.shape,captures:captures.map(({image,...r})=>r)})',context))};
+  return {ids,workers,drawCalls,blobs,run:s=>vm.runInContext(s,context),click:id=>ids.get(id).fire('click'),state:()=>structuredClone(vm.runInContext('({phase:comparison.phase,active:comparison.active,running,steps:sim.time,shape:sim.shape,captures:captures.map(({image,...r})=>r)})',context))};
 }
 test('application captures exactly matched Worker frames, locks controls and restores free exploration',()=>{
   const app=appHarness();app.workers[0].ready();app.ids.get('prediction').value='b';app.click('startComparison');
@@ -244,4 +245,45 @@ test('repeating restores original conditions and retains previous notes without 
   assert.equal(app.run('previousComparison.round'),2);assert.equal(app.run('previousComparison.captures.length'),2);
   assert.equal(app.run('previousComparison.repeatResult'),'similar');
   app.click('cancelComparison');assert.equal(app.run('previousComparison.conclusion'),'My second explanation');
+});
+
+test('learning record follows written evidence and invalidates review after a view changes',()=>{
+  const app=appHarness();app.workers[0].ready();app.ids.get('prediction').value='unsure';app.click('startComparison');finishWorkerPair(app);
+  const list=()=>app.ids.get('learningChecks').children;
+  assert.equal(app.ids.get('learningProgress').hidden,false);
+  assert.equal(app.ids.get('exportLearningRecord').disabled,false,'Incomplete writing can still be saved');
+  assert.match(app.ids.get('learningNext').textContent,/Describe/);
+  const notes=app.ids.get('captures').children.map(figure=>figure.children[1].children.find(el=>el.tagName==='LABEL').children[0]);
+  notes[0].value='A: blue wake';notes[0].fire('input');notes[1].value='B: short wake';notes[1].fire('input');
+  app.ids.get('fairReviewed').checked=true;app.ids.get('fairReviewed').fire('change');
+  app.ids.get('conclusion').value='I need more testing because the colours are hard to compare.';app.ids.get('conclusion').fire('input');
+  assert.ok(list().every(el=>el.dataset.done==='true'));
+  assert.match(app.ids.get('learningNext').textContent,/writing is recorded/);
+  app.run('selectExperiment("speed")');
+  assert.match(app.ids.get('conclusion').value,/more testing/,'Planning another question does not erase saved work');
+  const remove=app.ids.get('captures').children[1].children[1].children[0].children[1];remove.click();
+  assert.equal(app.ids.get('fairReviewed').checked,false);assert.equal(app.ids.get('fairReviewed').disabled,true);
+  assert.equal(app.ids.get('exportLearningRecord').disabled,true);
+});
+
+test('full downloaded record includes the previous round with its own review and explanation',async()=>{
+  const app=appHarness();app.workers[0].ready();app.ids.get('prediction').value='a';app.click('startComparison');finishWorkerPair(app);
+  app.run("captures[0].note='FIRST-A';captures[1].note='FIRST-B';");app.ids.get('conclusion').value='FIRST-EXPLANATION';app.ids.get('fairReviewed').checked=true;
+  app.click('repeatComparison');assert.equal(app.ids.get('fairReviewed').checked,false);finishWorkerPair(app);
+  app.run("captures[0].note='SECOND-A';captures[1].note='SECOND-B';");app.ids.get('conclusion').value='SECOND-EXPLANATION';app.ids.get('repeatResult').value='unsure';app.ids.get('repeatResult').fire('change');
+  assert.equal(app.ids.get('learningChecks').children.at(-1).dataset.done,'true');
+  app.click('exportLearningRecord');const report=await app.blobs.at(-1).text();
+  for(const word of ['FIRST-A','FIRST-B','FIRST-EXPLANATION','SECOND-A','SECOND-B','SECOND-EXPLANATION','Previous test','Student marked settings reviewed.','Student has not marked settings reviewed.'])assert.ok(report.includes(word),word);
+  app.run('exportLearningRecord(previousComparison.captures,previousComparison)');const previous=await app.blobs.at(-1).text();
+  assert.ok(previous.includes('FIRST-EXPLANATION'));assert.ok(!previous.includes('SECOND-EXPLANATION'));
+  app.click('repeatComparison');assert.equal(app.run('previousComparison.fairReviewed'),false);
+});
+
+test('manual captures retain the prediction from A after editing planning controls',async()=>{
+  const app=appHarness('javascript');app.ids.get('prediction').value='unsure';app.click('captureButton');
+  app.ids.get('prediction').value='a';app.click('captureButton');
+  assert.ok(app.state().captures.every(r=>r.prediction==="I'm not sure yet"));
+  app.click('exportLearningRecord');const report=await app.blobs.at(-1).text();
+  assert.ok(report.includes('I&#39;m not sure yet'));assert.ok(!report.includes('Block has the narrower wake'));
+  await app.run('exportReport()');assert.ok(app.drawCalls.includes("Prediction: I'm not sure yet"));
 });

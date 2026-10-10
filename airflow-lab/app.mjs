@@ -3,6 +3,7 @@ import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
 import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=stage4b-20261010';
+import {learningChecks,makeLearningRecord} from './learning-record.mjs?build=stage4c-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
@@ -14,7 +15,7 @@ function stabilityConfig(){
     position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,viscosity:sim.viscosity,
     animation:$('animation').value,batchMode:$('batchMode').value,
     forceEnabled:$('force').checked,particles:$('particles').checked,
-    vectors:$('vectors').checked,view,interfaceBuild:'stage4b-20261010',
+    vectors:$('vectors').checked,view,interfaceBuild:'stage4c-20261010',
     sizeMode:shapeAppearance?.sizeMode??'preset',geometryScale:shapeAppearance?.scale??sim.shapeScale};
 }
 function stabilityActivity(){
@@ -208,12 +209,12 @@ function repeatComparison(){
   try{comparison.start(plan);}catch(error){notify(error.message);return;}
   // Keep one complete previous pair, including its notes and reflection.
   previousComparison={captures:captures.map(r=>structuredClone(r)),conclusion:$('conclusion').value,
-    prediction:comparisonPrediction,repeatResult:$('repeatResult')?.value||'',round:comparisonRound};
+    prediction:comparisonPrediction,repeatResult:$('repeatResult')?.value||'',fairReviewed:$('fairReviewed').checked,round:comparisonRound};
   comparisonRound++;captures=[];
   $('comparisonShapeA').value=plan.pair[0];$('comparisonShapeB').value=plan.pair[1];
   $('matchShapeHeight').checked=plan.matchHeight;$('prediction').value=plan.predictionValue;
   experiment='shapes';press('experiment','shapes');$('guidedComparison').hidden=false;
-  $('conclusion').value='';$('repeatResult').value='';
+  $('conclusion').value='';$('repeatResult').value='';$('fairReviewed').checked=false;
   syncComparisonChoices();renderPreviousComparison();renderCaptures();beginComparisonRun();
 }
 function renderPreviousComparison(){
@@ -233,6 +234,8 @@ function renderPreviousComparison(){
   });root.append(grid);
   const download=document.createElement('button');download.className='secondary-button';download.textContent='Download previous report';
   download.addEventListener('click',()=>exportReport(previousComparison.captures,previousComparison).catch(()=>notify('Could not export the previous report.')));root.append(download);
+  const learning=document.createElement('button');learning.className='secondary-button';learning.textContent='Save previous learning record';
+  learning.addEventListener('click',()=>exportLearningRecord(previousComparison.captures,previousComparison));root.append(learning);
 }
 function cancelComparison(message='Comparison ended. Your saved views remain below; remove them to start again.'){
   if(!comparison.active)return;
@@ -826,9 +829,10 @@ function selectExperiment(next){
   experiment=next;press('experiment',next);const e=experiments[next];
   for(const [id,key]of [['challengeLabel','label'],['challengeTitle','title'],['challengeText','text'],['predictText','predict'],['observeText','observe'],['explainText','explain']])$(id).textContent=e[key];
   const options={shapes:['Block leaves a narrower wake','Streamlined leaves a narrower wake'],speed:['Faster flow changes the wake','Faster flow makes little difference'],angle:['Tilting changes the flow balance','Tilting makes little difference']}[next];
-  $('prediction').options[1].textContent=options[0];$('prediction').options[2].textContent=options[1];$('prediction').value='';$('conclusion').value='';
+  $('prediction').options[1].textContent=options[0];$('prediction').options[2].textContent=options[1];if(!captures.length){$('prediction').value='';$('conclusion').value='';}
   if($('guidedComparison'))$('guidedComparison').hidden=next!=='shapes';
   if(next==='shapes')syncComparisonChoices();
+  refreshLearningRecord();
 }
 document.querySelectorAll('[data-experiment]').forEach(el=>el.addEventListener('click',()=>selectExperiment(el.dataset.experiment)));
 function setupExperiment(){
@@ -845,7 +849,10 @@ function capture(comparisonInfo=null) {
   const bounds=sim.obstacleBounds();
   const record={image:canvas.toDataURL('image/png'),shape:sim.shape,angle:sim.angle,position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,inletSpeed:sim.inletSpeed,viscosity:sim.viscosity,steps:sim.time,view,engine:engineKind,grid:{width:W,height:H},shapeScale:sim.shapeScale,obstacleHeight:bounds?bounds.maxY-bounds.minY+1:0,animation:$('animation').value,batchMode:$('batchMode').value,particles:$('particles').checked,vectors:$('vectors').checked,forceEnabled:$('force').checked,comparison:comparisonInfo?.matched?comparisonInfo:null,probe:s&&!s.solid?s:null,force:$('force').checked&&(engineKind!=='webgpu'||gpuForceValid)?{drag:sim.forceX,lift:-sim.forceY,resultant:Math.hypot(sim.forceX,sim.forceY),units:'relative model force (simulation units)',snapshot:true}:null,note:''};
   record.experiment=experiment;
+  // Record the prediction visible when A was saved, rather than a later edit.
+  record.prediction=comparisonInfo?.prediction??captures[0]?.prediction??selectedPrediction();
   record.geometryScale=shapeAppearance?.scale??sim.shapeScale;record.sizeMode=shapeAppearance?.sizeMode??'preset';
+  $('fairReviewed').checked=false;
   captures.push(record);renderCaptures();notify(`View ${captures.length===1?'A':'B'} captured. ${captures.length===1?(record.comparison?'Describe A, then choose Observe B.':'Change one variable for your next view.'):'Compare the two views below.'}`);
   return {shape:record.shape,speed:record.speed,steps:record.steps,count:captures.length};
 }
@@ -856,7 +863,7 @@ function renderCaptures() {
     const image=document.createElement('img');image.src=record.image;image.alt=`Captured ${viewNames[record.view].toLowerCase()} view of ${names[record.shape].toLowerCase()} at speed ${record.speed.toFixed(3)}`;figure.append(image);
     const caption=document.createElement('figcaption');caption.className='capture-caption';
     const heading=document.createElement('div'),title=document.createElement('strong');title.textContent=`View ${index===0?'A':'B'} · ${names[record.shape]}`;
-    const remove=document.createElement('button');remove.textContent='Remove';remove.disabled=comparison.active;remove.setAttribute('aria-label',`Remove view ${index===0?'A':'B'}`);remove.addEventListener('click',()=>{captures.splice(index,1);renderCaptures();});heading.append(title,remove);caption.append(heading);
+    const remove=document.createElement('button');remove.textContent='Remove';remove.disabled=comparison.active;remove.setAttribute('aria-label',`Remove view ${index===0?'A':'B'}`);remove.addEventListener('click',()=>{captures.splice(index,1);$('fairReviewed').checked=false;if(!captures.length){$('conclusion').value='';$('repeatResult').value='';}renderCaptures();});heading.append(title,remove);caption.append(heading);
     const meta=document.createElement('div');meta.textContent=`Speed ${record.speed.toFixed(3)} · Viscosity ${record.viscosity.toFixed(3)} · ${record.angle}° · ${record.steps.toLocaleString()} steps · ${viewNames[record.view]}`;caption.append(meta);
     const method=document.createElement('div');method.className='advanced-only';method.textContent=`${record.engine} · ${record.grid.width} × ${record.grid.height} grid · Height ${record.obstacleHeight} cells`;caption.append(method);
     if(record.comparison){const trial=document.createElement('div');trial.textContent=`Round ${record.comparison.round} · ${record.sizeMode==='matched-height'?'Equally tall shapes':'Original preset sizes'}`;caption.append(trial);}
@@ -868,7 +875,8 @@ function renderCaptures() {
       caption.append(force);}
     if(record.probe){const probe=document.createElement('div');probe.textContent=`Probe (${record.probe.x}, ${record.probe.y}): speed ${record.probe.speed.toFixed(3)}`;caption.append(probe);}
     const label=document.createElement('label');label.textContent='What did you notice?';
-    const text=document.createElement('textarea');text.placeholder='Describe the wake or particle paths…';text.value=record.note;text.addEventListener('input',()=>record.note=text.value);label.append(text);caption.append(label);
+    const hint=document.createElement('small');hint.id=`observationHint${index}`;hint.className='observation-hint';hint.textContent='Look behind the shape. Describe the wake colours or paths. Use the same place in A and B. Short phrases are enough.';
+    const text=document.createElement('textarea');text.placeholder='Behind the shape, I see…';text.setAttribute('aria-describedby',hint.id);text.value=record.note;text.addEventListener('input',()=>{record.note=text.value;refreshLearningRecord();});label.append(text,hint);caption.append(label);
     const download=document.createElement('a');download.className='download';download.href=record.image;download.download=`airflow-${record.shape}-view-${index===0?'a':'b'}.png`;download.textContent='Download image';caption.append(download);figure.append(caption);root.append(figure);
   });
   if(captures.length===1){const empty=document.createElement('div');empty.className='capture-empty';empty.textContent='Your second view will appear here.';root.append(empty);}
@@ -886,8 +894,43 @@ function renderCaptures() {
       $('fairTestStatus').dataset.matched=String(!differences.length);
     }
   }
-  refreshComparison();
+  refreshComparison();refreshLearningRecord();
 }
+function selectedPrediction(){const p=$('prediction');return p.selectedIndex>0?p.options[p.selectedIndex].textContent:'';}
+function learningSnapshot(source=captures,saved=null){
+  const records=source.map(r=>structuredClone(r));
+  return {records,title:experiments[records[0]?.experiment??experiment].title,
+    prediction:saved?.prediction??records[0]?.prediction??records[0]?.comparison?.prediction??selectedPrediction(),
+    conclusion:saved?saved.conclusion:$('conclusion').value,
+    fairReviewed:saved?saved.fairReviewed:$('fairReviewed').checked,
+    repeatResult:saved?saved.repeatResult:$('repeatResult').value,
+    differences:records.length===2?comparisonDifferences(...records):[]};
+}
+function refreshLearningRecord(){
+  $('learningProgress').hidden=!captures.length;
+  $('fairReviewed').disabled=captures.length!==2;
+  $('exportLearningRecord').disabled=captures.length!==2;
+  const checks=learningChecks(learningSnapshot()),root=$('learningChecks');root.replaceChildren();
+  checks.forEach(check=>{const item=document.createElement('li');item.dataset.done=String(check.done);item.textContent=`${check.done?'Recorded':'To add'} · ${check.label}`;root.append(item);});
+  const next=checks.find(check=>!check.done);
+  $('learningNext').textContent=next?next.next:'Your writing is recorded. Read it once more, then save your learning record.';
+}
+function exportLearningRecord(source=captures,saved=null){
+  if(source.length!==2)return;
+  const record=learningSnapshot(source,saved);
+  if(!saved&&record.records.every(r=>r.comparison?.repeated)&&previousComparison?.round===record.records[0].comparison.round-1)
+    record.previous=learningSnapshot(previousComparison.captures,previousComparison);
+  const html=makeLearningRecord(record,{...names,...viewNames});
+  const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'})),a=document.createElement('a');
+  a.href=url;a.download=`airflow-lab-learning-record${record.records[0].comparison?'-round-'+record.records[0].comparison.round:''}.html`;
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  notify('Learning record saved. Open it in a browser to read or print.');
+}
+$('exportLearningRecord').addEventListener('click',()=>exportLearningRecord());
+$('fairReviewed').addEventListener('change',refreshLearningRecord);
+$('conclusion').addEventListener('input',refreshLearningRecord);
+$('repeatResult').addEventListener('change',refreshLearningRecord);
+$('prediction').addEventListener('change',refreshLearningRecord);
 $('captureButton').addEventListener('click',()=>capture());
 $('startComparison')?.addEventListener('click',startComparison);
 $('nextComparison')?.addEventListener('click',()=>{
@@ -912,8 +955,7 @@ async function exportReport(source=captures,saved=null){
  const records=source.map(r=>structuredClone(r));
  const explanation=saved?saved.conclusion:$('conclusion').value;
  const repeatResult=saved?saved.repeatResult:($('repeatResult')?.value||'');
- const p=$('prediction');
- const recordedPrediction=records.every(r=>r.comparison?.matched)?records[0].comparison.prediction:(p.selectedIndex?p.options[p.selectedIndex].textContent:'Not recorded');
+ const recordedPrediction=saved?.prediction??records[0].prediction??records[0].comparison?.prediction??selectedPrediction();
  const imageList=await Promise.all(records.map(item=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=item.image;})));
  const repeated=records.every(r=>r.comparison?.repeated);
  const sheet=document.createElement('canvas');sheet.width=1840;sheet.height=repeated?1010:920;const c=sheet.getContext('2d');
@@ -930,7 +972,7 @@ async function exportReport(source=captures,saved=null){
    c.fillStyle='#163445';c.font='18px sans-serif';reportLines(c,r.note,x+12,r.force?704:686,860,24,r.force?1:2);
  });
  c.font='19px sans-serif';c.fillStyle='#163445';
- reportLines(c,'Prediction: '+recordedPrediction,40,778,1740,25,1);
+ reportLines(c,'Prediction: '+(recordedPrediction||'Not recorded'),40,778,1740,25,1);
  reportLines(c,'Explanation: '+explanation,40,811,1740,26,2);
  c.fillStyle='#637989';c.font='17px sans-serif';c.fillText('Simplified 2D learning model · Simulation units · Not a calibrated aerodynamic test',40,892);
  c.font='16px sans-serif';c.fillStyle='#637989';
