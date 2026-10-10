@@ -70,3 +70,35 @@ When the WASM engine is active, the worker retains its solver and its f64 arrays
 5. For standardized solver comparisons, continue using Benchmark Lab with three repetitions and export its CSV.
 
 The current release includes automated Rust-worker tests for reset, settings changes, transfer buffers, numerical agreement, stale-message rejection and the Stir tool. It does **not** claim measured iPad/Samsung Student Lab FPS improvement before testing the completed interface.
+
+## Student Lab — Experimental real-time WebGPU (2026-10)
+
+The Student Lab now offers four engine selections in the same page:
+
+- **Auto:** WebGPU module Worker when supported, then **Rust/WASM**, then **JavaScript**.
+- **WebGPU (experimental):** explicitly request the real GPU D2Q9 evolving flow; if GPU setup or numerical checks fail, automatically fall back to Rust/WASM, then JavaScript.
+- **Rust/WASM:** tested D2Q9 f64 worker. Recommended for model-force visualizations.
+- **JavaScript:** original main-thread educational solver.
+
+The GPU worker is a *persistent* solver, not the Stage 1 single equilibrium probe. It executes the validated Stage 2 `d2q9-solver-r2-20261010.wgsl` collision/streaming pipeline on GPU-resident f32 populations; all the existing Student Lab visuals and particle trails remain on Canvas. A final macroscopic field is read back every small frame batch (capped at eight public simulation steps) and dispatched with transferable and recyclable f32 arrays. The worker serializes async reset / push / step messages to avoid races. The new GPU stirring shader `student-gpu-stir-v1.wgsl` supports the classroom Stir interaction.
+
+### Feature compatibility
+
+| Feature | WebGPU | Rust/WASM | JavaScript |
+|---|---|---|---|
+| All shape presets, custom barrier and dragging | Yes (reset mask) | Yes | Yes |
+| Speed/viscosity changes | Yes (GPU uniform updates) | Yes | Yes |
+| Pause/play, ten-step, particles, speed/density/curl views | Yes | Yes | Yes |
+| Probe and captured A/B images / report | Yes | Yes | Yes |
+| Stir | Yes (local GPU equilibrium modification) | Yes | Yes |
+| Model force arrows | **Not yet** (disabled when GPU active) | Yes | Yes |
+
+**Model-force measurement is deliberately disabled in WebGPU mode:** GPU currently performs fluid evolution but does not compute the momentum-exchange force used in the Rust/JS solver. Do not present the absent GPU force as a measured zero value.
+
+The GPU handles change-of-speed smoothing per dispatch batch rather than per half-step, so transient changes may not be bit-identical to the JS/Rust implementation. Also, GPU shader f32 and Rust solver f64 should not be assumed to produce identical results for extended swirls. The GPU worker checks density bounds and finiteness before publishing frames and switches back to Rust if unstable. For strict side-by-side scientific comparisons keep the **same engine, grid, settings and simulation step count** for both captures.
+
+Prior GPU speedups measured in Benchmark Lab only establish **full-solver throughput**, not a guaranteed multiplier for the Student Lab Canvas FPS, which includes macroscopic readback, particle movement and drawing.
+
+### Release checks
+
+GitHub CI validates JavaScript syntax, Student Lab engine and DOM routing, numerical assumptions and compiles the Student Stir WGSL with Naga. This does not replace on-device browser execution, but the user has already obtained 500-step WebGPU benchmark results and opted to proceed with Student Lab integration without additional benchmark sessions. The Student Lab will fall back to proven Rust/JS on unsupported browsers or GPU errors.
