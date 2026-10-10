@@ -150,6 +150,10 @@ function resetRustField(){
   wasmWorker.postMessage({type:'reset',revision:engineRevision,
     speed:sim.speed,viscosity:sim.viscosity,solid:sim.solid.slice()});
 }
+function syncGpuForce(){
+  if(wasmActive&&engineKind==='webgpu'&&wasmWorker)
+    wasmWorker.postMessage({type:'force',enabled:$('force').checked});
+}
 function updateRustParameters(){
   if(wasmActive&&wasmWorker)wasmWorker.postMessage({
     type:'params',speed:sim.speed,viscosity:sim.viscosity
@@ -201,7 +205,7 @@ function beginRustEngine(override=null){
   wasmStarting=true;
   engineLabel('Loading '+(engineKind==='webgpu'?'WebGPU':'Rust/WASM')+'…');
   try{
-    const worker=new Worker(new URL(engineKind==='webgpu'?'./student-gpu-worker-v1.mjs':'./student-wasm-worker.mjs',import.meta.url),{type:'module'});
+    const worker=new Worker(new URL(engineKind==='webgpu'?'./student-gpu-worker-v2.mjs':'./student-wasm-worker.mjs',import.meta.url),{type:'module'});
     wasmWorker=worker;
     worker.onerror=event=>{
       event.preventDefault();
@@ -215,12 +219,28 @@ function beginRustEngine(override=null){
         sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;
         resetRustField();
         const gpu=engineKind==='webgpu';
-        $('force').disabled=gpu;
-        if(gpu)$('force').checked=false;
-        $('force').title=gpu?'Select Rust/WASM to measure model force.':'Show model force';
+        $('force').disabled=gpu&&!data.forceOptIn;
+        $('force').title=gpu
+          ?'Experimental GPU-relative force. Adds GPU work when enabled; values are model units.'
+          :'Show model force (relative simulation units)';
+        if(gpu&&$('force').checked)syncGpuForce();
         engineLabel((engineChoice==='auto'?'Auto · ':'')+(gpu?'WebGPU worker · experimental':'Rust/WASM worker'),engineChoice==='webgpu'&&!gpu);
-        notify(gpu?'WebGPU active. Model force requires Rust/WASM mode.':'Rust/WASM active. Flow restarted using your current settings.');
+        notify(gpu?'WebGPU active. Force overlay is optional and experimental.':'Rust/WASM active. Flow restarted using your current settings.');
         paint();
+      }else if(data.type==='forceStatus'){
+        if(data.enabled){
+          $('force').disabled=false;
+          $('force').title='GPU-relative force active · simulation units, not newtons';
+        }else if(!data.available){
+          $('force').checked=false;
+          $('force').disabled=true;
+          $('force').title='GPU force feature unavailable on this browser · use Rust/WASM';
+          sim.forceX=0;sim.forceY=0;
+          notify(data.message||'GPU force is unavailable. The flow simulation remains active.');
+          paint();
+        }else{
+          sim.forceX=0;sim.forceY=0;paint();
+        }
       }else if(data.type==='error'){
         endRustEngine('simulation error');
       }else if(data.type==='skipped'){
@@ -273,7 +293,7 @@ function frame(now) {
   }
   if(now-performanceWindow>=1000){
     const seconds=(now-performanceWindow)/1000;
-    $('livePerformance').textContent=(wasmActive&&engineKind==='webgpu'?'GPU':'CPU')+' · Canvas: '+Math.round(paintedFrames/seconds)+
+    $('livePerformance').textContent=(wasmActive?(engineKind==='webgpu'?'WebGPU':'Rust/WASM'):'JS')+' · Canvas: '+Math.round(paintedFrames/seconds)+
       ' fps · Flow: '+Math.round(simulatedSteps/seconds)+' steps/s';
     performanceWindow=now;paintedFrames=0;simulatedSteps=0;
   }
@@ -417,7 +437,12 @@ $('quality').addEventListener('change',()=>{
 });
 $('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);updateRustParameters();paint();});
 $('viscosity').addEventListener('input',()=>{sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);updateRustParameters();paint();});
-['particles','vectors','force'].forEach(id=>$(id).addEventListener('change',paint));
+['particles','vectors'].forEach(id=>$(id).addEventListener('change',paint));
+$('force').addEventListener('change',()=>{
+  syncGpuForce();
+  if(!$('force').checked){sim.forceX=0;sim.forceY=0;}
+  paint();
+});
 $('viscosityInfo').addEventListener('click',()=>notify('Viscosity is a fluid’s resistance to shear. In this model, higher viscosity smooths out motion and can make swirls fade sooner.'));
 $('fullscreenButton').addEventListener('click',async()=>{
   try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}
@@ -436,7 +461,7 @@ document.addEventListener('keydown',event=>{
 let demoPhase=0;
 function setLevel(level){
   document.body.dataset.level=level;press('level',level);
-  if(level==='beginner'){toolSelected('move');if(view==='density')setView('curl');$('vectors').checked=false;$('force').checked=false;paint();}
+  if(level==='beginner'){toolSelected('move');if(view==='density')setView('curl');$('vectors').checked=false;$('force').checked=false;syncGpuForce();paint();}
 }
 document.querySelectorAll('[data-level]').forEach(el=>el.addEventListener('click',()=>setLevel(el.dataset.level)));
 $('demoButton').addEventListener('click',()=>{
