@@ -1,5 +1,5 @@
 // Stage 2 interface stays separate from the validated equilibrium probe and Student Lab.
-import {runWebGpuSolver} from './gpu-solver.mjs?build=stage2-r2-20261010';
+import {runWebGpuSolver} from './gpu-solver.mjs?build=stage3-force-v1-20261010';
 const $=id=>document.getElementById(id);
 const fmt=(n,p=1)=>Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:p}):'—';
 let busy=false,cancelled=false,activeWorker=null,activeReject=null,lastResult=null;
@@ -16,7 +16,7 @@ function locked(value){
 }
 function trialWorker(settings){
   return new Promise((resolve,reject)=>{
-    const worker=new Worker(new URL('./gpu-solver-worker.mjs?build=stage2-r2-20261010',import.meta.url),{type:'module'});
+    const worker=new Worker(new URL('./gpu-solver-worker.mjs?build=stage3-force-v1-20261010',import.meta.url),{type:'module'});
     activeWorker=worker;
     const cleanup=()=>{worker.terminate();if(activeWorker===worker){activeWorker=null;activeReject=null;}};
     activeReject=()=>{cleanup();reject(new Error('Cancelled'));};
@@ -50,6 +50,18 @@ function showPreview(result){
   $('gpuSolverPreviewLabel').textContent=result.grid+' / '+result.shape+' · '+result.steps+' full steps';
 }
 function showResult(result){
+  if(result.relativeForce&&result.rustForce&&result.javascriptForce){
+    const fmtForce=value=>Number.isFinite(value)?value.toFixed(6):'—';
+    for(const [label,key] of [['Drag','drag'],['Lift','lift'],['Resultant','resultant']]){
+      $('gpuForce'+label).textContent=fmtForce(result.relativeForce[key]);
+      $('rustForce'+label).textContent=fmtForce(result.rustForce[key]);
+      $('jsForce'+label).textContent=fmtForce(result.javascriptForce[key]);
+      $('forceError'+label).textContent=fmtForce(result.forceAbsoluteDifference[key]);
+    }
+    $('gpuForceNote').textContent=
+      'Observed absolute differences versus Rust. GPU f32 reduction order differs from Rust f64; results are preliminary until tested on actual hardware. Independent Rust reference time: '+
+      fmt(result.rustReferenceMs,1)+' ms (not included in GPU Steps/s).';
+  }
   $('gpuSolverRate').textContent=fmt(result.stepsPerSecond,1);
   $('gpuSolverTime').textContent=fmt(result.computeMs,1)+' ms';
   $('gpuSolverReadback').textContent=fmt(result.readbackMs,1)+' ms';
