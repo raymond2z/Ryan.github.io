@@ -147,3 +147,30 @@ For Student Lab validation:
 
 CI verifies JavaScript integration, force kernel placement and force-toggle gating, Rust-vs-JS relative-force parity and WGSL syntax. Real device force readbacks, accuracy and animation responsiveness still require physical-device tests. Keep Stage 3.2 marked **experimental** until these tests pass. Stage 3.3 can add timed force-window averaging, cross-engine side-by-side capture and explicit fallback/device health reporting.
 
+
+## Stage 3.3 — Diagnose live FPS plateau and bound GPU Worker batches
+
+The user's actual live Student Lab readings (iPad: 20–21 Canvas FPS / about 168 Flow Steps/s; Galaxy S24 Ultra: 20–22 Canvas FPS / about 158–173 Flow Steps/s at speed 0.150) **remain essentially unchanged when selecting Super fast**. Higher wind speed likewise does not directly demand more numerical steps per second. The confirmed source-code bottleneck is that the older Worker accepts a hard maximum of **8 steps** per update, while the main UI also restricts dispatch cadence to about 30 Hz. With 20–22 replies per second, the observed 160–176 Steps/s is consistent with an 8-step batch cap. This is evidence of a software-imposed throughput ceiling, not evidence that the underlying GPU is saturated.
+
+### What this update changes
+
+- A fresh test page, `stage3-performance.html?engine=webgpu&quality=detail&tune=adaptive`, includes an **open** Performance diagnostics panel. The student `index.html` keeps the panel collapsible and uses Fixed 8 steps by default until validated on actual devices.
+- **Fixed 8** preserves the old GPU Worker batch size for an approximate A/B control (though the new rendering scheduler itself differs from the previous release). **Adaptive 4–24** adjusts the GPU batch cap at most once every 3 valid worker replies, using an exponentially smoothed **CPU-wall-clock worker duration**, targeting about 30 ms per Worker request. The cap resets with model resets or changing batching mode. The Worker itself still hard-rejects more than 24 steps per message.
+- The separate browser requestAnimationFrame Canvas scheduler aims for **at most 30 draws/sec**, consuming the most recent GPU field and distributing tracer movement between draws when possible. Canvas can repaint a fluid field without receiving a new GPU state; the panel therefore reports **unique GPU fluid snapshots per second separately** from Canvas paints per second. Neither metric is the same as D2Q9 Steps/s.
+- Live timing estimates include JavaScript **command encoding** time (CPU), combined **GPU queue execution + buffer transfer + readback wait**, Worker unpack time, main-thread paint time, and the end-to-end main-to-Worker-to-main round trip. The separate queue/readback phase is NOT a hardware GPU timestamp and cannot distinguish kernel GPU time from its synchronization and transfer.
+- Diagnostics can be reset or exported as `airflow-stage3-3-live-performance.json`, retaining recent individual Worker and Canvas observations, selected grid, speed, shape, force setting, animation pace and measured rates.
+- The Stage 3.2 opt-in GPU force calculation, original JS and Rust/WASM fallback, simulation geometry interactions, stirring, force snapshots and A/B classroom capture are retained. WebGPU v3 Worker inherits the existing solver and optional force controller, adding timing and a new batch cap only.
+
+### Device test plan
+
+On **both** iPad and Galaxy S24 Ultra:
+1. Open the Stage 3.3 test page at Detailed 240×104, **Block, speed 0.150, Super fast, Force off**.
+2. Select **Fixed 8**, allow 5–10 seconds to settle; note Canvas FPS, *new GPU frames/s*, Flow Steps/s, Worker round-trip, command encoding, queue+readback and paint duration. Export JSON.
+3. Change to **Adaptive**, reset readings, allow 5–10 seconds to settle, repeat. Confirm that batch size grows beyond 8 only if the measured Worker duration permits, and that pointer/drag remains responsive.
+4. Repeat with Force on **separately**, never mix force-on and force-off trials. Optionally disable moving particles to distinguish tracer cost from fluid and Canvas cost.
+5. Save 3 samples per condition if practical. Compare **median** throughput and FPS rather than one best sample. If adaptive batch raises Flow Steps/s but not Canvas FPS, next investigate Canvas pixel conversion and particle drawing. If queue/readback dominates, consider GPU-resident rendering rather than simply increasing step cap.
+
+### Engineering limits
+
+This update does not claim a 30 FPS achievement or a 60 FPS GPU renderer; the new Canvas scheduler can paint more often than new fluid-field snapshots arrive. The main fluid field is still read back and redrawn via Canvas, and GPU force remains an opt-in experiment. Do not treat higher simulated Steps/s as improved interactive responsiveness without measuring frame cadence and pointer latency. CI covers stepper bounds, render scheduling logic, JavaScript syntax, WebGPU Worker structure and existing numerical reference tests. Real GPU performance must be verified on the physical devices.
+

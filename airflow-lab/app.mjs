@@ -1,5 +1,6 @@
 import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
+import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,shouldDrawGpuFrame,forceFrameTiming} from './live-performance.mjs';
 const $=id=>document.getElementById(id);
 // Mobile-first performance selection. The user can explicitly choose a detailed grid.
 const qualityPreference=new URLSearchParams(location.search).get('quality');
@@ -11,6 +12,45 @@ const engineChoice=['javascript','wasm','webgpu'].includes(enginePreference)?eng
 let engineKind='javascript';
 let wasmActive=false,wasmStarting=false,wasmWorker=null,workerRequest=0,workerInFlight=0;
 let engineRevision=0,lastWorkerRequest=0,manualSteps=0,gpuForceValid=false;
+const stepper=makeAdaptiveStepper({targetMs:30});
+const tuningPreference=new URLSearchParams(location.search).get('tune');
+let gpuFluidDirty=false,gpuParticleDebt=0,windowGpuSnapshots=0,lastSnapshotHz=0,lastCanvasFps=0,lastFlowRate=0;
+const gpuSamples=[],paintSamples=[],maxSamples=160;
+const recentMean=(list,key,n=30)=>{const values=list.slice(-n).map(s=>s[key]).filter(Number.isFinite);return values.length?values.reduce((a,b)=>a+b,0)/values.length:null;};
+const ms=value=>Number.isFinite(value)?value.toFixed(1)+' ms':'—';
+const bounded=(items,item)=>{items.push(item);if(items.length>maxSamples)items.shift();};
+function refreshPerformance(){
+  const gpu=wasmActive&&engineKind==='webgpu',avg=key=>gpu?recentMean(gpuSamples,key):null;
+  $('perfPaint').textContent=ms(recentMean(paintSamples,'paintMs'));
+  $('perfEncode').textContent=ms(avg('encodeMs'));
+  $('perfWait').textContent=ms(avg('queueReadbackMs'));
+  $('perfUnpack').textContent=ms(avg('unpackMs'));
+  $('perfRoundTrip').textContent=ms(avg('roundTripMs'));
+  $('perfSnapshots').textContent=gpu?lastSnapshotHz.toFixed(0)+' /s':'—';
+  $('perfBatch').textContent=gpu?($('batchMode').value==='adaptive'?stepper.batch:STEP_FIXED)+' steps':'—';
+  $('perfStatus').textContent=gpu
+    ?Math.round(lastCanvasFps)+' paints/s vs '+Math.round(lastSnapshotHz)+' new fields/s'
+    :'GPU timing shown only while WebGPU runs';
+}
+function resetPerformance(){
+  gpuSamples.length=0;paintSamples.length=0;stepper.reset();
+  windowGpuSnapshots=0;performanceWindow=performance.now();paintedFrames=0;simulatedSteps=0;
+  refreshPerformance();
+}
+function exportPerformance(){
+  const record={benchmark:'Airflow Stage 3.3 live diagnostic · wall-clock, not GPU hardware timestamp',
+    collectedAt:new Date().toISOString(),engine:engineKind,
+    grid:{width:W,height:H,quality:qualityOption},shape:sim.shape,
+    speed:sim.speed,viscosity:sim.viscosity,animation:$('animation').value,
+    forceEnabled:$('force').checked,batchMode:$('batchMode').value,
+    adaptiveBatch:stepper.batch,liveCanvasFps:lastCanvasFps,
+    liveGpuSnapshotsHz:lastSnapshotHz,liveFlowStepsPerSecond:lastFlowRate,
+    performanceSamples:gpuSamples,paintSamples,
+    note:'Queue/readback wait includes GPU execution and synchronization; independent fluid frames/s are not Canvas FPS.'};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='airflow-stage3-3-live-performance.json';
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
 let performanceWindow=performance.now(),paintedFrames=0,simulatedSteps=0;
 const requestedWasm=engineChoice!=='javascript';
 const canvas=$('tunnel'),ctx=canvas.getContext('2d',{alpha:false});
@@ -43,6 +83,7 @@ function makeParticle(startAnywhere=true) {
 function resetParticles(){particles=Array.from({length:particleCount},()=>makeParticle());}
 function notify(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500);}
 function paint() {
+  const paintStarted=performance.now();
   paintedFrames++;
   const data=pixels.data;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) {
@@ -98,6 +139,7 @@ function paint() {
     ctx.strokeStyle='#fff';ctx.lineWidth=2;const x=sensor.x*SX,y=sensor.y*SY;
     ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.moveTo(x-14,y);ctx.lineTo(x-5,y);ctx.moveTo(x+5,y);ctx.lineTo(x+14,y);ctx.moveTo(x,y-14);ctx.lineTo(x,y-5);ctx.moveTo(x,y+5);ctx.lineTo(x,y+14);ctx.stroke();
   }
+  bounded(paintSamples,{paintMs:forceFrameTiming(performance.now()-paintStarted)});
 }
 function arrow(x,y,dx,dy) {
   if(Math.hypot(dx,dy)<1)return;
@@ -145,7 +187,7 @@ function engineLabel(message,fallback=false){
 function resetRustField(){
   if(!wasmActive||!wasmWorker)return;
   engineRevision++;
-  workerInFlight=0;
+  workerInFlight=0;gpuFluidDirty=true;gpuParticleDebt=0;stepper.reset();
   // Always copy the current obstacle mask; drag/draw tools modify it on the UI thread.
   wasmWorker.postMessage({type:'reset',revision:engineRevision,
     speed:sim.speed,viscosity:sim.viscosity,solid:sim.solid.slice()});
@@ -170,7 +212,7 @@ function updateRustParameters(){
 function endRustEngine(reason){
   const wasGpu=engineKind==='webgpu';
   if(wasmWorker){wasmWorker.terminate();wasmWorker=null;}
-  wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;
+  wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;gpuParticleDebt=0;gpuFluidDirty=false;
   engineKind='javascript';
   // JS fallback must have f64 velocity fields for normal numeric operation.
   sim.rho=new Float64Array(sim.n);
@@ -214,7 +256,7 @@ function beginRustEngine(override=null){
   wasmStarting=true;
   engineLabel('Loading '+(engineKind==='webgpu'?'WebGPU':'Rust/WASM')+'…');
   try{
-    const worker=new Worker(new URL(engineKind==='webgpu'?'./student-gpu-worker-v2.mjs':'./student-wasm-worker.mjs',import.meta.url),{type:'module'});
+    const worker=new Worker(new URL(engineKind==='webgpu'?'./student-gpu-worker-v3.mjs':'./student-wasm-worker.mjs',import.meta.url),{type:'module'});
     wasmWorker=worker;
     worker.onerror=event=>{
       event.preventDefault();
@@ -225,7 +267,7 @@ function beginRustEngine(override=null){
       if(data.type==='ready'){
         wasmStarting=false;wasmActive=true;
         // The user could have changed controls while WASM was loading.
-        sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;
+        sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;stepper.reset();gpuParticleDebt=0;gpuFluidDirty=true;
         resetRustField();
         gpuForceValid=false;
         const gpu=engineKind==='webgpu';
@@ -261,6 +303,18 @@ function beginRustEngine(override=null){
       }else if(data.type==='frame'){
         if(data.requestId===workerInFlight)workerInFlight=0;
         if(data.revision!==engineRevision)return;
+        if(engineKind==='webgpu'&&data.perf){
+          const sample={timestamp:Date.now(),steps:data.steps,batchMode:$('batchMode').value,
+            encodeMs:forceFrameTiming(data.perf.encodeMs),
+            queueReadbackMs:forceFrameTiming(data.perf.queueReadbackMs),
+            unpackMs:forceFrameTiming(data.perf.unpackMs),
+            workerMs:forceFrameTiming(data.perf.workerMs),
+            roundTripMs:forceFrameTiming(performance.now()-lastWorkerRequest),
+            forceEnabled:data.perf.forceEnabled};
+          bounded(gpuSamples,sample);windowGpuSnapshots++;
+          if($('batchMode').value==='adaptive')
+            stepper.observe({steps:data.steps,workerMs:data.perf.workerMs});
+        }
         // Float32 fields are for drawing only. Rust/JS populations remain f64;
         // WebGPU retains f32 distributions in GPU buffers.
         const previous=[sim.rho,sim.ux,sim.uy];
@@ -273,8 +327,13 @@ function beginRustEngine(override=null){
         if($('force').checked)showForceReadout();
         simulatedSteps+=data.steps;
         pendingSteps=Math.max(0,pendingSteps-data.steps);
-        if(data.steps>0)moveParticles(data.steps);
-        if(performance.now()-lastPaint>=paintInterval){paint();lastPaint=performance.now();}
+        if(engineKind==='webgpu'){
+          if(data.steps>0)gpuParticleDebt=Math.min(MAX_TRACER_DEBT,gpuParticleDebt+data.steps);
+          gpuFluidDirty=true; // Latest field is consumed by the independent Canvas scheduler.
+        }else{
+          if(data.steps>0)moveParticles(data.steps);
+          if(performance.now()-lastPaint>=paintInterval){paint();lastPaint=performance.now();}
+        }
       }
     };
     worker.postMessage({type:'init',width:W,height:H,speed:sim.speed,viscosity:sim.viscosity});
@@ -288,13 +347,17 @@ function frame(now) {
   const drawing=pointer&&['draw','erase','move'].includes(pointer.action);
   if(running&&!document.hidden&&!drawing){
     const animation=Number($('animation').value),superFast=animation===24;
-    pendingSteps=Math.min(superFast?48:18,pendingSteps+elapsed*animation*.03);
+    const adaptiveGpu=wasmActive&&engineKind==='webgpu'&&$('batchMode').value==='adaptive';
+    pendingSteps=Math.min(superFast?(adaptiveGpu?96:48):(adaptiveGpu?48:18),
+      pendingSteps+elapsed*animation*.03);
     const count=Math.floor(pendingSteps);
     if(wasmActive){
-      if(count&&!workerInFlight&&now-lastWorkerRequest>=Math.max(1000/30,paintInterval)){
-        // The Worker can use a longer compute slice without blocking the UI thread.
+      const adaptiveGpu=engineKind==='webgpu'&&$('batchMode').value==='adaptive';
+      const sendCount=engineKind==='webgpu'
+        ?Math.min(count,adaptiveGpu?stepper.batch:STEP_FIXED):count;
+      if(sendCount&&!workerInFlight&&now-lastWorkerRequest>=Math.max(adaptiveGpu?1000/40:1000/30,paintInterval)){
         const budgetMs=useFastGrid?(superFast?34:25):(superFast?36:29);
-        publishRustStep(count,budgetMs,now);
+        publishRustStep(sendCount,budgetMs,now);
       }
     }else if(count){
       const budgetMs=useFastGrid?(superFast?18:9):(superFast?36:12);
@@ -303,14 +366,32 @@ function frame(now) {
     }
   }else pendingSteps=0;
   if(wasmActive&&manualSteps>0&&!workerInFlight){
-    const count=Math.min(engineKind==='webgpu'?8:48,manualSteps);manualSteps-=count;
+    const gpuLimit=$('batchMode').value==='adaptive'?stepper.batch:STEP_FIXED;
+    const count=Math.min(engineKind==='webgpu'?gpuLimit:48,manualSteps);manualSteps-=count;
     publishRustStep(count,Number.POSITIVE_INFINITY,now);
+  }
+  if(wasmActive&&engineKind==='webgpu'&&!document.hidden&&shouldDrawGpuFrame({
+    now,lastPaint,fluidDirty:gpuFluidDirty,tracerDebt:gpuParticleDebt,
+    running:running||manualSteps>0,particlesEnabled:$('particles').checked
+  })){
+    if($('particles').checked&&gpuParticleDebt>0){
+      // Divide bursts across frames for smoother tracers, but catch up to the
+      // actual solver when GPU snapshots arrive faster than Canvas refreshes.
+      const portion=Math.min(24,Math.ceil(gpuParticleDebt/2));
+      moveParticles(portion);gpuParticleDebt-=portion;
+    }else if(!$('particles').checked)gpuParticleDebt=0;
+    gpuFluidDirty=false;paint();lastPaint=now;
   }
   if(now-performanceWindow>=1000){
     const seconds=(now-performanceWindow)/1000;
+    lastCanvasFps=paintedFrames/seconds;
+    lastFlowRate=simulatedSteps/seconds;
+    lastSnapshotHz=windowGpuSnapshots/seconds;
+    windowGpuSnapshots=0;
     $('livePerformance').textContent=(wasmActive?(engineKind==='webgpu'?'WebGPU':'Rust/WASM'):'JS')+' · Canvas: '+Math.round(paintedFrames/seconds)+
       ' fps · Flow: '+Math.round(simulatedSteps/seconds)+' steps/s';
     performanceWindow=now;paintedFrames=0;simulatedSteps=0;
+    refreshPerformance();
   }
   if(now-lastReadout>250&&!document.hidden){
     updateProbe();
@@ -434,6 +515,13 @@ $('clearButton').addEventListener('click',()=>shapeSelected('none',0));
 $('closeSensor').addEventListener('click',()=>{sensor=null;$('sensorReadout').hidden=true;paint();});
 $('angle').addEventListener('input',()=>shapeSelected(sim.shape,Number($('angle').value),true));
 $('animation').addEventListener('change',()=>{pendingSteps=0;});
+$('batchMode').value=tuningPreference==='adaptive'?'adaptive':'fixed';
+$('batchMode').addEventListener('change',()=>{
+  gpuParticleDebt=0;resetPerformance();
+  notify('Workload mode changed · allow 5 seconds before comparing readings.');
+});
+$('resetPerformance').addEventListener('click',resetPerformance);
+$('exportPerformance').addEventListener('click',exportPerformance);
 $('quality').value=qualityOption;
 $('engine').value=engineChoice;
 $('engine').addEventListener('change',()=>{

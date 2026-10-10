@@ -33,6 +33,9 @@ jobs:
           node --check airflow-lab/gpu-solver-ui.mjs
           node --check airflow-lab/gpu-solver-worker.mjs
           node --check airflow-lab/student-gpu-worker-v1.mjs
+          node --check airflow-lab/student-gpu-worker-v2.mjs
+          node --check airflow-lab/student-gpu-worker-v3.mjs
+          node --check airflow-lab/live-performance.mjs
           node --check airflow-lab/app.mjs
       - name: Run benchmark tests
         run: node --test airflow-lab/benchmark.test.mjs
@@ -40,6 +43,8 @@ jobs:
         run: node --test airflow-lab/webgpu-validation.test.mjs
       - name: Verify Stage 2 D2Q9 solver math and UI (hardware GPU pending)
         run: node --test airflow-lab/gpu-solver.test.mjs
+      - name: Live adaptive-batching and render scheduler tests
+        run: node --test airflow-lab/live-performance.test.mjs
       - name: Student WebGPU integration regressions
         run: node --test airflow-lab/student-gpu-integration.test.mjs
       - name: Verify GPU relative force and independent Rust WASM reference

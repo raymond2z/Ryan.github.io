@@ -62,3 +62,21 @@ body[data-level=beginner] .advanced-only{display:none!important}
 .gpu-force-readout{display:block;margin:9px 0 2px;padding:10px 12px;background:#edf8f5;color:#126e62;border-radius:8px;font-size:12px;line-height:1.55;font-variant-numeric:tabular-nums}
 body[data-level="beginner"] .gpu-force-readout{display:none}
 #forceNote{margin-top:8px}
+
+/* Stage 3.3 · optional high-contrast mobile performance diagnostics */
+.perf-diagnostics{margin:0 0 12px;border-top:1px solid #344a5a;background:#142634;color:#d7e9ef;font-size:12px}
+.perf-diagnostics>summary{cursor:pointer;padding:11px 22px;font-size:13px;font-weight:650;display:list-item}
+.perf-experimental{font-size:11px;color:#94b2be;font-weight:450;margin-left:9px}
+.perf-body{padding:0 22px 15px}
+.perf-body>p{margin:5px 0 13px;color:#adc7d1;line-height:1.55}
+.perf-control-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-bottom:14px}
+.perf-control-row label{font-weight:650}
+.perf-control-row select{border-radius:7px;border:1px solid #567384;background:#243b4b;color:#effaff;padding:8px;min-height:40px;flex:1;min-width:210px}
+.perf-control-row button{font-size:12px;padding:8px 10px;min-height:36px}
+.perf-measures{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.perf-measures>div{padding:9px 10px;border:1px solid #345267;background:#1b3445;border-radius:8px;min-width:0;display:flex;flex-direction:column;gap:4px}
+.perf-measures span{font-size:11px;color:#b1cbd4}
+.perf-measures strong{font-size:14px;line-height:1.35;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.perf-footnote{font-size:11px}
+@media(max-width:800px){.perf-measures{grid-template-columns:repeat(2,minmax(0,1fr))}.perf-diagnostics>summary{padding:11px 16px}.perf-body{padding:0 16px 14px}}
+@media(max-width:520px){.perf-measures strong{font-size:13px}.perf-control-row{align-items:stretch}.perf-control-row label{width:100%}.perf-control-row select{min-width:100%}.perf-control-row button{flex:1}}

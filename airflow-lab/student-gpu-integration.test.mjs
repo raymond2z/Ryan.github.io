@@ -9,7 +9,7 @@ test('Student Lab offers WebGPU, Rust, JavaScript and Auto choices',()=>{
   for(const name of ['auto','webgpu','wasm','javascript'])
     assert.ok(html.includes('value="'+name+'"'),'Missing engine '+name);
   assert.match(app,/engineChoice=\['javascript','wasm','webgpu'\]/);
-  assert.match(app,/engineKind==='webgpu'\?'\.\/student-gpu-worker-v2\.mjs'/);
+  assert.match(app,/engineKind==='webgpu'\?'\.\/student-gpu-worker-v3\.mjs'/);
   assert.match(app,/const wasGpu=engineKind==='webgpu'/);
   assert.match(app,/beginRustEngine\('wasm'\)/,'Rust must be fallback if GPU cannot initialize or compute');
   assert.match(app,/data\.forceOptIn/,'GPU force must be explicitly supported by the worker');
@@ -18,7 +18,7 @@ test('Student Lab offers WebGPU, Rust, JavaScript and Auto choices',()=>{
 });
 
 test('GPU worker uses persistent D2Q9 ping-pong fields and serialized messages',()=>{
-  const s=get('student-gpu-worker-v2.mjs');
+  const s=get('student-gpu-worker-v3.mjs');
   for(const snippet of [
     'd2q9-solver-r2-20261010.wgsl',
     'student-gpu-stir-v1.wgsl',
@@ -29,6 +29,7 @@ test('GPU worker uses persistent D2Q9 ping-pong fields and serialized messages',
     "msg.type===\'recycle\'",
     'type:\'skipped\'',
     'Math.min(STEP_LIMIT',
+    'queueReadbackMs', 'encodeMs', 'workerMs', 'perf:{encodeMs,queueReadbackMs,unpackMs,workerMs,forceEnabled}',
     "if(forceEnabled&&forceController)forceController.encodeHalfStep(encoder)",
     "if(forceEnabled&&forceController)forceController.encodeReadback(encoder)",
     "const forcePending=forceEnabled&&forceController",

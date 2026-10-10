@@ -82,7 +82,7 @@ test('benchmark routes GPU force through Rust parity independently of Student UI
   assert.match(core,/javascriptForce/);
   for(const id of new Set([...ui.matchAll(/\$\('([A-Za-z][A-Za-z0-9]*)'\)/g)].map(m=>m[1])))
     assert.ok(html.includes('id="'+id+'"'),'Missing benchmark HTML #'+id);
-  const student=readFileSync(new URL('./student-gpu-worker-v2.mjs',import.meta.url),'utf8');
+  const student=readFileSync(new URL('./student-gpu-worker-v3.mjs',import.meta.url),'utf8');
   assert.match(student,/createGpuForceController/,'Stage 3.2 may opt in to verified GPU force math');
   assert.match(student,/if\(forceEnabled&&forceController\)forceController.encodeHalfStep\(encoder\)/,
     'Student Lab must not incur force passes when toggle is off');
