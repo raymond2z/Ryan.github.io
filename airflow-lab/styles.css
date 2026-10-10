@@ -99,3 +99,10 @@ body[data-level="beginner"] .gpu-force-readout{display:none}
 @media(max-width:800px){.guided-comparison{grid-template-columns:1fr;margin:16px 18px 0;padding:16px}.comparison-actions{flex-direction:row;flex-wrap:wrap}.comparison-actions button{flex:1}.fair-test-status{margin:0 18px 16px}}
 @media(max-width:520px){.guided-comparison p{font-size:13px}.guided-comparison h3{font-size:18px}.comparison-actions button{min-width:140px}.fair-test-status{font-size:12px}}
 @media print{.comparison-actions{display:none}}
+
+/* Stage 4B: student-selected pairs and one retained repeat. */
+.comparison-options{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.comparison-options label{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px;color:#315d54;font-size:13px;font-weight:650}
+.comparison-options select,.repeat-reflection select{background:white;border:1px solid #abc9c1;border-radius:8px;min-height:44px;padding:8px 10px;font-size:14px;color:#163445;width:100%}
+.comparison-size{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:#315d54}.comparison-size input{width:18px;height:18px;accent-color:#0d7568}
+.previous-comparison{margin:0 26px 20px;border:1px solid #cedddf;border-radius:10px;background:#f6fafb;padding:14px 16px}.previous-comparison>summary{cursor:pointer;font-weight:650;color:#315761;font-size:14px;min-height:28px}.previous-comparison>p{font-size:13px;color:#607787;line-height:1.6}.previous-captures{border:0;padding:8px 0 16px}.previous-comparison .secondary-button{font-size:13px}.repeat-reflection select{max-width:420px}
+@media(max-width:520px){.comparison-options select,.repeat-reflection select{font-size:16px}.previous-comparison{margin:0 18px 16px;padding:12px}.comparison-size{min-height:40px}.previous-captures{grid-template-columns:1fr}}

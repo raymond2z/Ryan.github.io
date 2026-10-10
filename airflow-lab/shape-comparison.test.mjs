@@ -6,7 +6,7 @@ import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs';
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
-import {createMatchedComparison,comparisonPlan,comparisonDifferences,seededRandom} from './shape-comparison.mjs';
+import {createMatchedComparison,comparisonPlan,comparisonDifferences,setComparisonShape,COMPARISON_SHAPES,seededRandom} from './shape-comparison.mjs';
 
 const settings={grid:{width:240,height:104},position:{x:72,y:52},speed:.085,viscosity:.025};
 test('every batch size reaches exactly the same observation point for A and B',()=>{
@@ -26,7 +26,7 @@ test('shared positions keep both real preset masks inside the grid with equal fr
     const plan=comparisonPlan({...settings,grid:{width,height},position});
     const sim=new FluidSimulation(width,height),heights=[];
     for(const shape of ['block','streamlined']){
-      sim.setShape(shape,0,plan.position);const b=sim.obstacleBounds();
+      setComparisonShape(sim,plan,shape);const b=sim.obstacleBounds();
       assert.deepEqual({x:sim.centerX,y:sim.centerY},plan.position);
       assert.ok(b.minX>=8&&b.minY>=8&&b.maxX<=width-9&&b.maxY<=height-9);
       heights.push(b.maxY-b.minY+1);assert.equal(sim.time,0);assert.equal(sim.inletSpeed,sim.speed);
@@ -64,16 +64,19 @@ test('manual speed and angle experiments recognize the chosen variable instead o
 // Worker protocol double; no browser, GPU adapter or changed solver is required.
 function appHarness(engine='webgpu'){
   const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
-  const draw=new Proxy({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),measureText:t=>({width:t.length*9})},{get:(o,k)=>o[k]??(()=>{})});
+  const drawCalls=[];
+  const draw=new Proxy({createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),measureText:t=>({width:t.length*9}),fillText:t=>drawCalls.push(t)},{get:(o,k)=>o[k]??(()=>{})});
   class Element{
     constructor(tag='div'){this.tagName=tag.toUpperCase();this.dataset={};this.style={};this.disabled=false;this.hidden=false;this.checked=false;this.value='';this.textContent='';this.children=[];this.listeners={};this.attributes={};this.options=[];this.classList={toggle(){}};this.width=1200;this.height=520;}
     addEventListener(type,fn){(this.listeners[type]??=[]).push(fn);}
+    click(){this.fire('click');}
     fire(type,event={}){if(this.disabled&&type==='click')return;for(const fn of this.listeners[type]??[])fn({button:0,preventDefault(){},...event});}
     setAttribute(k,v){this.attributes[k]=v;}removeAttribute(k){delete this.attributes[k];}
     get selectedIndex(){return this.options.findIndex(o=>o.value===this.value);}
     querySelector(){return this.child??=new Element('span');}
     append(...v){this.children.push(...v);}replaceChildren(...v){this.children=v;}remove(){}
     focus(){document.activeElement=this;}scrollIntoView(){}getContext(){return draw;}toDataURL(){return 'data:image/png;base64,test';}
+    toBlob(callback){callback(new Blob(['test'],{type:'image/png'}));}
     getBoundingClientRect(){return {left:0,top:0,width:1200,height:520};}
   }
   const elements=[],ids=new Map();
@@ -106,14 +109,16 @@ function appHarness(engine='webgpu'){
         time:this.time,steps,inletSpeed:this.speed,forceX:0,forceY:0,fields:{rho:new Float32Array(n).fill(1),ux:new Float32Array(n).fill(this.speed),uy:new Float32Array(n)}}});
     }
   }
-  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,seededRandom,
+  class Image{set src(value){this.onload();}}
+  class TestURL extends URL{static createObjectURL(){return 'blob:test';}static revokeObjectURL(){}}
+  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,
     document,navigator:{gpu:{}},location:{pathname:'/airflow-lab/',search:'?quality=fast&engine='+engine,href:'https://example.test/airflow-lab/'},
-    window:{addEventListener(){}},innerWidth:1200,matchMedia:()=>({matches:false}),Worker,WebAssembly,URL,URLSearchParams,
+    window:{addEventListener(){}},innerWidth:1200,matchMedia:()=>({matches:false}),Worker,WebAssembly,URL:TestURL,URLSearchParams,Image,Blob,
     performance:{now:()=>now++},Float32Array,Float64Array,Uint8ClampedArray,Math,Date,structuredClone,AbortController,
     requestAnimationFrame(){},setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},console});
   const source=readFileSync(new URL('./app.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replaceAll('import.meta.url',"'https://example.test/airflow-lab/app.mjs'");
   vm.runInContext(source,context);
-  return {ids,workers,run:s=>vm.runInContext(s,context),click:id=>ids.get(id).fire('click'),state:()=>structuredClone(vm.runInContext('({phase:comparison.phase,active:comparison.active,running,steps:sim.time,shape:sim.shape,captures:captures.map(({image,...r})=>r)})',context))};
+  return {ids,workers,drawCalls,run:s=>vm.runInContext(s,context),click:id=>ids.get(id).fire('click'),state:()=>structuredClone(vm.runInContext('({phase:comparison.phase,active:comparison.active,running,steps:sim.time,shape:sim.shape,captures:captures.map(({image,...r})=>r)})',context))};
 }
 test('application captures exactly matched Worker frames, locks controls and restores free exploration',()=>{
   const app=appHarness();app.workers[0].ready();app.ids.get('prediction').value='b';app.click('startComparison');
@@ -160,4 +165,83 @@ test('a prediction is required and keyboard/drag guards protect the matched run'
   app.ids.get('tunnel').fire('keydown',{key:'ArrowRight'});
   app.ids.get('tunnel').fire('pointerdown',{pointerId:1,clientX:400,clientY:250});
   assert.equal(app.run('sim.centerX'),before);assert.equal(app.run('pointer'),null);
+});
+
+test('all selectable pairs fit both grids and have genuinely matched raster heights',()=>{
+  for(const [width,height]of [[240,104],[168,72]]){
+    for(let i=0;i<COMPARISON_SHAPES.length;i++)for(let j=i+1;j<COMPARISON_SHAPES.length;j++){
+      for(const position of [{x:0,y:0},{x:width-1,y:height-1}]){
+        const pair=[COMPARISON_SHAPES[i],COMPARISON_SHAPES[j]],plan=comparisonPlan({...settings,grid:{width,height},position,pair});
+        const sim=new FluidSimulation(width,height),heights=[];
+        for(const shape of pair){
+          const baseScale=sim.shapeScale;setComparisonShape(sim,plan,shape);const b=sim.obstacleBounds();
+          assert.equal(sim.shapeScale,baseScale,'Normal preset scale must be restored');
+          assert.ok(b.minX>=8&&b.maxX<=width-9&&b.minY>=8&&b.maxY<=height-9);
+          assert.ok(Math.abs((b.minX+b.maxX)/2-plan.position.x)<=.5);
+          assert.ok(Math.abs((b.minY+b.maxY)/2-plan.position.y)<=.5);
+          heights.push(b.maxY-b.minY+1);assert.equal(sim.time,0);
+        }
+        assert.ok(Math.abs(heights[0]-heights[1])<=1,`Height mismatch ${pair} on ${width}`);
+      }
+    }
+  }
+});
+test('original-size comparisons preserve scale and warn about different frontal heights',()=>{
+  const sim=new FluidSimulation(240,104),plan=comparisonPlan({...settings,pair:['car','pikachu'],matchHeight:false});
+  const records=plan.pair.map(shape=>{
+    const appearance=setComparisonShape(sim,plan,shape),b=sim.obstacleBounds();
+    assert.equal(appearance.scale,1);
+    return {...settings,shape,angle:0,steps:2000,obstacleHeight:b.maxY-b.minY+1,sizeMode:appearance.sizeMode};
+  });
+  assert.ok(comparisonDifferences(...records).includes('front-facing height'));
+  assert.throws(()=>comparisonPlan({...settings,pair:['car','car']}));
+  assert.throws(()=>comparisonPlan({...settings,pair:['custom','bird']}));
+});
+function finishWorkerTrial(app){
+  const worker=app.workers[0];
+  while(app.state().active&&app.state().phase!=='ready-b'){
+    app.run('publishRustStep(24,Infinity,performance.now())');
+    worker.respond(worker.messages.filter(m=>m.type==='step').at(-1).count);
+  }
+}
+function finishWorkerPair(app){finishWorkerTrial(app);app.click('nextComparison');finishWorkerTrial(app);}
+test('chosen silhouettes and prediction follow the pair while duplicate choices are blocked',()=>{
+  const app=appHarness();app.workers[0].ready();
+  app.ids.get('comparisonShapeA').value='car';app.ids.get('comparisonShapeB').value='bird';
+  app.ids.get('comparisonShapeA').fire('change');
+  assert.match(app.ids.get('prediction').options[1].textContent,/Car/);assert.match(app.ids.get('nextComparison').textContent,/Bird/);
+  app.ids.get('prediction').value='b';app.click('startComparison');
+  assert.equal(app.ids.get('comparisonShapeA').disabled,true);assert.equal(app.ids.get('matchShapeHeight').disabled,true);
+  finishWorkerPair(app);const records=app.state().captures;
+  assert.deepEqual(records.map(r=>r.shape),['car','bird']);
+  assert.ok(records.every(r=>r.comparison.prediction==='Bird has the narrower wake'));
+  assert.deepEqual(comparisonDifferences(...records),[]);
+  app.run('captures=[];renderCaptures()');app.ids.get('comparisonShapeB').value='car';app.ids.get('comparisonShapeB').fire('change');
+  assert.equal(app.ids.get('startComparison').disabled,true);
+});
+test('repeating restores original conditions and retains previous notes without growing history',async()=>{
+  const app=appHarness();app.workers[0].ready();
+  app.ids.get('comparisonShapeA').value='car';app.ids.get('comparisonShapeB').value='pikachu';app.ids.get('comparisonShapeA').fire('change');
+  app.ids.get('prediction').value='a';app.click('startComparison');finishWorkerPair(app);
+  app.run("captures[0].note='A wide wake';captures[1].note='Small swirls';");app.ids.get('conclusion').value='My first explanation';
+  const first=app.state().captures;
+  // Change freely after completion, then ask to repeat the ORIGINAL test.
+  app.run('sim.speed=.15;sim.viscosity=.08;');app.ids.get('animation').value='24';app.ids.get('batchMode').value='adaptive';
+  app.ids.get('comparisonShapeA').value='bird';app.ids.get('comparisonShapeB').value='plate';app.ids.get('matchShapeHeight').checked=false;
+  app.click('repeatComparison');
+  assert.equal(app.ids.get('comparisonShapeA').value,'car');assert.equal(app.ids.get('comparisonShapeB').value,'pikachu');
+  assert.equal(app.ids.get('matchShapeHeight').checked,true);assert.equal(app.ids.get('animation').value,'7');assert.equal(app.ids.get('batchMode').value,'fixed');
+  assert.equal(app.run('sim.speed'),first[0].speed);assert.equal(app.run('sim.viscosity'),first[0].viscosity);
+  assert.equal(app.run('previousComparison.captures[0].note'),'A wide wake');
+  assert.equal(app.run('previousComparison.conclusion'),'My first explanation');
+  finishWorkerPair(app);assert.equal(app.state().captures[0].comparison.round,2);assert.equal(app.ids.get('repeatReflection').hidden,false);
+  assert.deepEqual(app.state().captures.map(r=>r.position),first.map(r=>r.position));
+  app.ids.get('repeatResult').value='similar';app.ids.get('conclusion').value='My second explanation';
+  await app.run('exportReport(previousComparison.captures,previousComparison)');
+  assert.ok(app.drawCalls.some(t=>t==='Explanation: My first explanation'));
+  await app.run('exportReport()');assert.ok(app.drawCalls.some(t=>/Round 2: The wake looked similar/.test(t)));
+  app.click('repeatComparison');
+  assert.equal(app.run('previousComparison.round'),2);assert.equal(app.run('previousComparison.captures.length'),2);
+  assert.equal(app.run('previousComparison.repeatResult'),'similar');
+  app.click('cancelComparison');assert.equal(app.run('previousComparison.conclusion'),'My second explanation');
 });

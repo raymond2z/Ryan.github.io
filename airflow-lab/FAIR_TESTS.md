@@ -1,65 +1,71 @@
-# Stage 4A — Compare shapes with matched conditions
+# Stage 4B — Choose shapes and check an observation again
 
-The classroom priority is a short **predict → observe → explain** task.
-The existing student page, manual snapshots and PNG report remain the entry point.
+The student workflow is **predict → observe A/B → explain → repeat**.
+Stage 4A's matched-step captures remain the foundation; this release adds
+student-selected pairs, height control and one retained previous comparison.
 
 ## Student workflow
 
-1. Open the Shape test and choose a prediction, including “I'm not sure yet”.
-2. Choose **Observe A · Block**. The current wind speed and viscosity are kept.
-   Both shapes face forward at 0°, use the same preset scale, and share a
-   position that fits both inside the grid. The colour view is Speed, particles
-   are on, arrows and force are off. The flow starts fresh at the selected wind.
-3. The app pauses and saves A at exactly **2,000 public simulation steps**.
-   Describe the wake in A's observation box.
-4. Choose **Observe B · Streamlined**. The app resets the flow with the same
-   settings, then pauses and saves B at exactly 2,000 steps.
-5. Compare the wake colours behind the shapes. Explain whether the evidence
-   supports the prediction, then download the existing A/B PNG report.
+1. In Compare shapes, choose Shape A and Shape B from Circle, Block,
+   Streamlined, Flat plate, Car, Bird or Pikachu. Choose two different presets.
+2. Leave **Make both shapes equally tall** on to control front-facing height.
+   It uniformly scales each silhouette in the guide; it does not match length
+   or area. Turning it off keeps the original preset sizes, and the result
+   check will flag differing frontal heights.
+3. Choose a prediction. The options follow the selected pair; “I'm not sure
+   yet” is available. Choose **Observe A** to start fresh flow at the current
+   wind and viscosity. Both shapes face forward and use the Speed colour view.
+4. The app pauses and saves A at exactly **2,000 public simulation steps**.
+   Write an observation, then choose **Observe B**. B starts with the same
+   conditions and is also captured at exactly 2,000 steps.
+5. Explain using wake colours and download the A/B PNG report.
+6. Choose **Repeat · keep this test** to check again. The app restores the
+   original wind, viscosity, pair, size method, position, animation pace and
+   workload, even if controls changed after the first run. The latest completed
+   pair, notes, prediction and explanation remain under **Previous test**.
+7. After the repeat, choose whether the wake looked similar, different or
+   uncertain. The current PNG report includes this response. The previous pair
+   has its own download button and uses its original notes and explanation.
 
-The run duration in real seconds varies by device. Matching elapsed model steps
-is more useful here than an arbitrary timer. This is one observation point,
-not a claim that a fluctuating wake has reached steady state. For later wakes,
-exit the guide and use the normal controls to explore.
+Only the current pair and one previous pair are kept in page memory. Repeating
+again replaces the older previous pair with the latest completed pair; download
+older reports first. Reloading clears the work. No account or uploads are added.
 
 ## Conditions and limits
 
-- The guided pair is deliberately Block / Streamlined. Their front-facing
-  heights match within one raster grid cell on both existing grids. Their
-  length, area and contour differ. This does not isolate contour while holding
-  every geometric quantity constant, and does not measure real aerodynamic drag.
-- A common safe anchor is computed before A starts. A previously dragged
-  position is kept if both shapes fit; otherwise both use the same clamped
-  position. Geometry and the solver are unchanged.
-- Each trial starts with fresh flow, the selected inlet speed and the same
-  seeded initial tracer markers. Tracer trails are visual aids, not an exact
-  equality check; delivery and rendering batches may still affect the trails.
-  Students compare wake colours and describe visible evidence.
-- Settings, shape edits, dragging, manual steps and manual capture are locked
-  during the guide. Pause is available while a trial runs. **Exit comparison**
-  restores free exploration and keeps any saved A for review. Remove existing
-  snapshots before starting a new guided run; the app never silently erases them.
-- Background tabs naturally pause progress. An engine error or fallback ends
-  the comparison; it cannot silently complete B on a different engine. Restart
-  a fresh pair after removing any partial snapshots.
-- Manual captures now record grid, engine, position, frontal height, display
-  settings and elapsed steps. The comparison check flags differences beyond
-  the chosen variable in Shape, Speed or Angle experiments. It checks recorded
-  conditions, not physical validity or statistical significance.
-- The guided prediction is saved with the captures, so the downloaded report
-  keeps the original prediction even if the prediction control changes later.
-- Snapshots, notes and predictions remain in page memory until downloaded;
-  reloading clears them. No account, telemetry or uploads are added.
+- The two grids retain their existing dimensions, 240 × 104 and 168 × 72.
+  Matched height targets the current grid's default Block frontal height:
+  31 or 21 raster cells. All supported pairs are verified to match within one
+  grid cell. Uniform scaling uses the existing silhouette equations, with
+  normal raster discretization; it is not an equal-area or equal-length test.
+- The app aligns bounding-box centres to the shared position within half a
+  raster cell. A prior dragged position is kept if both shapes fit. Otherwise
+  both use one common clamped position with the existing 8-cell safety margin.
+- Scaling applies to guided geometry only. Selecting a free-exploration shape
+  restores its original preset size. A completed guided shape stays visible
+  at its comparison size until changed; captures retain the actual size method
+  and scale. Drawing changes the obstacle to a custom mask as before.
+- Each trial starts fresh at the selected wind. Matching model steps does not
+  match real seconds or certify steady state. Device speed affects waiting
+  time. For later wake development, exit the guide and explore normally.
+- Initial tracer markers use the same seed. Particle trails remain visual aids;
+  Worker delivery and painting can affect their paths. Students compare wake
+  colours, rather than claiming pixel-identical trails or statistical proof.
+- Settings, pair/size choices, dragging, manual steps and manual capture stay
+  locked while a guided comparison runs. Pause and Exit remain available.
+  Cancelling a repeat preserves the previous completed pair, and an engine
+  change ends the active run. A repeated run cannot silently change engine.
+- Manual Shape, Speed and Angle captures still check recorded conditions
+  beyond the selected variable. Differences in height, position, grid, engine,
+  display settings or elapsed steps are shown for review. These checks do not
+  establish physical validity or real car/aircraft performance.
+- Reports freeze their source records and written reflection before loading
+  images. A previous report cannot accidentally use the new round's notes.
+  Guided predictions remain the original prediction even after controls change.
+- Research stability JSON also records interface build, geometry scale and
+  size method, so a resized silhouette is distinguishable from a native preset.
 
-## Implementation and validation
-
-The app caps only the final guided step batch to the remaining steps, then
-captures the returned field before permitting another trial. Worker revisions
-continue to reject stale pre-reset frames. The independent matched-comparison
-module tests batch sizes, common positions and condition checks. A small DOM /
-asynchronous Worker protocol double runs the real app handlers for automatic
-capture, control locks, cancellation and fallback. The JavaScript final chunk
-uses the real solver. These are application tests, not hardware GPU benchmarks.
+## Validation and scope
 
 ```sh
 node --check airflow-lab/app.mjs
@@ -67,15 +73,16 @@ node --check airflow-lab/shape-comparison.mjs
 node --test airflow-lab/shape-comparison.test.mjs airflow-lab/stability-recorder.test.mjs airflow-lab/live-performance.test.mjs airflow-lab/student-gpu-integration.test.mjs
 ```
 
-The 32 relevant tests passed for this release. GitHub also runs the existing
-full benchmark and WASM checks. No solver, shader, Worker kernel, grid default,
-30 FPS schedule or Fixed 8 default is changed. Repeated phone / tablet /
-desktop benchmarking is reserved for substantial runtime or classroom-default
-changes, following `STABILITY.md`.
+The 36 relevant automated tests passed for this release. Tests include every
+supported pair on both grids at the top-left and bottom-right boundaries;
+actual raster height/centre/bounds checks; exact observation steps; native-size
+warnings; selected-pair predictions; repeat restoration; retained notes; report
+source isolation; cancellation; and the existing recorder/scheduler/integration
+regressions. Application tests use a small DOM and asynchronous Worker protocol
+double; the JavaScript final chunk uses the real solver. These are not physical
+GPU benchmarks. GitHub also runs the existing full benchmark and WASM checks.
 
-## Next classroom work
-
-4A provides one usable controlled comparison. Further shape pairs, reset/repeat
-observations, and short student evidence prompts can follow observed classroom
-needs. 60 FPS and higher GPU update-rate experiments remain separate research
-work and are not required for this task.
+Solver, shaders, Worker kernels, engine selection, grid defaults, 30 FPS pacing
+and Fixed 8 default remain unchanged. Physical desktop/phone/tablet benchmarking
+is reserved for substantial runtime or classroom-default changes, following
+STABILITY.md. 60 FPS and higher GPU update rates remain separate research work.

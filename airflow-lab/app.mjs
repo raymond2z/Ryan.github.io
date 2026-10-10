@@ -2,7 +2,7 @@ import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
-import {createMatchedComparison,comparisonDifferences,seededRandom} from './shape-comparison.mjs?build=stage4a-20261010';
+import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=stage4b-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
@@ -14,7 +14,8 @@ function stabilityConfig(){
     position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,viscosity:sim.viscosity,
     animation:$('animation').value,batchMode:$('batchMode').value,
     forceEnabled:$('force').checked,particles:$('particles').checked,
-    vectors:$('vectors').checked,view};
+    vectors:$('vectors').checked,view,interfaceBuild:'stage4b-20261010',
+    sizeMode:shapeAppearance?.sizeMode??'preset',geometryScale:shapeAppearance?.scale??sim.shapeScale};
 }
 function stabilityActivity(){
   return {running,hidden:document.hidden,interacting:Boolean(pointer)};
@@ -117,7 +118,19 @@ let view='curl',tool='move',running=!matchMedia('(prefers-reduced-motion: reduce
 let sensor=null,pointer=null,particles=[],captures=[],experiment='shapes',lastFrame=0,lastReadout=0,pendingSteps=0,toastTimer;
 const comparison=createMatchedComparison();
 let comparisonLocks=[],particleRandom=Math.random,comparisonPrediction='';
-const comparisonLockSelector='[data-shape],[data-view],[data-level],[data-tool],[data-experiment],#setupExperiment,#demoButton,#nextDemo,#speed,#angle,#animation,#viscosity,#quality,#engine,#batchMode,#force,#particles,#vectors,#clearButton,#resetButton,#stepButton,#captureButton,#startStability,#prediction';
+let shapeAppearance=null,previousComparison=null,comparisonRound=1;
+const comparisonLockSelector='[data-shape],[data-view],[data-level],[data-tool],[data-experiment],#setupExperiment,#demoButton,#nextDemo,#speed,#angle,#animation,#viscosity,#quality,#engine,#batchMode,#force,#particles,#vectors,#clearButton,#resetButton,#stepButton,#captureButton,#startStability,#prediction,#comparisonShapeA,#comparisonShapeB,#matchShapeHeight';
+function chosenComparisonPair(){return [$('comparisonShapeA')?.value||'block',$('comparisonShapeB')?.value||'streamlined'];}
+function syncComparisonChoices(){
+  const pair=comparison.active?comparison.plan.pair:chosenComparisonPair();
+  if($('comparisonTitle'))$('comparisonTitle').textContent=`Compare ${names[pair[0]]} and ${names[pair[1]]}`;
+  if($('startComparison'))$('startComparison').textContent=`Observe A · ${names[pair[0]]}`;
+  if($('nextComparison'))$('nextComparison').textContent=`Observe B · ${names[pair[1]]}`;
+  if(experiment==='shapes'){
+    $('prediction').options[1].textContent=`${names[pair[0]]} has the narrower wake`;
+    $('prediction').options[2].textContent=`${names[pair[1]]} has the narrower wake`;
+  }
+}
 function lockComparison(){
   comparisonLocks=[...document.querySelectorAll(comparisonLockSelector)].map(el=>({el,disabled:el.disabled}));
   comparisonLocks.forEach(({el})=>el.disabled=true);
@@ -132,23 +145,28 @@ function unlockComparison(){
 }
 function refreshComparison(){
   if(!$('comparisonStatus'))return;
-  $('startComparison').disabled=comparison.active||wasmStarting||stability.active||captures.length>0||Boolean(pointer);
+  const pair=chosenComparisonPair();
+  $('startComparison').disabled=comparison.active||wasmStarting||stability.active||captures.length>0||Boolean(pointer)||pair[0]===pair[1];
   $('nextComparison').hidden=comparison.phase!=='ready-b';
   $('cancelComparison').hidden=!comparison.active;
   $('playButton').disabled=comparison.phase==='ready-b';
+  if($('repeatComparison'))$('repeatComparison').hidden=comparison.active||captures.length!==2||!captures.every(r=>r.comparison?.matched&&r.comparison.round===comparisonRound);
+  if($('repeatReflection'))$('repeatReflection').hidden=!previousComparison||captures.length!==2||!captures.every(r=>r.comparison?.repeated);
   if(comparison.running){
     const letter=comparison.phase==='running-a'?'A':'B';
     $('comparisonStatus').textContent=`${running?'Observing':'Paused'} ${letter} · ${names[comparison.shape]} · ${Math.min(sim.time,2000).toLocaleString()} / 2,000 steps. Settings stay the same; you can pause or exit.`;
   }else if(comparison.phase==='ready-b'){
     $('comparisonStatus').textContent='A saved. Describe the wake below, then observe B with the same wind, position and elapsed steps.';
   }else if(comparison.phase==='done'&&captures.length===2&&captures.every(r=>r.comparison?.matched)){
-    $('comparisonStatus').textContent='A and B saved at 2,000 steps. Compare the wake colours behind each shape. Did your prediction match?';
+    $('comparisonStatus').textContent=`Round ${comparisonRound}: A and B saved at 2,000 steps. Compare the wake colours. Repeat the same test to check your observation; the latest completed pair will be kept below.`;
   }else if(captures.length){
     $('comparisonStatus').textContent='Remove the saved views before starting a new matched comparison.';
   }else if(wasmStarting){
     $('comparisonStatus').textContent='Preparing the flow. Your comparison will be ready shortly.';
+  }else if(pair[0]===pair[1]){
+    $('comparisonStatus').textContent='Choose two different shapes, then make a prediction.';
   }else if(!comparison.active){
-    $('comparisonStatus').textContent='Predict first. We will reset each shape and save it at the same observation point. Wind and viscosity use your current settings; both shapes face forward.';
+    $('comparisonStatus').textContent='Choose two shapes and predict first. We will keep the same wind, position and elapsed steps. “Equally tall” controls front-facing height, not length or area.';
   }
 }
 function prepareComparisonTrial(){
@@ -156,24 +174,65 @@ function prepareComparisonTrial(){
   sim.speed=plan.speed;sim.viscosity=plan.viscosity;
   manualSteps=0;pendingSteps=0;sensor=null;$('sensorReadout').hidden=true;
   particleRandom=seededRandom();
-  sim.setShape(comparison.shape,0,plan.position);
+  shapeAppearance=setComparisonShape(sim,plan,comparison.shape);
   press('shape',comparison.shape);$('angle').value='0';$('angleValue').textContent='0°';
   $('observation').innerHTML=notes[comparison.shape];
-  $('canvasNote').textContent=`Compare the wake behind the ${names[comparison.shape].toLowerCase()}`;
+  $('canvasNote').textContent=`${plan.matchHeight?'Equally tall · ':''}Watch the wake behind the ${names[comparison.shape].toLowerCase()}`;
   resetParticles();resetRustField();running=true;syncRunning();paint();refreshComparison();
 }
 function startComparison(){
   if(comparison.active||stability.active||wasmStarting||captures.length||pointer)return;
   if(!$('prediction').value){notify('Choose a prediction first. “I’m not sure yet” is a prediction too.');$('prediction').focus();return;}
-  comparisonPrediction=$('prediction').options[$('prediction').selectedIndex].textContent;
-  comparison.start({speed:sim.speed,viscosity:sim.viscosity,position:{x:sim.centerX,y:sim.centerY},
+  try{comparison.start({speed:sim.speed,viscosity:sim.viscosity,position:{x:sim.centerX,y:sim.centerY},
     grid:{width:W,height:H},engine:engineKind,view:'speed',animation:$('animation').value,
-    batchMode:$('batchMode').value,shapeScale:sim.shapeScale});
-  // The supported guided pair has matching frontal height, up to one grid cell.
+    batchMode:$('batchMode').value,shapeScale:sim.shapeScale,pair:chosenComparisonPair(),matchHeight:$('matchShapeHeight')?.checked!==false,predictionValue:$('prediction').value});
+  }catch(error){notify(error.message);return;}
+  comparisonRound=1;comparisonPrediction=$('prediction').options[$('prediction').selectedIndex].textContent;
+  beginComparisonRun();
+}
+function beginComparisonRun(){
+  const plan=comparison.plan;
+  sim.speed=plan.speed;sim.viscosity=plan.viscosity;
+  $('speed').value=plan.speed;$('speedValue').textContent=plan.speed.toFixed(3);
+  $('viscosity').value=plan.viscosity;$('viscosityValue').textContent=plan.viscosity.toFixed(3);
+  $('animation').value=plan.animation;$('batchMode').value=plan.batchMode;
   $('force').checked=false;gpuForceValid=false;syncGpuForce();showForceReadout();
   $('particles').checked=true;$('vectors').checked=false;setView('speed');toolSelected('move');
   lockComparison();prepareComparisonTrial();
   $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function repeatComparison(){
+  if(comparison.active||wasmStarting||stability.active||pointer||captures.length!==2||!captures.every(r=>r.comparison?.matched))return;
+  const plan=comparison.plan;
+  if(!plan||plan.engine!==engineKind){notify('The engine changed. Keep this report, then start a fresh pair using the current engine.');return;}
+  try{comparison.start(plan);}catch(error){notify(error.message);return;}
+  // Keep one complete previous pair, including its notes and reflection.
+  previousComparison={captures:captures.map(r=>structuredClone(r)),conclusion:$('conclusion').value,
+    prediction:comparisonPrediction,repeatResult:$('repeatResult')?.value||'',round:comparisonRound};
+  comparisonRound++;captures=[];
+  $('comparisonShapeA').value=plan.pair[0];$('comparisonShapeB').value=plan.pair[1];
+  $('matchShapeHeight').checked=plan.matchHeight;$('prediction').value=plan.predictionValue;
+  experiment='shapes';press('experiment','shapes');$('guidedComparison').hidden=false;
+  $('conclusion').value='';$('repeatResult').value='';
+  syncComparisonChoices();renderPreviousComparison();renderCaptures();beginComparisonRun();
+}
+function renderPreviousComparison(){
+  const root=$('previousComparison');if(!root)return;
+  root.replaceChildren();root.hidden=!previousComparison;if(!previousComparison)return;
+  const title=document.createElement('summary');title.textContent=`Previous test · Round ${previousComparison.round} · pictures and notes`;root.append(title);
+  const info=document.createElement('p');info.textContent=`Prediction: ${previousComparison.prediction}. Explanation: ${previousComparison.conclusion||'Not recorded'}`;root.append(info);
+  const grid=document.createElement('div');grid.className='captures previous-captures';
+  previousComparison.captures.forEach((record,index)=>{
+    const figure=document.createElement('figure');figure.className='capture-card';
+    const img=document.createElement('img');img.src=record.image;img.alt=`Previous view ${index?'B':'A'} · ${names[record.shape]}`;
+    const caption=document.createElement('figcaption');caption.className='capture-caption';
+    const heading=document.createElement('strong');heading.textContent=`${index?'B':'A'} · ${names[record.shape]}`;
+    const settings=document.createElement('div');settings.textContent=`Wind ${record.speed.toFixed(3)} · ${record.steps.toLocaleString()} steps · Height ${record.obstacleHeight} cells`;
+    const note=document.createElement('p');note.textContent=record.note||'No observation recorded.';
+    caption.append(heading,settings,note);figure.append(img,caption);grid.append(figure);
+  });root.append(grid);
+  const download=document.createElement('button');download.className='secondary-button';download.textContent='Download previous report';
+  download.addEventListener('click',()=>exportReport(previousComparison.captures,previousComparison).catch(()=>notify('Could not export the previous report.')));root.append(download);
 }
 function cancelComparison(message='Comparison ended. Your saved views remain below; remove them to start again.'){
   if(!comparison.active)return;
@@ -187,7 +246,7 @@ function finishComparisonTrial(){
   try{
     comparison.complete(sim.time);running=false;pendingSteps=0;manualSteps=0;
     if(gpuParticleDebt>0){moveParticles(gpuParticleDebt);gpuParticleDebt=0;}
-    syncRunning();capture({matched:true,letter,prediction:comparisonPrediction});
+    syncRunning();capture({matched:true,letter,prediction:comparisonPrediction,round:comparisonRound,repeated:comparisonRound>1});
     if(comparison.phase==='done')unlockComparison();else refreshComparison();
   }catch(error){
     comparison.cancel();running=false;pendingSteps=0;manualSteps=0;syncRunning();unlockComparison();
@@ -562,6 +621,7 @@ function setView(next) {
   $('legendLow').textContent=info[0];$('legendHigh').textContent=info[1];$('legendNote').textContent=info[2];$('legendGradient').style.background=info[3];paint();
 }
 function shapeSelected(shape,angle=0,preservePosition=false) {
+  shapeAppearance=null;
   sim.setShape(shape,angle,preservePosition?{x:sim.centerX,y:sim.centerY}:null);resetParticles();press('shape',shape);$('angle').value=angle;$('angleValue').textContent=`${angle}°`;
   const disabled=['custom','none'].includes(shape);$('angle').disabled=disabled;
   $('observation').innerHTML=notes[shape];$('canvasNote').textContent=shape==='none'?'Add a shape to disturb the flow':`Watch the wake behind the ${names[shape].toLowerCase()}`;
@@ -589,6 +649,7 @@ function position(event) {
   const r=canvas.getBoundingClientRect();return {x:Math.max(2,Math.min(W-3,(event.clientX-r.left)/r.width*W)),y:Math.max(2,Math.min(H-3,(event.clientY-r.top)/r.height*H))};
 }
 function editSegment(from,to) {
+  shapeAppearance=null;
   const distance=Math.hypot(to.x-from.x,to.y-from.y),segments=Math.ceil(distance/1.5)||1;
   for(let i=0;i<=segments;i++){const t=i/segments;sim.brush(from.x+(to.x-from.x)*t,from.y+(to.y-from.y)*t,tool==='erase'?3:2,tool==='erase');}
   press('shape','custom');$('angle').disabled=true;$('observation').innerHTML=notes.custom;$('canvasNote').textContent='Your custom barrier';
@@ -757,7 +818,7 @@ $('nextDemo').addEventListener('click',()=>{
   $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
 });
 const experiments={
-  shapes:{label:'01 / SHAPE TEST',title:'Which shape leaves a narrower wake?',text:'Use the guided comparison to hold wind, viscosity, position and elapsed steps constant. The two shapes face forward and have matching frontal heights, within one grid cell.',predict:'Which shape will leave a narrower wake?',observe:'Compare wake colours behind A and B.',explain:'Use a difference you can see to explain your answer.'},
+  shapes:{label:'01 / SHAPE TEST',title:'Which shape leaves a narrower wake?',text:'Choose two shapes. Keep wind, viscosity, position and elapsed steps constant. “Equally tall” controls front-facing height, not length or area. Repeat to check your observation.',predict:'Which shape will leave a narrower wake?',observe:'Compare wake colours behind A and B.',explain:'Use a difference you can see to explain your answer.'},
   speed:{label:'02 / SPEED TEST',title:'What changes when the flow gets faster?',text:'Keep the circle and viscosity unchanged. Compare speeds of 0.040, 0.100 and 0.200. Use Reset flow for each fresh test, then compare after a similar number of steps.',predict:'Will faster flow create a different wake?',observe:'Compare the swirls and particle paths.',explain:'Describe one change you can actually see.'},
   angle:{label:'03 / ANGLE TEST',title:'What happens when you tilt the shape?',text:'Start with the streamlined shape at 0°. Try 20°, keeping flow speed and viscosity unchanged. Compare the flow above and below the shape.',predict:'Will the flow stay balanced on both sides?',observe:'Use direction arrows and the speed view.',explain:'Explain how the angle changed the flow.'}
 };
@@ -767,12 +828,13 @@ function selectExperiment(next){
   const options={shapes:['Block leaves a narrower wake','Streamlined leaves a narrower wake'],speed:['Faster flow changes the wake','Faster flow makes little difference'],angle:['Tilting changes the flow balance','Tilting makes little difference']}[next];
   $('prediction').options[1].textContent=options[0];$('prediction').options[2].textContent=options[1];$('prediction').value='';$('conclusion').value='';
   if($('guidedComparison'))$('guidedComparison').hidden=next!=='shapes';
+  if(next==='shapes')syncComparisonChoices();
 }
 document.querySelectorAll('[data-experiment]').forEach(el=>el.addEventListener('click',()=>selectExperiment(el.dataset.experiment)));
 function setupExperiment(){
   sim.viscosity=.025;sim.speed=experiment==='speed'?.040:.085;
   $('viscosity').value=sim.viscosity;$('viscosityValue').textContent=sim.viscosity.toFixed(3);$('speed').value=sim.speed;$('speedValue').textContent=sim.speed.toFixed(3);
-  shapeSelected(experiment==='shapes'?'block':experiment==='angle'?'streamlined':'circle',0);
+  shapeSelected(experiment==='shapes'?chosenComparisonPair()[0]:experiment==='angle'?'streamlined':'circle',0);
   $('particles').checked=true;$('vectors').checked=experiment==='angle';setView(experiment==='angle'?'speed':'curl');
   toolSelected(document.body.dataset.level==='beginner'?'move':'probe');running=true;syncRunning();notify('Experiment ready. Predict, then start the matched shape comparison or explore freely.');
 }
@@ -783,6 +845,7 @@ function capture(comparisonInfo=null) {
   const bounds=sim.obstacleBounds();
   const record={image:canvas.toDataURL('image/png'),shape:sim.shape,angle:sim.angle,position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,inletSpeed:sim.inletSpeed,viscosity:sim.viscosity,steps:sim.time,view,engine:engineKind,grid:{width:W,height:H},shapeScale:sim.shapeScale,obstacleHeight:bounds?bounds.maxY-bounds.minY+1:0,animation:$('animation').value,batchMode:$('batchMode').value,particles:$('particles').checked,vectors:$('vectors').checked,forceEnabled:$('force').checked,comparison:comparisonInfo?.matched?comparisonInfo:null,probe:s&&!s.solid?s:null,force:$('force').checked&&(engineKind!=='webgpu'||gpuForceValid)?{drag:sim.forceX,lift:-sim.forceY,resultant:Math.hypot(sim.forceX,sim.forceY),units:'relative model force (simulation units)',snapshot:true}:null,note:''};
   record.experiment=experiment;
+  record.geometryScale=shapeAppearance?.scale??sim.shapeScale;record.sizeMode=shapeAppearance?.sizeMode??'preset';
   captures.push(record);renderCaptures();notify(`View ${captures.length===1?'A':'B'} captured. ${captures.length===1?(record.comparison?'Describe A, then choose Observe B.':'Change one variable for your next view.'):'Compare the two views below.'}`);
   return {shape:record.shape,speed:record.speed,steps:record.steps,count:captures.length};
 }
@@ -795,7 +858,8 @@ function renderCaptures() {
     const heading=document.createElement('div'),title=document.createElement('strong');title.textContent=`View ${index===0?'A':'B'} · ${names[record.shape]}`;
     const remove=document.createElement('button');remove.textContent='Remove';remove.disabled=comparison.active;remove.setAttribute('aria-label',`Remove view ${index===0?'A':'B'}`);remove.addEventListener('click',()=>{captures.splice(index,1);renderCaptures();});heading.append(title,remove);caption.append(heading);
     const meta=document.createElement('div');meta.textContent=`Speed ${record.speed.toFixed(3)} · Viscosity ${record.viscosity.toFixed(3)} · ${record.angle}° · ${record.steps.toLocaleString()} steps · ${viewNames[record.view]}`;caption.append(meta);
-    const method=document.createElement('div');method.textContent=`${record.comparison?'Matched shape test · ':''}${record.engine} · ${record.grid.width} × ${record.grid.height} grid · Height ${record.obstacleHeight} cells`;caption.append(method);
+    const method=document.createElement('div');method.className='advanced-only';method.textContent=`${record.engine} · ${record.grid.width} × ${record.grid.height} grid · Height ${record.obstacleHeight} cells`;caption.append(method);
+    if(record.comparison){const trial=document.createElement('div');trial.textContent=`Round ${record.comparison.round} · ${record.sizeMode==='matched-height'?'Equally tall shapes':'Original preset sizes'}`;caption.append(trial);}
     if(record.shape!=='none'){const location=document.createElement('div');location.textContent=`Object position (${record.position.x}, ${record.position.y})`;caption.append(location);}
     if(Math.abs(record.inletSpeed-record.speed)>.0003){const transition=document.createElement('div');transition.textContent=`Flow still adjusting: inlet ${record.inletSpeed.toFixed(3)} toward ${record.speed.toFixed(3)}.`;caption.append(transition);}
     if(record.force){const force=document.createElement('div');
@@ -832,19 +896,31 @@ $('nextComparison')?.addEventListener('click',()=>{
   $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
 });
 $('cancelComparison')?.addEventListener('click',()=>cancelComparison());
+$('repeatComparison')?.addEventListener('click',repeatComparison);
+['comparisonShapeA','comparisonShapeB','matchShapeHeight'].forEach(id=>$(id)?.addEventListener('change',()=>{
+  if(comparison.active)return;
+  $('prediction').value='';syncComparisonChoices();refreshComparison();
+}));
 function reportLines(c,text,x,y,width,spacing,max=2){
   const words=String(text||'No observation entered').split(/\s+/);let line='',count=0;
   for(const word of words){const next=line?line+' '+word:word;if(line&&c.measureText(next).width>width){c.fillText(line,x,y+spacing*count++);line=word;if(count>=max)return;}else line=next;}
   if(count<max)c.fillText(line,x,y+spacing*count);
 }
-async function exportReport(){
- if(captures.length!==2)return;
- const imageList=await Promise.all(captures.map(item=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=item.image;})));
- const sheet=document.createElement('canvas');sheet.width=1840;sheet.height=920;const c=sheet.getContext('2d');
- c.fillStyle='#f3f6f8';c.fillRect(0,0,1840,920);c.fillStyle='#0e1824';c.fillRect(0,0,1840,125);
+async function exportReport(source=captures,saved=null){
+ if(source.length!==2)return;
+ // Freeze this report before loading images; edits during export cannot change it.
+ const records=source.map(r=>structuredClone(r));
+ const explanation=saved?saved.conclusion:$('conclusion').value;
+ const repeatResult=saved?saved.repeatResult:($('repeatResult')?.value||'');
+ const p=$('prediction');
+ const recordedPrediction=records.every(r=>r.comparison?.matched)?records[0].comparison.prediction:(p.selectedIndex?p.options[p.selectedIndex].textContent:'Not recorded');
+ const imageList=await Promise.all(records.map(item=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=item.image;})));
+ const repeated=records.every(r=>r.comparison?.repeated);
+ const sheet=document.createElement('canvas');sheet.width=1840;sheet.height=repeated?1010:920;const c=sheet.getContext('2d');
+ c.fillStyle='#f3f6f8';c.fillRect(0,0,1840,sheet.height);c.fillStyle='#0e1824';c.fillRect(0,0,1840,125);
  c.fillStyle='#5de4d1';c.font='bold 36px sans-serif';c.fillText('AIRFLOW LAB / A–B COMPARISON',40,54);
- c.fillStyle='#e4eff2';c.font='22px sans-serif';c.fillText(experiments[captures[0].experiment].title,40,94);
- captures.forEach((r,n)=>{const x=40+n*920;c.fillStyle='#fff';c.fillRect(x,144,900,585);c.drawImage(imageList[n],x+10,155,880,381);
+ c.fillStyle='#e4eff2';c.font='22px sans-serif';c.fillText(experiments[records[0].experiment].title,40,94);
+ records.forEach((r,n)=>{const x=40+n*920;c.fillStyle='#fff';c.fillRect(x,144,900,585);c.drawImage(imageList[n],x+10,155,880,381);
   c.fillStyle='#163445';c.font='bold 25px sans-serif';c.fillText('VIEW '+(n?'B':'A')+' · '+names[r.shape],x+12,574);
   c.fillStyle='#566c7c';c.font='19px sans-serif';c.fillText('Flow '+r.speed.toFixed(3)+' · Viscosity '+r.viscosity.toFixed(3)+' · Angle '+r.angle+'°',x+12,610);
   c.fillText(r.steps.toLocaleString()+' steps · '+viewNames[r.view],x+12,645);
@@ -853,16 +929,16 @@ async function exportReport(){
        ' · Lift '+r.force.lift.toFixed(4),x+12,671);}
    c.fillStyle='#163445';c.font='18px sans-serif';reportLines(c,r.note,x+12,r.force?704:686,860,24,r.force?1:2);
  });
- const p=$('prediction');c.font='19px sans-serif';c.fillStyle='#163445';
- const recordedPrediction=captures.every(r=>r.comparison?.matched)?captures[0].comparison.prediction:(p.selectedIndex?p.options[p.selectedIndex].textContent:'Not recorded');
+ c.font='19px sans-serif';c.fillStyle='#163445';
  reportLines(c,'Prediction: '+recordedPrediction,40,778,1740,25,1);
- reportLines(c,'Explanation: '+$('conclusion').value,40,811,1740,26,2);
+ reportLines(c,'Explanation: '+explanation,40,811,1740,26,2);
  c.fillStyle='#637989';c.font='17px sans-serif';c.fillText('Simplified 2D learning model · Simulation units · Not a calibrated aerodynamic test',40,892);
  c.font='16px sans-serif';c.fillStyle='#637989';
- const differences=comparisonDifferences(...captures);
- reportLines(c,'Comparison check: '+(differences.length?differences.join(', '):'other recorded conditions match')+' · '+captures[0].engine+' · '+W+' × '+H+' grid',40,867,1740,20,1);
+ const differences=comparisonDifferences(...records);
+ reportLines(c,'Comparison check: '+(differences.length?differences.join(', '):'other recorded conditions match')+' · '+records[0].engine+' · '+records[0].grid.width+' × '+records[0].grid.height+' · '+(records[0].sizeMode==='matched-height'?'equal frontal height':'preset sizes'),40,867,1740,20,1);
+ if(repeated){c.fillStyle='#163445';c.font='19px sans-serif';reportLines(c,`Repeat check · Round ${records[0].comparison.round}: ${({'similar':'The wake looked similar','different':'The wake looked different','unsure':'I am not sure yet'})[repeatResult]||'Not recorded'}. See the previous report for the earlier observations.`,40,947,1740,25,2);}
  sheet.toBlob(blob=>{if(!blob){notify('Report export unavailable on this device.');return;}
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='airflow-lab-comparison.png';document.body.append(a);a.click();a.remove();
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`airflow-lab-comparison${records[0].comparison?'-round-'+records[0].comparison.round:''}.png`;document.body.append(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);notify('Comparison report ready. Check your downloads.');
  },'image/png');
 }
@@ -904,6 +980,6 @@ if(modelContext?.registerTool) {
   register({name:'capture_wind_tunnel_view',description:'Capture the current rendered view for the visible two-view comparison. Fails when both slots are occupied or a matched comparison is active.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>{if(comparison.active)throw new Error('Matched comparisons capture automatically.');if(captures.length>=2)throw new Error('Both comparison slots are full.');return capture();}});
   window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
-setLevel(researchPage?'advanced':'beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);
+syncComparisonChoices();setLevel(researchPage?'advanced':'beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);
 window.addEventListener('pagehide',()=>{if(wasmWorker)wasmWorker.terminate();},{once:true});
 
