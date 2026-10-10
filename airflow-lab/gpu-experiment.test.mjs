@@ -41,14 +41,19 @@ function window(governor,second,{workerMs=3,roundTripMs=workerMs+1,visualMs=1,st
   return governor.evaluate(second*1000,{allowBatch});
 }
 test('healthy hardware measures each candidate before retaining throughput gains and fulfills demand',()=>{
-  const gov=createGpuLoadGovernor();gov.evaluate(0);let decisions=0;
+  const gov=createGpuLoadGovernor();gov.evaluate(0);let decisions=0,fulfilledAt=null;
   for(let i=1;i<=160;i++){
-    const changes=window(gov,i);decisions+=changes.filter(c=>c.control==='throughputTrial').length;
+    const changes=window(gov,i);
+    for(const change of changes.filter(c=>c.control==='throughputTrial')){
+      decisions++;assert.equal(change.trial.validWindows,3);assert.ok(change.trial.changePercent>=5);
+    }
+    if(fulfilledAt===null&&gov.optimization.acceptedPolicy.updateHz===60&&gov.optimization.acceptedPolicy.batch===24)fulfilledAt=i;
     assert.ok(gov.state.updateHz>=15&&gov.state.updateHz<=60);
     assert.ok(gov.state.batch>=4&&gov.state.batch<=24);
   }
   assert.deepEqual(gov.state,{paintHz:60,updateHz:60,batch:24});
-  assert.equal(gov.optimization.phase,'holding');assert.ok(decisions>=8);
+  assert.equal(gov.optimization.phase,'holding');assert.ok(decisions>0);
+  assert.ok(fulfilledAt<=40,`healthy demand fulfilled after ${fulfilledAt} seconds`);
   gov.reset();assert.deepEqual(gov.state,{paintHz:60,updateHz:30,batch:8});
 });
 test('visual overload reduces drawing separately and fixed batches remain fixed',()=>{
@@ -207,10 +212,64 @@ test('tracer budgeting advances larger debt with bounded work and gradual marker
     let result=tracer.next({debt:24,now:0});assert.equal(result.count,baseCount);assert.equal(result.portion,24);
     result=tracer.next({debt:96,now:1000});assert.equal(result.portion,64);
     assert.ok(result.count*Math.ceil(result.portion/2)<=baseCount*12);
-    const reduced=result.count;result=tracer.next({debt:12,now:2000});assert.equal(result.count,reduced);
-    result=tracer.next({debt:12,now:5000});assert.ok(result.count>=reduced&&result.count<=baseCount);
+    const reduced=result.count;
+    for(let now=1050;now<=7000;now+=50){
+      result=tracer.next({debt:12,now});assert.equal(result.count,reduced,'six continuous seconds of headroom required');
+    }
+    result=tracer.next({debt:12,now:7050});assert.equal(result.count,Math.min(baseCount,reduced+Math.ceil(baseCount*.05)));
+    for(let now=7100;now<=50000;now+=50)result=tracer.next({debt:12,now});
+    assert.equal(result.count,baseCount,'sustained light work eventually restores full density');
     tracer.reset();assert.equal(tracer.count,baseCount);
     result=tracer.next({debt:24,split:true,now:6000});assert.equal(result.portion,12);assert.equal(result.count,baseCount);
+  }
+});
+
+test('recurring expensive tracer paints do not repeatedly restore and remove markers',()=>{
+  const tracer=createGpuTracerBudget({baseCount:460});
+  let result=tracer.next({debt:48,now:0});const stableCount=result.count;let changes=0;
+  for(let frame=1;frame<=7200;frame++){
+    const debt=frame%2?24:48;result=tracer.next({debt,now:frame*1000/60});
+    if(result.changed)changes++;
+    assert.equal(result.count,stableCount);
+    assert.ok(result.count*Math.ceil(result.portion/2)<=460*12);
+  }
+  assert.equal(changes,0,'steady burst patterns should keep a steady marker density');
+});
+
+test('a pause, missing paints or a renewed load spike invalidate tracer recovery evidence',()=>{
+  const tracer=createGpuTracerBudget({baseCount:190});
+  const reduced=tracer.next({debt:64,now:0}).count;
+  for(let now=50;now<=5000;now+=50)tracer.next({debt:12,now});
+  assert.equal(tracer.next({debt:12,now:15000}).count,reduced,'a pause cannot count as continuous headroom');
+  for(let now=15050;now<=20000;now+=50)tracer.next({debt:12,now});
+  assert.equal(tracer.next({debt:64,now:20050}).count,reduced);
+  for(let now=20100;now<=26050;now+=50)assert.equal(tracer.next({debt:12,now}).count,reduced);
+  assert.ok(tracer.next({debt:12,now:26100}).count>reduced);
+});
+
+test('a wider batch trial still rolls back on regression and retries a smaller increment',()=>{
+  const gov=createGpuLoadGovernor();gov.evaluate(0);
+  for(let i=1;i<=6;i++)window(gov,i);
+  assert.equal(gov.optimization.acceptedPolicy.batch,10);
+  window(gov,7);assert.equal(gov.state.batch,14);
+  assert.equal(gov.optimization.acceptedPolicy.batch,10,'a wider candidate is not accepted before measuring');
+  window(gov,8,{snapshots:14});window(gov,9,{snapshots:14});
+  assert.equal(gov.state.batch,10);assert.equal(gov.optimization.lastTrial.decision,'restored');
+  for(let i=10;i<=19;i++)window(gov,i);
+  assert.equal(gov.state.batch,12,'retry uses a smaller increment');
+  assert.equal(gov.optimization.acceptedPolicy.batch,10);
+  window(gov,20);window(gov,21);assert.equal(gov.optimization.acceptedPolicy.batch,10);
+  window(gov,22);assert.equal(gov.optimization.acceptedPolicy.batch,12);
+});
+
+test('weak throughput gains or slow compute do not justify wider batch trials',()=>{
+  for(const mode of ['weak','slow']){
+    const gov=createGpuLoadGovernor();gov.evaluate(0);
+    for(let i=1;i<=6;i++)window(gov,i,{workerMs:mode==='slow'?20:3,
+      totalSteps:mode==='weak'&&i>=4?254:null});
+    assert.equal(gov.optimization.acceptedPolicy.batch,10);
+    for(let i=7;i<=9;i++)window(gov,i,{workerMs:mode==='slow'?20:3,totalSteps:mode==='weak'?254:null});
+    assert.equal(gov.state.batch,12,mode);
   }
 });
 

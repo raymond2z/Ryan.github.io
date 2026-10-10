@@ -1,5 +1,5 @@
 // Opt-in scheduling experiments. The numerical solver, grid and Worker cap stay fixed.
-export const GPU_EXPERIMENT_BUILD='gpu-throughput-20261010';
+export const GPU_EXPERIMENT_BUILD='gpu-smooth-auto-20261010';
 export const GPU_PROFILES={
   baseline:{label:'30 paint / 30 flow',paintHz:30,updateHz:30},
   display60:{label:'60 paint / 30 flow',paintHz:60,updateHz:30},
@@ -119,7 +119,10 @@ export function createGpuLoadGovernor(){
           changePercent:score!==null&&trial.reference>0?(score/trial.reference-1)*100:null,
           validWindows:trial.samples.length};
         changes.push({control:'throughputTrial',from:trial.reference,to:score,reason,...evidence,trial:structuredClone(lastTrial)});
-        settled=keep?trial.samples.slice(-3):[];probe=null;nextTrialAfter=now+(keep?3000:10000);
+        // Reuse the three verified windows; strong gains need no extra idle
+        // baseline. Weak gains and failed candidates retain the longer hold.
+        const strongGain=keep&&score>=trial.reference*1.1;
+        settled=keep?trial.samples.slice(-3):[];probe=null;nextTrialAfter=now+(keep?(strongGain?1000:3000):10000);
       };
       if(lastWindow===null||now<lastWindow||now-lastWindow>2500){
         finishTrial(false,'timing interrupted; discard trial');clearEvidence();lastWindow=now;return changes;
@@ -183,7 +186,16 @@ export function createGpuLoadGovernor(){
       const full=w.filter(s=>s.steps>=batch),fullEnough=full.length>=6,index=rates.indexOf(updateHz);
       const candidates=[];
       if(allowBatch&&fullEnough&&workerWorkP95>30&&batch>4)candidates.push({updateHz,batch:batch-2});
-      if(allowBatch&&fullEnough&&batch<24)candidates.push({updateHz,batch:Math.min(24,batch+2)});
+      if(allowBatch&&fullEnough&&batch<24){
+        const provenGrowth=lastTrial?.decision==='retained'&&lastTrial.changePercent>=10&&
+          lastTrial.candidate.batch>lastTrial.from.batch&&
+          lastTrial.candidate.batch===batch&&lastTrial.candidate.updateHz===updateHz;
+        if(provenGrowth&&workerWorkP95<=15&&r.flowHz>=updateHz*.9)
+          candidates.push({updateHz,batch:Math.min(24,batch+4)});
+        // If the wider trial fails, its blocked policy leaves a smaller probe
+        // available. It still needs the same three-window throughput check.
+        candidates.push({updateHz,batch:Math.min(24,batch+2)});
+      }
       if(index<rates.length-1&&r.flowEligible&&r.flowHz>=updateHz*.85)candidates.push({updateHz:rates[index+1],batch});
       if(allowBatch&&fullEnough&&batch>4)candidates.push({updateHz,batch:batch-2});
       if(index>0)candidates.push({updateHz:rates[index-1],batch});
@@ -202,18 +214,29 @@ export function createGpuLoadGovernor(){
 // untouched. Midpoint integration keeps the existing <=2-step substeps.
 export function createGpuTracerBudget({baseCount}){
   if(!Number.isInteger(baseCount)||baseCount<64)throw Error('Invalid tracer count');
-  let count=baseCount,lastReduction=-Infinity,lastRecovery=-Infinity;
+  let count=baseCount,lastRecovery=-Infinity,headroomSince=null,lastObservation=null;
+  const recoveryStep=Math.ceil(baseCount*.05);
   return {
     get count(){return count;},
-    reset(){count=baseCount;lastReduction=-Infinity;lastRecovery=-Infinity;},
+    reset(){count=baseCount;lastRecovery=-Infinity;headroomSince=null;lastObservation=null;},
     next({debt,split=false,now}){
       if(!Number.isFinite(debt)||debt<0||!Number.isFinite(now))throw Error('Invalid tracer budget');
       const portion=Math.min(debt,64,split?Math.ceil(debt/2):debt);
       const desired=Math.max(Math.max(24,Math.floor(baseCount/3)),Math.min(baseCount,Math.floor(baseCount*12/Math.max(12,Math.ceil(portion/2)))));
       const from=count;
-      if(desired<count){count=desired;lastReduction=now;}
-      else if(desired>count&&now-lastReduction>=3000&&now-lastRecovery>=3000){
-        count=Math.min(desired,count+Math.ceil(baseCount*.1));lastRecovery=now;
+      // A pause or a missing paint is not continuous headroom evidence.
+      if(lastObservation===null||now<lastObservation||now-lastObservation>250)headroomSince=null;
+      lastObservation=now;
+      if(desired<count){count=desired;headroomSince=null;}
+      else if(desired>count&&(desired===baseCount||desired>=count+recoveryStep)){
+        if(headroomSince===null)headroomSince=now;
+        if(now-headroomSince>=6000&&now-lastRecovery>=3000){
+          count=Math.min(desired,count+recoveryStep);lastRecovery=now;
+        }
+      }else{
+        // Recurring full-cost paints cancel recovery, so a single cheap frame
+        // cannot add markers just before the next expensive one removes them.
+        headroomSince=null;
       }
       return {portion,count,changed:from!==count,from};
     }

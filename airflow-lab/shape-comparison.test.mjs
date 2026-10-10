@@ -417,3 +417,20 @@ test('Auto on slow animation callbacks budgets visual markers while preserving n
   assert.deepEqual(app.state().captures.map(r=>r.steps),[2000,2000]);
   assert.equal(app.run('activeTracerCount'),190);
 });
+
+test('Auto reaches full demand promptly through verified trials in the asynchronous application loop',()=>{
+  const app=appHarness('webgpu',{path:'/airflow-lab/performance.html',page:'performance.html',search:'&profile=auto60&pace=2',workerDelay:2});
+  app.workers[0].ready();app.click('gpuBenchmarkPreset');const start=app.run('performance.now()');let fulfilledAt=null;
+  for(let i=1;i<=60*60;i++){
+    const time=start+i*1000/60;app.advance(time);app.run(`frame(${time})`);
+    if(i%60===0&&fulfilledAt===null){
+      const accepted=app.run('gpuLoadGovernor.optimization.acceptedPolicy');
+      if(accepted.batch===24&&accepted.updateHz===60)fulfilledAt=i/60;
+    }
+  }
+  assert.ok(fulfilledAt!==null&&fulfilledAt<=50,`asynchronous demand fulfillment after ${fulfilledAt} seconds`);
+  assert.ok(app.run('lastFlowRate')>=1300);
+  assert.equal(app.run('gpuLoadGovernor.optimization.phase'),'holding');
+  assert.equal(app.run('tracerDroppedSteps'),0);
+  assert.ok(app.workers[0].messages.filter(m=>m.type==='step').every(m=>m.count>0&&m.count<=24));
+});

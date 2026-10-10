@@ -1,6 +1,6 @@
-# Stage 3.4B-3 — Measure throughput before keeping Auto changes
+# Stage 3.4B-3 — Steadier markers and faster measured Auto trials
 
-Build: `gpu-throughput-20261010`.
+Build: `gpu-smooth-auto-20261010`.
 
 Open [GPU scheduling experiments](https://raymond2z.github.io/Ryan.github.io/airflow-lab/performance.html?engine=webgpu).
 This dedicated page starts in Advanced mode with the research controls visible.
@@ -54,8 +54,8 @@ and GPU → Rust/WASM → JavaScript fallback remain intact.
    for a promising candidate or a substantial problem. No repeated desktop,
    phone and tablet benchmark is required for routine text or teaching changes.
 
-The current release provides updated experiments and automated regression
-evidence. The previous build has representative device recordings (below);
+The current small update provides updated experiments and automated regression
+evidence. Previous builds have representative device recordings (below);
 this update has **not** been benchmarked on those physical devices.
 Promoting a research configuration to the classroom defaults remains a separate
 decision based on representative device evidence and interaction quality.
@@ -75,9 +75,13 @@ The app keeps pending work bounded. Tracer debt remains capped at 96 steps;
 visual debt dropped under load is counted and logged, without removing solver
 steps. Auto free exploration can consume up to 64 debt steps per paint while
 reducing visible marker density to keep the midpoint integration work bounded.
-Each midpoint substep remains at most two model steps. The first reduced marker
-count is held for three seconds; recovery is gradual. Reactivated markers are
-reseeded so stale positions are not presented as current paths.
+Each midpoint substep remains at most two model steps. Density reductions remain
+immediate to respect the work budget. Recovery requires six continuous seconds
+with enough spare marker capacity, then adds at most 5% of nominal markers every
+three seconds. Recurring full-cost paints cancel recovery evidence; gaps over
+250 ms and backward clocks also reset it. Small slack below one recovery increment
+does not trigger recovery, except when full nominal density is affordable.
+Reactivated markers are reseeded so stale positions are not presented as current paths.
 
 The panel and JSON expose active versus nominal marker counts. This changes
 visual density, not the numerical grid, public step count or inlet speed. The
@@ -101,9 +105,16 @@ All timings remain browser wall clocks, not GPU hardware timestamps.
 - Two consecutive windows below 80% of baseline end the trial early. A trial
   without enough clean windows times out after 15 seconds. Failed trials restore
   the accepted cadence and batch, hold for 10 seconds, and block that candidate
-  for 60 seconds. Accepted trials hold for at least three seconds before another.
+  for 60 seconds. Accepted trials hold for three seconds; a measured gain of at
+  least 10% permits the next trial after one second, reusing the three verified
+  windows as its baseline.
 - Start with larger batches when full-packet evidence exists, then probe request
-  rates. Smaller batches are also tested, rather than repeatedly forced smaller
+  rates. Growth initially probes two additional steps. After a retained batch
+  increase of at least 10%, raw Worker P95 at most 15 ms and actual field delivery
+  at least 90% of target permit a four-step growth probe. A failed wider probe
+  restores the checkpoint and leaves the smaller increment available after the
+  existing failure hold. Every wider probe still needs three clean windows and
+  the same gain threshold. Smaller batches are also tested, rather than repeatedly forced smaller
   to meet an arbitrary fraction of a 60 Hz interval. There is no linear cost
   assumption and no promise of a global optimum.
 - Demand already fulfilled (at least 95% of requested steps/s) stops exploratory
@@ -177,18 +188,33 @@ fields/s over ~24 paints/s. However, the old interval-based controller reduced
 batches to four steps, leaving roughly 240 solver steps/s. Its last-third
 throughput fell 37.44% from the first third, with 37 load adjustments and 1,704
 visual debt steps capped. This was a numerical-throughput regression despite
-more frequent field delivery. This release addresses that policy failure with
-measured trials and separates tracer work from solver adaptation; **new physical
-S24/iPad/desktop gains remain unmeasured**.
+more frequent field delivery. The subsequent throughput controller addressed
+that policy failure with measured trials and a separate tracer budget.
 
-Keep classroom defaults. Do not rerun all three devices for routine changes.
-If validating this scheduling revision, one targeted S24 Auto / 2× run at the
-same grid/settings addresses the known delivery gap; further device testing
-needs a specific reason.
+The user then supplied a completed, uninterrupted S24 report from
+`gpu-throughput-20261010`, with the same Detailed 240×104 grid, Auto / 2×,
+Circle, wind 0.150, viscosity 0.025, Super fast, Adaptive, particles on and Force off.
+No report samples or capped visual debt steps were lost. Whole-run averages were
+**47.17 paints/s, 51.85 fresh fields/s and 891.53 solver steps/s**. The last
+approximately 30 seconds delivered **53.72 paints/s, 59.97 fresh fields/s and
+1,439.12 steps/s** against 1,440 requested steps/s. Ten throughput trials were
+retained; one was cancelled and restored because the drawing policy changed.
+The final 60/60/24 policy was confirmed at approximately 94 seconds.
+
+That report also recorded 42 visual marker adjustments, with late-window density
+between 172 and 296 of 460 nominal markers. Repeated recovery followed by immediate
+reduction motivates this small update's continuous-headroom recovery rule.
+Browser callbacks were also near 60/s, versus mostly 24/s in the preceding S24 run;
+the whole improvement cannot be attributed to the controller alone. This report
+is evidence for the **previous** build, not a physical benchmark of
+`gpu-smooth-auto-20261010`.
+
+Keep classroom defaults. No repeated three-device benchmark is requested for
+this small update. Further physical testing needs a specific unresolved concern.
 
 ## Validation
 
-The 76-test related suite covers real application frame/input/export
+The 81-test related suite covers real application frame/input/export
 handlers with asynchronous Worker doubles and simulated cancellable timers,
 flow requests without animation callbacks, stop/resume/backpressure and late
 deadlines, numerical final-step clamping,
@@ -196,8 +222,17 @@ deadlines, numerical final-step clamping,
 cached raster work, backpressure, bounded overload/recovery, invalid/sparse/stale
 samples, retained/restored throughput trials, fixed-overhead regressions,
 slower high-frequency candidates, timeouts, activity invalidation, demand
-exclusions, marker-work bounds and recovery, classroom isolation, repeat restoration,
+exclusions, marker-work bounds, sustained recovery, recurring bursts and pause
+invalidation, wider-trial fallback, classroom isolation, repeat restoration,
 fallback and duration-weighted recorder data.
+In the same synthetic healthy-load fixture, the accepted 60-request/24-step
+configuration is reached after 32 seconds versus 60 with the preceding governor.
+In a two-minute fixture alternating 24 and 48 tracer-debt steps at 60 callbacks/s,
+marker recovery/reduction changes after the initial reduction fall from 78 to 0.
+The asynchronous application-loop test also confirms full-demand acceptance
+within 50 simulated seconds while maintaining bounded requests and no capped
+visual debt. These are regression fixtures, not predictions of hardware gains.
+
 These checks are not physical GPU benchmarks. Existing GitHub workflows also
 run the full solver/benchmark/WASM checks.
 

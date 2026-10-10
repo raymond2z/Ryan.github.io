@@ -4,7 +4,7 @@ import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,force
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs?build=gpu-cadence-feedback-20261010';
 import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=gpu-cadence-20261010';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs?build=stage4c-20261010';
-import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs?build=gpu-throughput-20261010';
+import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs?build=gpu-smooth-auto-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
