@@ -1,6 +1,6 @@
 import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
-import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,shouldDrawGpuFrame,forceFrameTiming} from './live-performance.mjs';
+import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
 const $=id=>document.getElementById(id);
 // Mobile-first performance selection. The user can explicitly choose a detailed grid.
 const qualityPreference=new URLSearchParams(location.search).get('quality');
@@ -13,6 +13,7 @@ let engineKind='javascript';
 let wasmActive=false,wasmStarting=false,wasmWorker=null,workerRequest=0,workerInFlight=0;
 let engineRevision=0,lastWorkerRequest=0,manualSteps=0,gpuForceValid=false;
 const stepper=makeAdaptiveStepper({targetMs:30});
+const gpuPaintPacer=createGpuPaintPacer();
 const tuningPreference=new URLSearchParams(location.search).get('tune');
 let gpuFluidDirty=false,gpuParticleDebt=0,windowGpuSnapshots=0,lastSnapshotHz=0,lastCanvasFps=0,lastFlowRate=0;
 const gpuSamples=[],paintSamples=[],maxSamples=160;
@@ -187,7 +188,7 @@ function engineLabel(message,fallback=false){
 function resetRustField(){
   if(!wasmActive||!wasmWorker)return;
   engineRevision++;
-  workerInFlight=0;gpuFluidDirty=true;gpuParticleDebt=0;stepper.reset();
+  workerInFlight=0;gpuFluidDirty=true;gpuParticleDebt=0;stepper.reset();gpuPaintPacer.reset();
   // Always copy the current obstacle mask; drag/draw tools modify it on the UI thread.
   wasmWorker.postMessage({type:'reset',revision:engineRevision,
     speed:sim.speed,viscosity:sim.viscosity,solid:sim.solid.slice()});
@@ -212,7 +213,7 @@ function updateRustParameters(){
 function endRustEngine(reason){
   const wasGpu=engineKind==='webgpu';
   if(wasmWorker){wasmWorker.terminate();wasmWorker=null;}
-  wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;gpuParticleDebt=0;gpuFluidDirty=false;
+  wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;gpuParticleDebt=0;gpuFluidDirty=false;gpuPaintPacer.reset();
   engineKind='javascript';
   // JS fallback must have f64 velocity fields for normal numeric operation.
   sim.rho=new Float64Array(sim.n);
@@ -267,7 +268,7 @@ function beginRustEngine(override=null){
       if(data.type==='ready'){
         wasmStarting=false;wasmActive=true;
         // The user could have changed controls while WASM was loading.
-        sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;stepper.reset();gpuParticleDebt=0;gpuFluidDirty=true;
+        sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;stepper.reset();gpuPaintPacer.reset();gpuParticleDebt=0;gpuFluidDirty=true;
         resetRustField();
         gpuForceValid=false;
         const gpu=engineKind==='webgpu';
@@ -370,8 +371,8 @@ function frame(now) {
     const count=Math.min(engineKind==='webgpu'?gpuLimit:48,manualSteps);manualSteps-=count;
     publishRustStep(count,Number.POSITIVE_INFINITY,now);
   }
-  if(wasmActive&&engineKind==='webgpu'&&!document.hidden&&shouldDrawGpuFrame({
-    now,lastPaint,fluidDirty:gpuFluidDirty,tracerDebt:gpuParticleDebt,
+  if(wasmActive&&engineKind==='webgpu'&&!document.hidden&&gpuPaintPacer.shouldDraw({
+    now,fluidDirty:gpuFluidDirty,tracerDebt:gpuParticleDebt,
     running:running||manualSteps>0,particlesEnabled:$('particles').checked
   })){
     if($('particles').checked&&gpuParticleDebt>0){
