@@ -37,6 +37,7 @@ jobs:
           node --check airflow-lab/student-gpu-worker-v3.mjs
           node --check airflow-lab/live-performance.mjs
           node --check airflow-lab/stability-recorder.mjs
+          node --check airflow-lab/shape-comparison.mjs
           node --check airflow-lab/app.mjs
       - name: Run benchmark tests
         run: node --test airflow-lab/benchmark.test.mjs
@@ -48,6 +49,8 @@ jobs:
         run: node --test airflow-lab/live-performance.test.mjs
       - name: Stability recorder regressions
         run: node --test airflow-lab/stability-recorder.test.mjs
+      - name: Matched classroom comparison and application protocol tests
+        run: node --test airflow-lab/shape-comparison.test.mjs
       - name: Student WebGPU integration regressions
         run: node --test airflow-lab/student-gpu-integration.test.mjs
       - name: Verify GPU relative force and independent Rust WASM reference

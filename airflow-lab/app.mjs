@@ -2,6 +2,7 @@ import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
+import {createMatchedComparison,comparisonDifferences,seededRandom} from './shape-comparison.mjs?build=stage4a-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
@@ -24,12 +25,12 @@ function refreshStability(){
   const now=performance.now();stability.observeState(stabilityConfig(),stabilityActivity(),now);
   stability.tick(now,new Date().toISOString());
   const progress=stability.progress(now);
-  $('startStability').disabled=stability.active;
+  $('startStability').disabled=stability.active||comparison.active;
   $('stopStability').disabled=!stability.active;
   $('exportStability').disabled=!stability.hasReport;
   $('stabilityDuration').disabled=stability.active;$('stabilityDevice').disabled=stability.active;
   // Engine/detail switches reload the document and would discard the active run.
-  $('engine').disabled=stability.active;$('quality').disabled=stability.active;
+  $('engine').disabled=stability.active||comparison.active;$('quality').disabled=stability.active||comparison.active;
   if(!progress)return;
   if(stability.active){
     const remaining=Math.max(0,Math.ceil((progress.requestedDurationMs-progress.elapsedMs)/1000));
@@ -114,6 +115,85 @@ for(const [key,value]of Object.entries(EXTRA_SHAPES))notes[key]=value.note;
 document.querySelectorAll('[data-shape-preview]').forEach(el=>el.innerHTML=shapePreview(el.dataset.shapePreview));
 let view='curl',tool='move',running=!matchMedia('(prefers-reduced-motion: reduce)').matches;
 let sensor=null,pointer=null,particles=[],captures=[],experiment='shapes',lastFrame=0,lastReadout=0,pendingSteps=0,toastTimer;
+const comparison=createMatchedComparison();
+let comparisonLocks=[],particleRandom=Math.random,comparisonPrediction='';
+const comparisonLockSelector='[data-shape],[data-view],[data-level],[data-tool],[data-experiment],#setupExperiment,#demoButton,#nextDemo,#speed,#angle,#animation,#viscosity,#quality,#engine,#batchMode,#force,#particles,#vectors,#clearButton,#resetButton,#stepButton,#captureButton,#startStability,#prediction';
+function lockComparison(){
+  comparisonLocks=[...document.querySelectorAll(comparisonLockSelector)].map(el=>({el,disabled:el.disabled}));
+  comparisonLocks.forEach(({el})=>el.disabled=true);
+  canvas.setAttribute('aria-disabled','true');
+}
+function unlockComparison(){
+  comparisonLocks.forEach(({el,disabled})=>el.disabled=disabled);comparisonLocks=[];
+  canvas.removeAttribute('aria-disabled');particleRandom=Math.random;
+  $('angle').disabled=['custom','none'].includes(sim.shape);
+  if(stability.active){$('engine').disabled=true;$('quality').disabled=true;}
+  renderCaptures();refreshComparison();
+}
+function refreshComparison(){
+  if(!$('comparisonStatus'))return;
+  $('startComparison').disabled=comparison.active||wasmStarting||stability.active||captures.length>0||Boolean(pointer);
+  $('nextComparison').hidden=comparison.phase!=='ready-b';
+  $('cancelComparison').hidden=!comparison.active;
+  $('playButton').disabled=comparison.phase==='ready-b';
+  if(comparison.running){
+    const letter=comparison.phase==='running-a'?'A':'B';
+    $('comparisonStatus').textContent=`${running?'Observing':'Paused'} ${letter} · ${names[comparison.shape]} · ${Math.min(sim.time,2000).toLocaleString()} / 2,000 steps. Settings stay the same; you can pause or exit.`;
+  }else if(comparison.phase==='ready-b'){
+    $('comparisonStatus').textContent='A saved. Describe the wake below, then observe B with the same wind, position and elapsed steps.';
+  }else if(comparison.phase==='done'&&captures.length===2&&captures.every(r=>r.comparison?.matched)){
+    $('comparisonStatus').textContent='A and B saved at 2,000 steps. Compare the wake colours behind each shape. Did your prediction match?';
+  }else if(captures.length){
+    $('comparisonStatus').textContent='Remove the saved views before starting a new matched comparison.';
+  }else if(wasmStarting){
+    $('comparisonStatus').textContent='Preparing the flow. Your comparison will be ready shortly.';
+  }else if(!comparison.active){
+    $('comparisonStatus').textContent='Predict first. We will reset each shape and save it at the same observation point. Wind and viscosity use your current settings; both shapes face forward.';
+  }
+}
+function prepareComparisonTrial(){
+  const plan=comparison.plan;
+  sim.speed=plan.speed;sim.viscosity=plan.viscosity;
+  manualSteps=0;pendingSteps=0;sensor=null;$('sensorReadout').hidden=true;
+  particleRandom=seededRandom();
+  sim.setShape(comparison.shape,0,plan.position);
+  press('shape',comparison.shape);$('angle').value='0';$('angleValue').textContent='0°';
+  $('observation').innerHTML=notes[comparison.shape];
+  $('canvasNote').textContent=`Compare the wake behind the ${names[comparison.shape].toLowerCase()}`;
+  resetParticles();resetRustField();running=true;syncRunning();paint();refreshComparison();
+}
+function startComparison(){
+  if(comparison.active||stability.active||wasmStarting||captures.length||pointer)return;
+  if(!$('prediction').value){notify('Choose a prediction first. “I’m not sure yet” is a prediction too.');$('prediction').focus();return;}
+  comparisonPrediction=$('prediction').options[$('prediction').selectedIndex].textContent;
+  comparison.start({speed:sim.speed,viscosity:sim.viscosity,position:{x:sim.centerX,y:sim.centerY},
+    grid:{width:W,height:H},engine:engineKind,view:'speed',animation:$('animation').value,
+    batchMode:$('batchMode').value,shapeScale:sim.shapeScale});
+  // The supported guided pair has matching frontal height, up to one grid cell.
+  $('force').checked=false;gpuForceValid=false;syncGpuForce();showForceReadout();
+  $('particles').checked=true;$('vectors').checked=false;setView('speed');toolSelected('move');
+  lockComparison();prepareComparisonTrial();
+  $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function cancelComparison(message='Comparison ended. Your saved views remain below; remove them to start again.'){
+  if(!comparison.active)return;
+  comparison.cancel();running=false;manualSteps=0;pendingSteps=0;syncRunning();unlockComparison();
+  if($('comparisonStatus'))$('comparisonStatus').textContent=message;
+  notify(message);
+}
+function finishComparisonTrial(){
+  if(!comparison.running||sim.time<comparison.plan.targetSteps)return;
+  const letter=comparison.phase==='running-a'?'A':'B';
+  try{
+    comparison.complete(sim.time);running=false;pendingSteps=0;manualSteps=0;
+    if(gpuParticleDebt>0){moveParticles(gpuParticleDebt);gpuParticleDebt=0;}
+    syncRunning();capture({matched:true,letter,prediction:comparisonPrediction});
+    if(comparison.phase==='done')unlockComparison();else refreshComparison();
+  }catch(error){
+    comparison.cancel();running=false;pendingSteps=0;manualSteps=0;syncRunning();unlockComparison();
+    $('comparisonStatus').textContent=error.message;notify(error.message);
+  }
+}
 const particleCount=useFastGrid?190:460;
 const maxTrailPoints=useFastGrid?16:22;
 const paintInterval=useFastGrid?1000/30:0;
@@ -122,7 +202,7 @@ let lastPaint=0;
 function makeParticle(startAnywhere=true) {
   let x=2,y=2;
   for(let attempt=0;attempt<20;attempt++) {
-    x=startAnywhere?2+Math.random()*(W-4):2; y=4+Math.random()*(H-8);
+    x=startAnywhere?2+particleRandom()*(W-4):2; y=4+particleRandom()*(H-8);
     if(!sim.solid[Math.floor(x)+Math.floor(y)*W]) break;
   }
   return {x,y,trail:[]};
@@ -220,12 +300,13 @@ function updateProbe() {
   $('sensorText').textContent=s.solid?'Inside a barrier — choose a fluid point.':`Speed ${s.speed.toFixed(3)} · Density ${s.density.toFixed(3)} · Step ${sim.time.toLocaleString()}`;
 }
 function runSteps(count,budgetMs=Infinity) {
+  count=comparison.limit(count,sim.time);
   const start=performance.now();let completed=0;
   try{
     while(completed<count){sim.step();completed++;if(performance.now()-start>=budgetMs)break;}
     moveParticles(completed);simulatedSteps+=completed;return completed;
   }
-  catch{stabilityEvent('engine_error',{engine:'javascript',reason:'unstable flow'});running=false;sim.reset();resetParticles();syncRunning();notify('The flow became unstable and was reset. Try a gentler speed or higher viscosity.');return 0;}
+  catch{cancelComparison('The flow changed unexpectedly. Start a fresh comparison with gentler wind.');stabilityEvent('engine_error',{engine:'javascript',reason:'unstable flow'});running=false;sim.reset();resetParticles();syncRunning();notify('The flow became unstable and was reset. Try a gentler speed or higher viscosity.');return 0;}
 }
 
 function engineLabel(message,fallback=false){
@@ -259,6 +340,7 @@ function updateRustParameters(){
   });
 }
 function endRustEngine(reason){
+  cancelComparison('The flow engine changed. Start a fresh comparison so both views use the same engine.');
   stabilityEvent('fallback',{from:engineKind,reason});
   const wasGpu=engineKind==='webgpu';
   if(wasmWorker){wasmWorker.terminate();wasmWorker=null;}
@@ -281,6 +363,7 @@ function endRustEngine(reason){
 }
 function publishRustStep(count,budgetMs,now){
   if(!wasmActive||!wasmWorker||workerInFlight)return;
+  count=comparison.limit(count,sim.time);
   workerInFlight=++workerRequest;
   lastWorkerRequest=now;
   wasmWorker.postMessage({type:'step',revision:engineRevision,
@@ -386,6 +469,7 @@ function beginRustEngine(override=null){
           if(data.steps>0)moveParticles(data.steps);
           if(performance.now()-lastPaint>=paintInterval){paint();lastPaint=performance.now();}
         }
+        finishComparisonTrial();
       }
     };
     worker.postMessage({type:'init',width:W,height:H,speed:sim.speed,viscosity:sim.viscosity});
@@ -415,6 +499,7 @@ function frame(now) {
       const budgetMs=useFastGrid?(superFast?18:9):(superFast?36:12);
       pendingSteps-=runSteps(count,budgetMs);
       if(now-lastPaint>=paintInterval){paint();lastPaint=now;}
+      finishComparisonTrial();
     }
   }else pendingSteps=0;
   if(wasmActive&&manualSteps>0&&!workerInFlight){
@@ -450,13 +535,14 @@ function frame(now) {
   if(now-lastReadout>250&&!document.hidden){
     updateProbe();
     updateRunStatus();
+    refreshComparison();
     lastReadout=now;
   }
   requestAnimationFrame(frame);
 }
 function updateRunStatus() {
   const settling=Math.abs(sim.inletSpeed-sim.speed)>.0003;
-  const label=running?(settling?'Adjusting flow':'Running'):'Paused';
+  const label=pointer?.action==='move'?'Moving object · release to restart':running?(settling?'Adjusting flow':'Running'):'Paused';
   $('runState').textContent=`${label} · ${sim.time.toLocaleString()} steps`;
   $('speedValue').title=settling?`Current inlet: ${sim.inletSpeed.toFixed(3)}; target: ${sim.speed.toFixed(3)}`:'Inlet flow speed';
 }
@@ -467,6 +553,7 @@ function syncRunning() {
   $('playIcon').innerHTML=running?'<path d="M6 4v12M14 4v12"/>':'<path d="m6 3 10 7-10 7V3Z"/>';
   $('runDot').classList.toggle('paused',!running);updateRunStatus();
   $('playButton').setAttribute('aria-label',running?'Pause simulation':'Play simulation');
+  refreshComparison();
 }
 function press(group,value){document.querySelectorAll(`[data-${group}]`).forEach(el=>el.setAttribute('aria-pressed',String(el.dataset[group]===value)));}
 function setView(next) {
@@ -507,6 +594,7 @@ function editSegment(from,to) {
   press('shape','custom');$('angle').disabled=true;$('observation').innerHTML=notes.custom;$('canvasNote').textContent='Your custom barrier';
 }
 canvas.addEventListener('pointerdown',event=>{
+  if(comparison.active){notify('Exit the comparison to move the object. Both views must use the same position.');return;}
   if(event.button!==0||pointer)return;event.preventDefault();canvas.focus({preventScroll:true});
   const p=position(event);
   if(tool==='move'&&!hitObject(p,event.pointerType==='touch'?7:4)){notify('Drag the object itself. Choose a shape first if the tunnel is empty.');return;}
@@ -516,6 +604,7 @@ canvas.addEventListener('pointerdown',event=>{
     pointer.start={...p};pointer.origin={x:sim.centerX,y:sim.centerY};pointer.mask=sim.solid.slice();pointer.moved=false;
     canvas.style.cursor='grabbing';pendingSteps=0;
   }
+  updateRunStatus();
   canvas.setPointerCapture(event.pointerId);
   if(tool==='probe'){sensor=p;updateProbe();}
   else if(tool==='draw'||tool==='erase')editSegment(p,p);
@@ -548,6 +637,7 @@ function endPointer(event){
 }
 canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('lostpointercapture',endPointer);
 canvas.addEventListener('keydown',event=>{
+  if(comparison.active&&event.key.startsWith('Arrow')){event.preventDefault();return;}
   const directions={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
   if(tool==='move'&&directions[event.key]&&!pointer){
     event.preventDefault();const [dx,dy]=directions[event.key],amount=event.shiftKey?5:1;
@@ -580,6 +670,7 @@ $('batchMode').addEventListener('change',()=>{
 });
 $('resetPerformance').addEventListener('click',resetPerformance);
 $('startStability')?.addEventListener('click',()=>{
+  if(comparison.active)return;
   if(!running||document.hidden||wasmStarting||!wasmActive||engineKind!=='webgpu'){
     notify('Start the recording after WebGPU is active, the flow is running and this tab is visible.');return;
   }
@@ -622,7 +713,7 @@ $('quality').addEventListener('change',()=>{
   else url.searchParams.set('quality',next);
   location.assign(url.toString());
 });
-$('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);updateRustParameters();paint();});
+$('speed').addEventListener('input',()=>{sim.speed=Number($('speed').value);$('speedValue').textContent=sim.speed.toFixed(3);updateRustParameters();updateRunStatus();paint();});
 $('viscosity').addEventListener('input',()=>{sim.viscosity=Number($('viscosity').value);$('viscosityValue').textContent=sim.viscosity.toFixed(3);updateRustParameters();paint();});
 ['particles','vectors'].forEach(id=>$(id).addEventListener('change',paint));
 $('force').addEventListener('change',()=>{
@@ -642,8 +733,8 @@ document.querySelectorAll('.dialog-close').forEach(el=>el.addEventListener('clic
 document.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}}));
 document.addEventListener('keydown',event=>{
   if(['INPUT','TEXTAREA','SELECT','BUTTON','A'].includes(document.activeElement?.tagName)||document.querySelector('dialog[open]'))return;
-  if(event.code==='Space'){event.preventDefault();running=!running;syncRunning();}
-  if(event.key.toLowerCase()==='r')flowReset();
+  if(event.code==='Space'&&comparison.phase!=='ready-b'){event.preventDefault();running=!running;syncRunning();}
+  if(event.key.toLowerCase()==='r'&&!comparison.active)flowReset();
 });
 
 showForceReadout();
@@ -666,7 +757,7 @@ $('nextDemo').addEventListener('click',()=>{
   $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
 });
 const experiments={
-  shapes:{label:'01 / SHAPE TEST',title:'Which shape leaves a narrower wake?',text:'Try the block, then the streamlined shape. Both have the same front-facing height at 0°. Keep the flow settings unchanged and compare after a similar number of steps.',predict:'Which shape will disturb the flow more?',observe:'Follow particles behind each shape.',explain:'Use what you see to support your answer.'},
+  shapes:{label:'01 / SHAPE TEST',title:'Which shape leaves a narrower wake?',text:'Use the guided comparison to hold wind, viscosity, position and elapsed steps constant. The two shapes face forward and have matching frontal heights, within one grid cell.',predict:'Which shape will leave a narrower wake?',observe:'Compare wake colours behind A and B.',explain:'Use a difference you can see to explain your answer.'},
   speed:{label:'02 / SPEED TEST',title:'What changes when the flow gets faster?',text:'Keep the circle and viscosity unchanged. Compare speeds of 0.040, 0.100 and 0.200. Use Reset flow for each fresh test, then compare after a similar number of steps.',predict:'Will faster flow create a different wake?',observe:'Compare the swirls and particle paths.',explain:'Describe one change you can actually see.'},
   angle:{label:'03 / ANGLE TEST',title:'What happens when you tilt the shape?',text:'Start with the streamlined shape at 0°. Try 20°, keeping flow speed and viscosity unchanged. Compare the flow above and below the shape.',predict:'Will the flow stay balanced on both sides?',observe:'Use direction arrows and the speed view.',explain:'Explain how the angle changed the flow.'}
 };
@@ -675,6 +766,7 @@ function selectExperiment(next){
   for(const [id,key]of [['challengeLabel','label'],['challengeTitle','title'],['challengeText','text'],['predictText','predict'],['observeText','observe'],['explainText','explain']])$(id).textContent=e[key];
   const options={shapes:['Block leaves a narrower wake','Streamlined leaves a narrower wake'],speed:['Faster flow changes the wake','Faster flow makes little difference'],angle:['Tilting changes the flow balance','Tilting makes little difference']}[next];
   $('prediction').options[1].textContent=options[0];$('prediction').options[2].textContent=options[1];$('prediction').value='';$('conclusion').value='';
+  if($('guidedComparison'))$('guidedComparison').hidden=next!=='shapes';
 }
 document.querySelectorAll('[data-experiment]').forEach(el=>el.addEventListener('click',()=>selectExperiment(el.dataset.experiment)));
 function setupExperiment(){
@@ -682,14 +774,16 @@ function setupExperiment(){
   $('viscosity').value=sim.viscosity;$('viscosityValue').textContent=sim.viscosity.toFixed(3);$('speed').value=sim.speed;$('speedValue').textContent=sim.speed.toFixed(3);
   shapeSelected(experiment==='shapes'?'block':experiment==='angle'?'streamlined':'circle',0);
   $('particles').checked=true;$('vectors').checked=experiment==='angle';setView(experiment==='angle'?'speed':'curl');
-  toolSelected('probe');running=true;syncRunning();notify('Experiment ready. Watch the flow settle, then capture your first view.');
+  toolSelected(document.body.dataset.level==='beginner'?'move':'probe');running=true;syncRunning();notify('Experiment ready. Predict, then start the matched shape comparison or explore freely.');
 }
 $('setupExperiment').addEventListener('click',setupExperiment);
-function capture() {
+function capture(comparisonInfo=null) {
   paint();const s=sensor?sim.sample(sensor.x,sensor.y):null;
   if(captures.length>=2){notify('Remove a captured view to make room for another.');return null;}
-  const record={image:canvas.toDataURL('image/png'),shape:sim.shape,angle:sim.angle,position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,inletSpeed:sim.inletSpeed,viscosity:sim.viscosity,steps:sim.time,view,probe:s&&!s.solid?s:null,force:$('force').checked&&(engineKind!=='webgpu'||gpuForceValid)?{drag:sim.forceX,lift:-sim.forceY,resultant:Math.hypot(sim.forceX,sim.forceY),units:'relative model force (simulation units)',snapshot:true}:null,note:''};
-  captures.push(record);renderCaptures();notify(`View ${captures.length===1?'A':'B'} captured. ${captures.length===1?'Change one variable for your next view.':'Compare the two views below.'}`);
+  const bounds=sim.obstacleBounds();
+  const record={image:canvas.toDataURL('image/png'),shape:sim.shape,angle:sim.angle,position:{x:sim.centerX,y:sim.centerY},speed:sim.speed,inletSpeed:sim.inletSpeed,viscosity:sim.viscosity,steps:sim.time,view,engine:engineKind,grid:{width:W,height:H},shapeScale:sim.shapeScale,obstacleHeight:bounds?bounds.maxY-bounds.minY+1:0,animation:$('animation').value,batchMode:$('batchMode').value,particles:$('particles').checked,vectors:$('vectors').checked,forceEnabled:$('force').checked,comparison:comparisonInfo?.matched?comparisonInfo:null,probe:s&&!s.solid?s:null,force:$('force').checked&&(engineKind!=='webgpu'||gpuForceValid)?{drag:sim.forceX,lift:-sim.forceY,resultant:Math.hypot(sim.forceX,sim.forceY),units:'relative model force (simulation units)',snapshot:true}:null,note:''};
+  record.experiment=experiment;
+  captures.push(record);renderCaptures();notify(`View ${captures.length===1?'A':'B'} captured. ${captures.length===1?(record.comparison?'Describe A, then choose Observe B.':'Change one variable for your next view.'):'Compare the two views below.'}`);
   return {shape:record.shape,speed:record.speed,steps:record.steps,count:captures.length};
 }
 function renderCaptures() {
@@ -699,8 +793,9 @@ function renderCaptures() {
     const image=document.createElement('img');image.src=record.image;image.alt=`Captured ${viewNames[record.view].toLowerCase()} view of ${names[record.shape].toLowerCase()} at speed ${record.speed.toFixed(3)}`;figure.append(image);
     const caption=document.createElement('figcaption');caption.className='capture-caption';
     const heading=document.createElement('div'),title=document.createElement('strong');title.textContent=`View ${index===0?'A':'B'} · ${names[record.shape]}`;
-    const remove=document.createElement('button');remove.textContent='Remove';remove.setAttribute('aria-label',`Remove view ${index===0?'A':'B'}`);remove.addEventListener('click',()=>{captures.splice(index,1);renderCaptures();});heading.append(title,remove);caption.append(heading);
+    const remove=document.createElement('button');remove.textContent='Remove';remove.disabled=comparison.active;remove.setAttribute('aria-label',`Remove view ${index===0?'A':'B'}`);remove.addEventListener('click',()=>{captures.splice(index,1);renderCaptures();});heading.append(title,remove);caption.append(heading);
     const meta=document.createElement('div');meta.textContent=`Speed ${record.speed.toFixed(3)} · Viscosity ${record.viscosity.toFixed(3)} · ${record.angle}° · ${record.steps.toLocaleString()} steps · ${viewNames[record.view]}`;caption.append(meta);
+    const method=document.createElement('div');method.textContent=`${record.comparison?'Matched shape test · ':''}${record.engine} · ${record.grid.width} × ${record.grid.height} grid · Height ${record.obstacleHeight} cells`;caption.append(method);
     if(record.shape!=='none'){const location=document.createElement('div');location.textContent=`Object position (${record.position.x}, ${record.position.y})`;caption.append(location);}
     if(Math.abs(record.inletSpeed-record.speed)>.0003){const transition=document.createElement('div');transition.textContent=`Flow still adjusting: inlet ${record.inletSpeed.toFixed(3)} toward ${record.speed.toFixed(3)}.`;caption.append(transition);}
     if(record.force){const force=document.createElement('div');
@@ -713,10 +808,30 @@ function renderCaptures() {
     const download=document.createElement('a');download.className='download';download.href=record.image;download.download=`airflow-${record.shape}-view-${index===0?'a':'b'}.png`;download.textContent='Download image';caption.append(download);figure.append(caption);root.append(figure);
   });
   if(captures.length===1){const empty=document.createElement('div');empty.className='capture-empty';empty.textContent='Your second view will appear here.';root.append(empty);}
-  $('captureButton').disabled=captures.length>=2;
+  $('captureButton').disabled=comparison.active||captures.length>=2;
   $('exportComparison').disabled=captures.length!==2;
+  if($('fairTestStatus')){
+    $('fairTestStatus').hidden=captures.length!==2;
+    if(captures.length===2){
+      const differences=comparisonDifferences(...captures);
+      $('fairTestStatus').textContent=differences.length
+        ?`Check your comparison: ${differences.join(', ')}. Check that only the variable for your question changed.`
+        :captures[0].experiment==='shapes'
+          ?'Matched conditions: same wind, viscosity, position, angle, view, engine, grid and elapsed steps. Frontal heights match within one grid cell. Compare the wake; particle trails are visual markers.'
+          :'Matched conditions: only the variable for your question changed. Other recorded settings and elapsed steps match. Use your observations as evidence.';
+      $('fairTestStatus').dataset.matched=String(!differences.length);
+    }
+  }
+  refreshComparison();
 }
-$('captureButton').addEventListener('click',capture);
+$('captureButton').addEventListener('click',()=>capture());
+$('startComparison')?.addEventListener('click',startComparison);
+$('nextComparison')?.addEventListener('click',()=>{
+  if(comparison.phase!=='ready-b')return;
+  comparison.next();prepareComparisonTrial();renderCaptures();
+  $('canvasWrap').scrollIntoView({behavior:'smooth',block:'center'});
+});
+$('cancelComparison')?.addEventListener('click',()=>cancelComparison());
 function reportLines(c,text,x,y,width,spacing,max=2){
   const words=String(text||'No observation entered').split(/\s+/);let line='',count=0;
   for(const word of words){const next=line?line+' '+word:word;if(line&&c.measureText(next).width>width){c.fillText(line,x,y+spacing*count++);line=word;if(count>=max)return;}else line=next;}
@@ -728,7 +843,7 @@ async function exportReport(){
  const sheet=document.createElement('canvas');sheet.width=1840;sheet.height=920;const c=sheet.getContext('2d');
  c.fillStyle='#f3f6f8';c.fillRect(0,0,1840,920);c.fillStyle='#0e1824';c.fillRect(0,0,1840,125);
  c.fillStyle='#5de4d1';c.font='bold 36px sans-serif';c.fillText('AIRFLOW LAB / A–B COMPARISON',40,54);
- c.fillStyle='#e4eff2';c.font='22px sans-serif';c.fillText(experiments[experiment].title,40,94);
+ c.fillStyle='#e4eff2';c.font='22px sans-serif';c.fillText(experiments[captures[0].experiment].title,40,94);
  captures.forEach((r,n)=>{const x=40+n*920;c.fillStyle='#fff';c.fillRect(x,144,900,585);c.drawImage(imageList[n],x+10,155,880,381);
   c.fillStyle='#163445';c.font='bold 25px sans-serif';c.fillText('VIEW '+(n?'B':'A')+' · '+names[r.shape],x+12,574);
   c.fillStyle='#566c7c';c.font='19px sans-serif';c.fillText('Flow '+r.speed.toFixed(3)+' · Viscosity '+r.viscosity.toFixed(3)+' · Angle '+r.angle+'°',x+12,610);
@@ -739,9 +854,13 @@ async function exportReport(){
    c.fillStyle='#163445';c.font='18px sans-serif';reportLines(c,r.note,x+12,r.force?704:686,860,24,r.force?1:2);
  });
  const p=$('prediction');c.font='19px sans-serif';c.fillStyle='#163445';
- reportLines(c,'Prediction: '+(p.selectedIndex?p.options[p.selectedIndex].textContent:'Not recorded'),40,778,1740,25,1);
+ const recordedPrediction=captures.every(r=>r.comparison?.matched)?captures[0].comparison.prediction:(p.selectedIndex?p.options[p.selectedIndex].textContent:'Not recorded');
+ reportLines(c,'Prediction: '+recordedPrediction,40,778,1740,25,1);
  reportLines(c,'Explanation: '+$('conclusion').value,40,811,1740,26,2);
  c.fillStyle='#637989';c.font='17px sans-serif';c.fillText('Simplified 2D learning model · Simulation units · Not a calibrated aerodynamic test',40,892);
+ c.font='16px sans-serif';c.fillStyle='#637989';
+ const differences=comparisonDifferences(...captures);
+ reportLines(c,'Comparison check: '+(differences.length?differences.join(', '):'other recorded conditions match')+' · '+captures[0].engine+' · '+W+' × '+H+' grid',40,867,1740,20,1);
  sheet.toBlob(blob=>{if(!blob){notify('Report export unavailable on this device.');return;}
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='airflow-lab-comparison.png';document.body.append(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);notify('Comparison report ready. Check your downloads.');
@@ -757,6 +876,7 @@ if(modelContext?.registerTool) {
   const state=()=>({shape:sim.shape,position:{x:sim.centerX,y:sim.centerY},animation:Object.keys(animationModes).find(key=>animationModes[key]===Number($('animation').value)),angle:sim.angle,speed:sim.speed,inletSpeed:sim.inletSpeed,viscosity:sim.viscosity,view,running,steps:sim.time,captures:captures.length,probe:sensor?sim.sample(sensor.x,sensor.y):null});
   register({name:'read_wind_tunnel',description:'Read the current wind-tunnel settings and optional probe measurement.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute:()=>state()});
   register({name:'configure_wind_tunnel',description:'Change visible wind-tunnel settings. Shape or angle changes reset the fluid. Speed changes blend into the current flow; viscosity changes preserve it. Does not capture a view.',inputSchema:{type:'object',properties:{shape:{type:'string',enum:presetNames},angle:{type:'number',minimum:-45,maximum:45,multipleOf:5},speed:{type:'number',minimum:0,maximum:.2,multipleOf:.005},viscosity:{type:'number',minimum:.02,maximum:.15,multipleOf:.005},view:{type:'string',enum:['curl','speed','density']},running:{type:'boolean'},animation:{type:'string',enum:Object.keys(animationModes)}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{
+    if(comparison.active)throw new Error('Exit the matched comparison before changing settings. Use the visible Pause button to pause.');
     if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Expected a settings object.');
     const allowed=['shape','angle','speed','viscosity','view','running','animation'];
     if(Object.keys(input).some(k=>!allowed.includes(k)))throw new Error('Unknown setting.');
@@ -776,11 +896,12 @@ if(modelContext?.registerTool) {
     updateProbe();paint();return state();
   }});
   register({name:'move_wind_tunnel_object',description:'Reposition the entire obstacle, keep it inside the tunnel, and restart the flow at its new position. Coordinates are simulation grid coordinates; returns the actual clamped position.',inputSchema:{type:'object',properties:{x:{type:'number',minimum:0,maximum:W-1},y:{type:'number',minimum:0,maximum:H-1}},required:['x','y'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:input=>{
+    if(comparison.active)throw new Error('Exit the matched comparison before moving the object.');
     if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['x','y'].includes(key))||typeof input.x!=='number'||typeof input.y!=='number'||!Number.isFinite(input.x)||!Number.isFinite(input.y)||input.x<0||input.x>=W||input.y<0||input.y>=H)throw new Error('Provide valid x and y grid coordinates.');
     if(!moveObjectBy(input.x-sim.centerX,input.y-sim.centerY))throw new Error('Choose or draw an object first.');
     toolSelected('move');return state();
   }});
-  register({name:'capture_wind_tunnel_view',description:'Capture the current rendered view for the visible two-view comparison. Fails when both slots are occupied.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>{if(captures.length>=2)throw new Error('Both comparison slots are full.');return capture();}});
+  register({name:'capture_wind_tunnel_view',description:'Capture the current rendered view for the visible two-view comparison. Fails when both slots are occupied or a matched comparison is active.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>{if(comparison.active)throw new Error('Matched comparisons capture automatically.');if(captures.length>=2)throw new Error('Both comparison slots are full.');return capture();}});
   window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
 }
 setLevel(researchPage?'advanced':'beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);

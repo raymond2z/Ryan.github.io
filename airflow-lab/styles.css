@@ -87,3 +87,15 @@ body[data-level="beginner"] .gpu-force-readout{display:none}
 .stability-controls h3{margin:0 0 8px;font-size:15px}.stability-controls p{font-size:12px;line-height:1.6}
 .stability-controls input{font:inherit;min-height:40px;max-width:220px;background:#1b303d;color:#e1f1f2;border:1px solid #607887;border-radius:6px;padding:8px}
 #stabilityStatus{display:block;line-height:1.6;margin-top:10px;font-variant-numeric:tabular-nums}
+
+/* Stage 4A: a short guided test, with the existing free exploration below. */
+.guided-comparison{margin:20px 26px 0;padding:18px 20px;background:#edf8f5;border:1px solid #bddbd4;border-radius:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 20px;align-items:center}
+.guided-comparison h3{margin:6px 0 8px;font-size:19px;color:#163445}.guided-comparison p{margin:0;font-size:14px;line-height:1.6;color:#42665f}
+.comparison-actions{display:flex;flex-direction:column;gap:8px}.comparison-actions button{min-height:44px}
+.guided-comparison #comparisonStatus{grid-column:1/-1;font-weight:650;color:#145e54;font-size:13px;padding-top:10px;border-top:1px solid #c7dfd9;font-variant-numeric:tabular-nums}
+.guided-comparison small{grid-column:1/-1;font-size:12px;color:#54716b;line-height:1.5}
+.fair-test-status{margin:0 26px 18px;padding:12px 15px;background:#fff3df;border:1px solid #e4ca9d;border-radius:9px;font-size:13px;line-height:1.6;color:#725124}
+.fair-test-status[data-matched=true]{background:#edf8f5;border-color:#bddbd4;color:#145e54}
+@media(max-width:800px){.guided-comparison{grid-template-columns:1fr;margin:16px 18px 0;padding:16px}.comparison-actions{flex-direction:row;flex-wrap:wrap}.comparison-actions button{flex:1}.fair-test-status{margin:0 18px 16px}}
+@media(max-width:520px){.guided-comparison p{font-size:13px}.guided-comparison h3{font-size:18px}.comparison-actions button{min-width:140px}.fair-test-status{font-size:12px}}
+@media print{.comparison-actions{display:none}}
