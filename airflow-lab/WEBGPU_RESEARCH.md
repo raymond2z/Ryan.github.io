@@ -174,3 +174,23 @@ On **both** iPad and Galaxy S24 Ultra:
 
 This update does not claim a 30 FPS achievement or a 60 FPS GPU renderer; the new Canvas scheduler can paint more often than new fluid-field snapshots arrive. The main fluid field is still read back and redrawn via Canvas, and GPU force remains an opt-in experiment. Do not treat higher simulated Steps/s as improved interactive responsiveness without measuring frame cadence and pointer latency. CI covers stepper bounds, render scheduling logic, JavaScript syntax, WebGPU Worker structure and existing numerical reference tests. Real GPU performance must be verified on the physical devices.
 
+
+## Stage 3.3 hotfix — 60 Hz fractional rAF timing aliasing (2026-10-10)
+
+Two real-device Stage 3.3 exports support separating solver throughput from Canvas FPS:
+
+- The iPad `Super fast` export used Detailed 240×104, Circle, speed 0.150, viscosity 0.025, force off, Adaptive batch cap 24. It recorded **696 Flow Steps/s**, **29 fresh GPU field samples/s**, but only **22 Canvas paints/s**. Across 160 recent samples, the GPU queue+readback wait averaged ~9.1 ms, command encoding ~0.18 ms, Worker round-trip ~10.4 ms, and Canvas drawing ~5.6 ms. A majority of sampled requests (147/160) processed all 24 GPU steps. Thus independent solver throughput has improved substantially, while the display remains FPS-constrained.
+- The other export had the same grid/shape/physics but **Normal (animation = 7)**, with **~214 Flow Steps/s**, **~30.5 new GPU field samples/s**, **~21.7 Canvas paints/s**. It provides no device identity. These two reports cannot establish any device ranking or a same-settings A/B improvement.
+
+### Source-code scheduling problem and fix
+
+The previous per-frame render gate was `now - lastPaint >= 1000/30`. On a nominal **60 Hz requestAnimationFrame** clock, a 2-refresh interval can be marginally below 33.333… ms due to fractional/timestamp quantization, leading to a wait for the *third* refresh (~50 ms, ~20 FPS). Measuring ~29 field updates but only ~22 paints is consistent with that scheduling artifact. It does not prove that no other factor (browser scheduling, main-thread rendering, tracing) contributes.
+
+A new `createGpuPaintPacer()` scheduler:
+- Tracks **absolute 30 Hz paint deadlines** instead of measuring 33.333… ms anew from the last actual paint;
+- Applies a bounded **1.5 ms frame-alignment tolerance** so a mathematically on-time 2-refresh callback isn't rejected by floating-point / display timing jitter;
+- Skips elapsed deadlines after a delayed browser callback, avoiding accumulated phase drift;
+- Only schedules work for newly dirty fluid fields or pending tracer interpolation; respects existing GPU Worker, Adaptive 4–24 Steps, Rust/JS fallback, and opt-in force.
+- Adds Node regression simulations for 60, 90 and 120 Hz rAF, plus idle/reset/late callback behavior.
+
+**Validation gate**: GitHub CI confirms the scheduling tests and existing GPU numerical checks, but there is no hardware browser GPU execution in CI. Compare the **fresh** `stage3-fps.html?engine=webgpu&quality=detail&tune=adaptive` against the previous Stage 3.3 measurement conditions: Circle, speed .150, Super fast, force off, detailed 240×104. After 5–10 seconds, export JSON and record Canvas FPS versus unique GPU snapshots/s. The expected engineering goal is to close the observed ~29 samples/s versus ~22 paints/s gap, **not a guaranteed 30 FPS**. Do not claim solver Steps/s acceleration from this scheduling change alone.
