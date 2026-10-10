@@ -7,7 +7,8 @@ const qualityOption=['fast','detail'].includes(qualityPreference)?qualityPrefere
 const useFastGrid=qualityOption==='fast'||(qualityOption==='auto'&&(matchMedia('(pointer: coarse)').matches||innerWidth<700));
 const sim=new FluidSimulation(useFastGrid?168:240,useFastGrid?72:104);
 const enginePreference=new URLSearchParams(location.search).get('engine');
-const engineChoice=['javascript','wasm'].includes(enginePreference)?enginePreference:'auto';
+const engineChoice=['javascript','wasm','webgpu'].includes(enginePreference)?enginePreference:'auto';
+let engineKind='javascript';
 let wasmActive=false,wasmStarting=false,wasmWorker=null,workerRequest=0,workerInFlight=0;
 let engineRevision=0,lastWorkerRequest=0,manualSteps=0;
 let performanceWindow=performance.now(),paintedFrames=0,simulatedSteps=0;
@@ -155,13 +156,21 @@ function updateRustParameters(){
   });
 }
 function endRustEngine(reason){
+  const wasGpu=engineKind==='webgpu';
   if(wasmWorker){wasmWorker.terminate();wasmWorker=null;}
   wasmActive=false;wasmStarting=false;workerInFlight=0;manualSteps=0;
+  engineKind='javascript';
   // JS fallback must have f64 velocity fields for normal numeric operation.
   sim.rho=new Float64Array(sim.n);
   sim.ux=new Float64Array(sim.n);
   sim.uy=new Float64Array(sim.n);
   sim.reset();pendingSteps=0;resetParticles();paint();
+  $('force').disabled=false;$('force').title='Show model force';
+  if(wasGpu){
+    engineLabel('WebGPU unavailable · switching to Rust/WASM',true);
+    beginRustEngine('wasm');
+    return;
+  }
   engineLabel('JavaScript fallback · '+reason,true);
   if(reason!=='selected')notify('Rust/WASM unavailable. The JavaScript simulator is still working.');
 }
@@ -172,20 +181,27 @@ function publishRustStep(count,budgetMs,now){
   wasmWorker.postMessage({type:'step',revision:engineRevision,
     requestId:workerInFlight,count,budgetMs});
 }
-function beginRustEngine(){
+function beginRustEngine(override=null){
   $('engine').value=engineChoice;
   if(!requestedWasm){
     engineLabel('JavaScript · selected');
     return;
   }
-  if(typeof Worker==='undefined'||typeof WebAssembly==='undefined'){
-    engineLabel('JavaScript fallback · Rust not supported',true);
-    return;
+  if(typeof Worker==='undefined'){
+    endRustEngine('Web Workers unavailable');return;
+  }
+  if((override==='wasm'||engineChoice==='wasm')&&typeof WebAssembly==='undefined'){
+    endRustEngine('WebAssembly unavailable');return;
+  }
+  engineKind=override||(engineChoice==='wasm'?'wasm':'webgpu');
+  if(engineKind==='webgpu'&&!navigator.gpu)engineKind='wasm';
+  if(engineKind==='wasm'&&typeof WebAssembly==='undefined'){
+    endRustEngine('WebAssembly unavailable');return;
   }
   wasmStarting=true;
-  engineLabel('Loading Rust/WASM…');
+  engineLabel('Loading '+(engineKind==='webgpu'?'WebGPU':'Rust/WASM')+'…');
   try{
-    const worker=new Worker(new URL('./student-wasm-worker.mjs',import.meta.url),{type:'module'});
+    const worker=new Worker(new URL(engineKind==='webgpu'?'./student-gpu-worker-v1.mjs':'./student-wasm-worker.mjs',import.meta.url),{type:'module'});
     wasmWorker=worker;
     worker.onerror=event=>{
       event.preventDefault();
@@ -198,8 +214,12 @@ function beginRustEngine(){
         // The user could have changed controls while WASM was loading.
         sim.reset();resetParticles();pendingSteps=0;workerInFlight=0;
         resetRustField();
-        engineLabel((engineChoice==='auto'?'Auto · ':'')+'Rust/WASM worker');
-        notify('Rust/WASM is active. Flow restarted using your current settings.');
+        const gpu=engineKind==='webgpu';
+        $('force').disabled=gpu;
+        if(gpu)$('force').checked=false;
+        $('force').title=gpu?'Select Rust/WASM to measure model force.':'Show model force';
+        engineLabel((engineChoice==='auto'?'Auto · ':'')+(gpu?'WebGPU worker · experimental':'Rust/WASM worker'),engineChoice==='webgpu'&&!gpu);
+        notify(gpu?'WebGPU active. Model force requires Rust/WASM mode.':'Rust/WASM active. Flow restarted using your current settings.');
         paint();
       }else if(data.type==='error'){
         endRustEngine('simulation error');
@@ -208,7 +228,8 @@ function beginRustEngine(){
       }else if(data.type==='frame'){
         if(data.requestId===workerInFlight)workerInFlight=0;
         if(data.revision!==engineRevision)return;
-        // Float32 fields are for drawing only. The Rust solver remains f64.
+        // Float32 fields are for drawing only. Rust/JS populations remain f64;
+        // WebGPU retains f32 distributions in GPU buffers.
         const previous=[sim.rho,sim.ux,sim.uy];
         sim.rho=data.fields.rho;sim.ux=data.fields.ux;sim.uy=data.fields.uy;
         const buffers=previous.filter(v=>v instanceof Float32Array&&v.length===sim.n).map(v=>v.buffer);
@@ -247,12 +268,12 @@ function frame(now) {
     }
   }else pendingSteps=0;
   if(wasmActive&&manualSteps>0&&!workerInFlight){
-    const count=Math.min(48,manualSteps);manualSteps-=count;
+    const count=Math.min(engineKind==='webgpu'?8:48,manualSteps);manualSteps-=count;
     publishRustStep(count,Number.POSITIVE_INFINITY,now);
   }
   if(now-performanceWindow>=1000){
     const seconds=(now-performanceWindow)/1000;
-    $('livePerformance').textContent='Canvas: '+Math.round(paintedFrames/seconds)+
+    $('livePerformance').textContent=(wasmActive&&engineKind==='webgpu'?'GPU':'CPU')+' · Canvas: '+Math.round(paintedFrames/seconds)+
       ' fps · Flow: '+Math.round(simulatedSteps/seconds)+' steps/s';
     performanceWindow=now;paintedFrames=0;simulatedSteps=0;
   }
@@ -525,6 +546,7 @@ if(modelContext?.registerTool) {
     if(input.angle!==undefined&&['custom','none'].includes(input.shape??sim.shape))throw new Error('Choose a preset shape before setting its angle.');
     if(input.speed!==undefined){sim.speed=input.speed;$('speed').value=input.speed;$('speedValue').textContent=input.speed.toFixed(3);}
     if(input.viscosity!==undefined){sim.viscosity=input.viscosity;$('viscosity').value=input.viscosity;$('viscosityValue').textContent=input.viscosity.toFixed(3);}
+    if(input.speed!==undefined||input.viscosity!==undefined)updateRustParameters();
     if(input.shape!==undefined||input.angle!==undefined)shapeSelected(input.shape??sim.shape,input.angle??sim.angle,input.shape===undefined);
     if(input.animation!==undefined){$('animation').value=animationModes[input.animation];pendingSteps=0;}
     if(input.view!==undefined)setView(input.view);
