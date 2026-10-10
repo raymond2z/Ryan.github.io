@@ -32,6 +32,36 @@ export function shouldDrawGpuFrame({now,lastPaint,fluidDirty,tracerDebt,running,
   if(now-lastPaint<RENDER_INTERVAL_MS)return false;
   return Boolean(fluidDirty||(running&&particlesEnabled&&tracerDebt>=.5));
 }
+// RequestAnimationFrame times are quantized to display refreshes.
+// A naive >= 1000/30 test can miss the second 60 Hz refresh by a fraction
+// of a millisecond, slipping to the third refresh (~20 FPS).
+// Track absolute paint deadlines; a 1.5 ms alignment margin avoids a
+// one-refresh penalty without accumulating one frame's lateness into the next.
+export const FRAME_ALIGNMENT_MARGIN_MS=1.5;
+export function createGpuPaintPacer({
+  intervalMs=RENDER_INTERVAL_MS,alignmentMs=FRAME_ALIGNMENT_MARGIN_MS
+}={}){
+  if(!(Number.isFinite(intervalMs)&&intervalMs>0&&Number.isFinite(alignmentMs)&&alignmentMs>=0))
+    throw Error('Invalid GPU paint interval');
+  let nextDue=null;
+  return {
+    reset(){nextDue=null;},
+    get nextDue(){return nextDue;},
+    shouldDraw({now,fluidDirty,tracerDebt,running,particlesEnabled}){
+      if(!Number.isFinite(now))return false;
+      const changes=Boolean(fluidDirty||(running&&particlesEnabled&&tracerDebt>=.5));
+      if(!changes)return false;
+      if(nextDue===null){nextDue=now+intervalMs;return true;}
+      if(now+alignmentMs<nextDue)return false;
+      // Advance fixed deadlines rather than using actual paint completion,
+      // so a late callback cannot make every subsequent frame late.
+      const missed=Math.max(1,Math.floor((now+alignmentMs-nextDue)/intervalMs)+1);
+      nextDue+=missed*intervalMs;
+      return true;
+    }
+  };
+}
+
 export function forceFrameTiming(value){
   return Number.isFinite(value)&&value>=0?Math.round(value*10)/10:null;
 }
