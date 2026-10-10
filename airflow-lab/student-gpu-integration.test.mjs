@@ -9,15 +9,16 @@ test('Student Lab offers WebGPU, Rust, JavaScript and Auto choices',()=>{
   for(const name of ['auto','webgpu','wasm','javascript'])
     assert.ok(html.includes('value="'+name+'"'),'Missing engine '+name);
   assert.match(app,/engineChoice=\['javascript','wasm','webgpu'\]/);
-  assert.match(app,/engineKind==='webgpu'\?'\.\/student-gpu-worker-v1\.mjs'/);
+  assert.match(app,/engineKind==='webgpu'\?'\.\/student-gpu-worker-v2\.mjs'/);
   assert.match(app,/const wasGpu=engineKind==='webgpu'/);
   assert.match(app,/beginRustEngine\('wasm'\)/,'Rust must be fallback if GPU cannot initialize or compute');
-  assert.match(app,/if\(gpu\)\$\('force'\)\.checked=false/,'GPU cannot misreport wall force');
-  assert.match(app,/\$\('force'\)\.disabled=gpu/);
+  assert.match(app,/data\.forceOptIn/,'GPU force must be explicitly supported by the worker');
+  assert.match(app,/syncGpuForce\(\)/,'GPU force is opt-in and follows the toggle');
+  assert.match(app,/data\.type==='forceStatus'/,'GPU force failures must not stop the simulation');
 });
 
 test('GPU worker uses persistent D2Q9 ping-pong fields and serialized messages',()=>{
-  const s=get('student-gpu-worker-v1.mjs');
+  const s=get('student-gpu-worker-v2.mjs');
   for(const snippet of [
     'd2q9-solver-r2-20261010.wgsl',
     'student-gpu-stir-v1.wgsl',
@@ -28,6 +29,10 @@ test('GPU worker uses persistent D2Q9 ping-pong fields and serialized messages',
     "msg.type===\'recycle\'",
     'type:\'skipped\'',
     'Math.min(STEP_LIMIT',
+    "if(forceEnabled&&forceController)forceController.encodeHalfStep(encoder)",
+    "if(forceEnabled&&forceController)forceController.encodeReadback(encoder)",
+    "const forcePending=forceEnabled&&forceController",
+    "await setForceEnabled(Boolean(msg.enabled))",
     'let pending=Promise.resolve()',
     'if(msg.revision!==revision)',
     'new Float32Array(model.f)',
@@ -58,6 +63,10 @@ test('Student Lab controls preserve drawing, reset, probe and performance report
 test('HTML references required controls and marks GPU as experimental',()=>{
   const html=get('index.html'),app=get('app.mjs');
   assert.match(html,/WebGPU \(experimental\)/);
+  assert.match(html,/id="forceReadout"/);
+  assert.match(html,/id="forceNote"/);
+  assert.match(app,/gpuForceValid/);
+  assert.match(app,/force:\$\('force'\)\.checked/,'A\/B captures may include force snapshots');
   for(const id of new Set([...app.matchAll(/\$\('([a-zA-Z][a-zA-Z0-9]*)'\)/g)].map(m=>m[1])))
     assert.ok(html.includes('id="'+id+'"'),'Missing #'+id);
 });
