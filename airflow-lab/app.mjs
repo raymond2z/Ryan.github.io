@@ -1,10 +1,10 @@
 import {FluidSimulation} from './simulation.mjs';
 import {EXTRA_SHAPES,shapePreview} from './shapes.mjs';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
-import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs?build=gpu-cadence-20261010';
+import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs?build=gpu-cadence-feedback-20261010';
 import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=gpu-cadence-20261010';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs?build=stage4c-20261010';
-import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor} from './gpu-experiment.mjs?build=gpu-cadence-20261010';
+import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop} from './gpu-experiment.mjs?build=gpu-cadence-feedback-20261010';
 const $=id=>document.getElementById(id);
 const stability=createStabilityRecorder();
 let stabilityTimer=null,stabilityFinishedShown=false;
@@ -70,13 +70,17 @@ let engineRevision=0,lastWorkerRequest=0,manualSteps=0,gpuForceValid=false;
 const stepper=makeAdaptiveStepper({targetMs:30});
 let gpuPaintPacer=createGpuPaintPacer();
 const gpuRequestPacer=createGpuRequestPacer(),gpuLoadGovernor=createGpuLoadGovernor();
+const gpuFlowLoop=createGpuFlowLoop({tick:researchFlowTick});
+let researchDemandClock=null,windowGpuRequests=0,windowAnimationFrames=0,lastCallbackHz=0;
+let windowPolicyChanged=false,windowInterrupted=false,windowTracerDropStart=0,lastDeliveryWindow=null;
 const gpuExperimentChanges=[];
 let tracerDroppedSteps=0,lastTracerDropEvent=0,lastReusedPaintHz=0,windowReusedPaints=0;
 function experimentConfiguration(){
   return {enabled:gpuExperimentPage,build:GPU_EXPERIMENT_BUILD,
     profile:gpuExperimentPage?experimentProfile:'classroom',paceMultiplier:gpuExperimentPage?flowPaceMultiplier:1,
     requestedPaintHz:gpuExperimentPage?GPU_PROFILES[experimentProfile].paintHz:30,
-    requestedUpdateHz:gpuExperimentPage?(experimentProfile==='auto60'?'auto 15–60':GPU_PROFILES[experimentProfile].updateHz):'classroom scheduler'};
+    requestedUpdateHz:gpuExperimentPage?(experimentProfile==='auto60'?'auto 15–60':GPU_PROFILES[experimentProfile].updateHz):'classroom scheduler',
+    flowScheduler:gpuExperimentPage?'independent timer + Worker completion':'classroom animation callback'};
 }
 function experimentPolicy(){return experimentProfile==='auto60'?gpuLoadGovernor.state:GPU_PROFILES[experimentProfile];}
 function adaptiveGpuBatch(){return gpuExperimentPage&&experimentProfile==='auto60'?gpuLoadGovernor.state.batch:stepper.batch;}
@@ -84,10 +88,36 @@ function syncExperimentPacing(){
   if(!gpuExperimentPage)return;
   const policy=experimentPolicy();gpuRequestPacer.setRate(policy.updateHz);
   gpuPaintPacer=createGpuPaintPacer({intervalMs:1000/policy.paintHz});
+  windowPolicyChanged=true;gpuFlowLoop.wake();
 }
 function resetExperimentPacing(){
   if(gpuExperimentPage)stabilityEvent('experiment_policy_reset',{profile:experimentProfile});
   gpuLoadGovernor.reset();gpuRequestPacer.reset();syncExperimentPacing();
+  researchDemandClock=null;syncResearchFlow();
+}
+function researchFlowEnabled(){
+  return gpuExperimentPage&&wasmActive&&engineKind==='webgpu'&&running&&!document.hidden&&
+    !(pointer&&['draw','erase','move'].includes(pointer.action));
+}
+function syncResearchFlow(){
+  if(researchFlowEnabled())gpuFlowLoop.start();
+  else{gpuFlowLoop.stop();researchDemandClock=null;}
+}
+function researchFlowTick(now){
+  if(!researchFlowEnabled()){gpuFlowLoop.stop();researchDemandClock=null;return null;}
+  const elapsed=researchDemandClock===null?0:Math.max(0,Math.min(100,now-researchDemandClock));
+  researchDemandClock=now;
+  const animation=Number($('animation').value),adaptive=$('batchMode').value==='adaptive';
+  const stepsPerMs=animation*.03*flowPaceMultiplier;
+  pendingSteps=Math.min(animation===24?(adaptive?96:48):(adaptive?48:18),pendingSteps+elapsed*stepsPerMs);
+  if(workerInFlight)return null; // The completion handler will wake the single timer.
+  const count=Math.min(Math.floor(pendingSteps),adaptive?adaptiveGpuBatch():STEP_FIXED);
+  if(!count)return Math.min(1000/gpuRequestPacer.rate,Math.max(1,(1-pendingSteps)/stepsPerMs));
+  if(gpuRequestPacer.shouldRequest({now,hasWork:true})){
+    publishRustStep(count,useFastGrid?(animation===24?34:25):(animation===24?36:29),now);
+    return null;
+  }
+  return gpuRequestPacer.delay(now);
 }
 const tuningPreference=new URLSearchParams(location.search).get('tune');
 let gpuFluidDirty=false,gpuParticleDebt=0,windowGpuSnapshots=0,lastSnapshotHz=0,lastCanvasFps=0,lastFlowRate=0;
@@ -110,20 +140,21 @@ function refreshPerformance(){
   if(gpuExperimentPage){
     const policy=experimentPolicy();
     $('gpuExperimentStatus').textContent=gpu
-      ?`Targets: ${policy.paintHz} paints/s · ${policy.updateHz} flow updates/s · demand ${flowPaceMultiplier}×. Measured: ${Math.round(lastCanvasFps)} paints/s · ${Math.round(lastSnapshotHz)} new fields/s · ${Math.round(lastFlowRate)} steps/s. Targets are ceilings, not guarantees.`
+      ?`Targets: ${policy.paintHz} paints/s · ${policy.updateHz} flow updates/s · demand ${flowPaceMultiplier}×. Measured: ${Math.round(lastCanvasFps)} paints/s · ${Math.round(lastSnapshotHz)} new fields/s · ${Math.round(lastFlowRate)} steps/s. Browser callbacks: ${Math.round(lastCallbackHz)}/s. Targets are ceilings, not guarantees.`
       :'GPU experiment inactive · '+(wasmStarting?'waiting for WebGPU.':'current engine is '+engineKind+'. Research pacing is off for this engine.');
     $('perfVisual').textContent=ms(recentMean(paintSamples,'visualWorkMs'));
     $('perfReused').textContent=lastReusedPaintHz.toFixed(0)+' /s';
     $('perfTracerDrops').textContent=tracerDroppedSteps.toFixed(0)+' visual steps';
     $('gpuAdjustmentStatus').textContent=experimentProfile==='auto60'
-      ?gpuExperimentChanges.at(-1)?.description||'Auto starts at 60 paint / 30 flow / 8 steps. It needs measured headroom before increasing load.'
+      ?gpuExperimentChanges.at(-1)?.description||'Auto starts at 60 paint / 30 flow / 8 steps. It checks actual delivery and work time before increasing load.'
       :'Cadence targets fixed for this profile. The GPU workload selector controls fixed/adaptive batches.';
   }
 }
 function resetPerformance(){
   gpuSamples.length=0;paintSamples.length=0;stepper.reset();resetExperimentPacing();
   gpuExperimentChanges.length=0;tracerDroppedSteps=0;lastTracerDropEvent=0;windowReusedPaints=0;lastReusedPaintHz=0;
-  lastSnapshotHz=0;lastCanvasFps=0;lastFlowRate=0;
+  lastSnapshotHz=0;lastCanvasFps=0;lastFlowRate=0;lastCallbackHz=0;lastDeliveryWindow=null;
+  windowGpuRequests=0;windowAnimationFrames=0;windowPolicyChanged=false;windowInterrupted=false;windowTracerDropStart=0;
   windowGpuSnapshots=0;performanceWindow=performance.now();paintedFrames=0;simulatedSteps=0;
   refreshPerformance();
 }
@@ -138,6 +169,7 @@ function exportPerformance(){
     performanceSamples:gpuSamples,paintSamples,
     experiment:{...experimentConfiguration(),active:wasmActive&&engineKind==='webgpu'&&gpuExperimentPage,
       currentPolicy:gpuExperimentPage?experimentPolicy():null,adjustments:gpuExperimentChanges,
+      deliveredWindow:gpuExperimentPage?lastDeliveryWindow:null,
       reusedRasterPaintsHz:lastReusedPaintHz,tracerDroppedSteps},
     note:'Queue/readback wait includes GPU execution and synchronization; independent fluid frames/s are not Canvas FPS.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));
@@ -436,6 +468,7 @@ function resetRustField(){
   stabilityEvent('flow_reset',{engine:engineKind});
   if(!wasmActive||!wasmWorker)return;
   engineRevision++;
+  windowInterrupted=true;
   workerInFlight=0;gpuFluidDirty=true;gpuParticleDebt=0;stepper.reset();gpuPaintPacer.reset();resetExperimentPacing();
   // Always copy the current obstacle mask; drag/draw tools modify it on the UI thread.
   wasmWorker.postMessage({type:'reset',revision:engineRevision,
@@ -485,6 +518,7 @@ function publishRustStep(count,budgetMs,now){
   count=comparison.limit(count,sim.time);
   workerInFlight=++workerRequest;
   lastWorkerRequest=now;
+  if(gpuExperimentPage&&engineKind==='webgpu')windowGpuRequests++;
   wasmWorker.postMessage({type:'step',revision:engineRevision,
     requestId:workerInFlight,count,budgetMs});
 }
@@ -554,6 +588,7 @@ function beginRustEngine(override=null){
         endRustEngine('simulation error');
       }else if(data.type==='skipped'){
         if(data.requestId===workerInFlight)workerInFlight=0;
+        gpuFlowLoop.wake();
       }else if(data.type==='frame'){
         if(data.requestId===workerInFlight)workerInFlight=0;
         if(data.revision!==engineRevision)return;
@@ -598,6 +633,7 @@ function beginRustEngine(override=null){
           if(performance.now()-lastPaint>=paintInterval){paint();lastPaint=performance.now();}
         }
         finishComparisonTrial();
+        gpuFlowLoop.wake();
       }
     };
     worker.postMessage({type:'init',width:W,height:H,speed:sim.speed,viscosity:sim.viscosity});
@@ -607,6 +643,7 @@ function beginRustEngine(override=null){
 }
 
 function frame(now) {
+  windowAnimationFrames++;
   const elapsed=lastFrame?Math.min(100,now-lastFrame):0;lastFrame=now;
   const drawing=pointer&&['draw','erase','move'].includes(pointer.action);
   const researchGpu=gpuExperimentPage&&wasmActive&&engineKind==='webgpu';
@@ -621,16 +658,14 @@ function frame(now) {
   if(running&&!document.hidden&&!drawing){
     const animation=Number($('animation').value),superFast=animation===24;
     const adaptiveGpu=wasmActive&&engineKind==='webgpu'&&$('batchMode').value==='adaptive';
-    pendingSteps=Math.min(superFast?(adaptiveGpu?96:48):(adaptiveGpu?48:18),
-      pendingSteps+elapsed*animation*.03*(researchGpu?flowPaceMultiplier:1));
+    if(!researchGpu)pendingSteps=Math.min(superFast?(adaptiveGpu?96:48):(adaptiveGpu?48:18),
+      pendingSteps+elapsed*animation*.03);
     const count=Math.floor(pendingSteps);
     if(wasmActive){
       const adaptiveGpu=engineKind==='webgpu'&&$('batchMode').value==='adaptive';
       const sendCount=engineKind==='webgpu'
         ?Math.min(count,adaptiveGpu?adaptiveGpuBatch():STEP_FIXED):count;
-      const requestDue=researchGpu
-        ?gpuRequestPacer.shouldRequest({now,hasWork:sendCount>0,busy:Boolean(workerInFlight)})
-        :sendCount&&!workerInFlight&&now-lastWorkerRequest>=Math.max(adaptiveGpu?1000/40:1000/30,paintInterval);
+      const requestDue=!researchGpu&&sendCount&&!workerInFlight&&now-lastWorkerRequest>=Math.max(adaptiveGpu?1000/40:1000/30,paintInterval);
       if(requestDue){
         const budgetMs=useFastGrid?(superFast?34:25):(superFast?36:29);
         publishRustStep(sendCount,budgetMs,now);
@@ -665,10 +700,21 @@ function frame(now) {
     lastCanvasFps=paintedFrames/seconds;
     lastFlowRate=simulatedSteps/seconds;
     lastSnapshotHz=windowGpuSnapshots/seconds;
+    lastCallbackHz=windowAnimationFrames/seconds;
     lastReusedPaintHz=windowReusedPaints/seconds;windowReusedPaints=0;
-    stability.rates({durationMs:now-performanceWindow,paints:paintedFrames,
+    const deliveredWindow={durationMs:now-performanceWindow,paints:paintedFrames,
       steps:simulatedSteps,snapshots:windowGpuSnapshots,...stabilityActivity(),
-      experimentPolicy:researchGpu?experimentPolicy():null,tracerDroppedSteps},now);
+      experimentPolicy:researchGpu?experimentPolicy():null,tracerDroppedSteps,
+      animationFrames:windowAnimationFrames,requests:windowGpuRequests,
+      demandStepsPerSecond:Number($('animation').value)*30*(researchGpu?flowPaceMultiplier:1),
+      particlesEnabled:$('particles').checked,interrupted:windowInterrupted,policyChanged:windowPolicyChanged,
+      tracerDroppedStepsDelta:Math.max(0,tracerDroppedSteps-windowTracerDropStart)};
+    stability.rates(deliveredWindow,now);
+    if(researchGpu){
+      lastDeliveryWindow=deliveredWindow;
+      if(experimentProfile==='auto60')gpuLoadGovernor.observeRates(deliveredWindow,now);
+    }
+    windowGpuRequests=0;windowAnimationFrames=0;windowPolicyChanged=false;windowInterrupted=false;windowTracerDropStart=tracerDroppedSteps;
     windowGpuSnapshots=0;
     $('livePerformance').textContent=(wasmActive?(engineKind==='webgpu'?'WebGPU':'Rust/WASM'):'JS')+' · Canvas: '+Math.round(paintedFrames/seconds)+
       ' fps · Flow: '+Math.round(simulatedSteps/seconds)+' steps/s';
@@ -690,7 +736,8 @@ function updateRunStatus() {
   $('speedValue').title=settling?`Current inlet: ${sim.inletSpeed.toFixed(3)}; target: ${sim.speed.toFixed(3)}`:'Inlet flow speed';
 }
 function syncRunning() {
-  if(!running)pendingSteps=0;
+  if(!running){pendingSteps=0;windowInterrupted=true;}
+  syncResearchFlow();
   if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
   $('playButton').querySelector('span').textContent=running?'Pause':'Play';
   $('playIcon').innerHTML=running?'<path d="M6 4v12M14 4v12"/>':'<path d="m6 3 10 7-10 7V3Z"/>';
@@ -744,6 +791,7 @@ canvas.addEventListener('pointerdown',event=>{
   const p=position(event);
   if(tool==='move'&&!hitObject(p,event.pointerType==='touch'?7:4)){notify('Drag the object itself. Choose a shape first if the tunnel is empty.');return;}
   pointer={...p,id:event.pointerId,action:tool};
+  windowInterrupted=true;syncResearchFlow();
   if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
   if(tool==='move'){
     pointer.start={...p};pointer.origin={x:sim.centerX,y:sim.centerY};pointer.mask=sim.solid.slice();pointer.moved=false;
@@ -779,6 +827,7 @@ function endPointer(event){
   // When paused, refresh the flow visualization after using Stir.
   if(wasmActive&&tool==='push'&&!running&&!workerInFlight)
     publishRustStep(0,0,performance.now());
+  syncResearchFlow();
 }
 canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);canvas.addEventListener('lostpointercapture',endPointer);
 canvas.addEventListener('keydown',event=>{
@@ -807,7 +856,7 @@ $('resetButton').addEventListener('click',flowReset);
 $('clearButton').addEventListener('click',()=>shapeSelected('none',0));
 $('closeSensor').addEventListener('click',()=>{sensor=null;$('sensorReadout').hidden=true;paint();});
 $('angle').addEventListener('input',()=>shapeSelected(sim.shape,Number($('angle').value),true));
-$('animation').addEventListener('change',()=>{pendingSteps=0;});
+$('animation').addEventListener('change',()=>{pendingSteps=0;researchDemandClock=null;windowInterrupted=true;gpuFlowLoop.wake();});
 $('batchMode').value=tuningPreference==='adaptive'?'adaptive':'fixed';
 $('batchMode').addEventListener('change',()=>{
   gpuParticleDebt=0;resetPerformance();
@@ -824,7 +873,7 @@ function changeGpuExperiment(){
 $('gpuProfile').value=experimentProfile;$('gpuDemand').value=String(flowPaceMultiplier);
 $('gpuExperimentPanel').hidden=!gpuExperimentPage;
 $('gpuExperimentMetrics').hidden=!gpuExperimentPage;
-if(gpuExperimentPage)$('perfSchedulingNote').textContent='Research targets are ceilings. Extra tracer paints reuse the latest fluid raster; they are not new numerical fields. Compare actual paints/s, fresh fields/s and steps/s separately. Auto adjusts cadence and 4–24-step batches when Adaptive is selected; it never changes wind, viscosity, grid or shape.';
+if(gpuExperimentPage)$('perfSchedulingNote').textContent='Flow requests use a separate timer and Worker completion. Browser callbacks still limit drawing. Extra tracer paints reuse the latest field raster. Auto checks actual delivery, work time and tracer backlog; sustained shortfalls reduce load. Recovery needs measured headroom. Grid, wind and shape remain your choices.';
 ['gpuProfile','gpuDemand'].forEach(id=>$(id).addEventListener('change',changeGpuExperiment));
 $('gpuBenchmarkPreset').addEventListener('click',()=>{
   if(!gpuExperimentPage||comparison.active||stability.active)return;
@@ -845,6 +894,7 @@ $('startStability')?.addEventListener('click',()=>{
   }
   stability.start({durationMinutes:Number($('stabilityDuration').value),config:stabilityConfig(),
     now:performance.now(),wallTime:new Date().toISOString()});
+  if(gpuExperimentPage)stabilityEvent('experiment_policy_snapshot',{build:GPU_EXPERIMENT_BUILD,policy:experimentPolicy()});
   stabilityFinishedShown=false;refreshStability();
   stabilityTimer=setInterval(refreshStability,250);
 });
@@ -852,13 +902,15 @@ $('stopStability')?.addEventListener('click',()=>{stability.stop(performance.now
 $('exportStability')?.addEventListener('click',exportStability);
 document.addEventListener('visibilitychange',()=>{
   stabilityEvent('visibility',{hidden:document.hidden});if(stability.active)refreshStability();
-  if(gpuExperimentPage){pendingSteps=0;gpuParticleDebt=0;lastFrame=0;resetExperimentPacing();}
+  if(gpuExperimentPage){pendingSteps=0;gpuParticleDebt=0;lastFrame=0;windowInterrupted=true;resetExperimentPacing();}
 });
 document.addEventListener('input',event=>{
+  if(gpuExperimentPage)windowInterrupted=true;
   if(stability.active&&event.target!==$('stabilityDevice'))
     stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
 });
 document.addEventListener('change',()=>{
+  if(gpuExperimentPage)windowInterrupted=true;
   if(stability.active)stability.observeState(stabilityConfig(),stabilityActivity(),performance.now());
 });
 window.addEventListener('pagehide',()=>{
@@ -1115,7 +1167,7 @@ if(modelContext?.registerTool) {
     if(input.viscosity!==undefined){sim.viscosity=input.viscosity;$('viscosity').value=input.viscosity;$('viscosityValue').textContent=input.viscosity.toFixed(3);}
     if(input.speed!==undefined||input.viscosity!==undefined)updateRustParameters();
     if(input.shape!==undefined||input.angle!==undefined)shapeSelected(input.shape??sim.shape,input.angle??sim.angle,input.shape===undefined);
-    if(input.animation!==undefined){$('animation').value=animationModes[input.animation];pendingSteps=0;}
+    if(input.animation!==undefined){$('animation').value=animationModes[input.animation];pendingSteps=0;researchDemandClock=null;windowInterrupted=true;gpuFlowLoop.wake();}
     if(input.view!==undefined)setView(input.view);
     if(input.running!==undefined){running=input.running;syncRunning();}
     updateProbe();paint();return state();

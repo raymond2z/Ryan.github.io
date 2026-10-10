@@ -124,3 +124,16 @@ test('student/research wiring preserves batching and hides diagnostics in Beginn
   assert.match(app,/stability\.worker\(sample,performance\.now\(\)\)/);
   assert.match(app,/visibilitychange/);assert.match(app,/stabilityEvent\('engine_error'/);
 });
+
+test('delivery summaries weight window duration, omit interrupted windows and tolerate older reports',()=>{
+  const r=start();
+  r.rates({...activity,durationMs:1000,paints:60,snapshots:40,steps:800,requests:40,animationFrames:60},2000);
+  r.rates({...activity,durationMs:2000,paints:60,snapshots:40,steps:800,requests:40,animationFrames:60},4000);
+  r.rates({...activity,durationMs:1000,paints:1,snapshots:1,steps:1,requests:1,animationFrames:1,interrupted:true},5000);
+  assert.deepEqual(r.report(5000).summary.deliveryRates,{paintsPerSecond:40,freshFieldsPerSecond:80/3,
+    flowStepsPerSecond:1600/3,requestsPerSecond:80/3,animationCallbacksPerSecond:40});
+  const legacy=start();legacy.rates({...activity,durationMs:1000,paints:30,snapshots:30,steps:720},2000);
+  assert.equal(legacy.report(2000).summary.deliveryRates.requestsPerSecond,null);
+  assert.equal(legacy.report(2000).summary.deliveryRates.animationCallbacksPerSecond,null);
+  assert.equal(legacy.report(2000).summary.deliveryRates.flowStepsPerSecond,720);
+});

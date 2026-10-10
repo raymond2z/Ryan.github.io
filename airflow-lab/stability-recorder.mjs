@@ -86,7 +86,10 @@ export function createStabilityRecorder({maxSamples=60000,maxEvents=2000}={}){
       result.elapsedMs=duration;result.remainingMs=Math.max(0,run.requestedDurationMs-duration);
       const workers=run.workerSamples,paints=run.paintSamples;
       const windows=run.rateWindows;
-      const thirds=windows.filter(w=>w.running&&!w.hidden&&!w.interacting&&w.durationMs<=2500);
+      const thirds=windows.filter(w=>w.running&&!w.hidden&&!w.interacting&&!w.interrupted&&w.durationMs<=2500);
+      const measuredSeconds=thirds.reduce((sum,w)=>sum+w.durationMs,0)/1000;
+      const deliveredRate=key=>measuredSeconds>0&&thirds.every(w=>Number.isFinite(w[key]))
+        ?thirds.reduce((sum,w)=>sum+w[key],0)/measuredSeconds:null;
       const rateMean=items=>items.length?items.reduce((sum,w)=>sum+w.steps,0)/
         (items.reduce((sum,w)=>sum+w.durationMs,0)/1000):null;
       const early=thirds.filter(w=>w.elapsedMs<=run.requestedDurationMs/3);
@@ -98,6 +101,9 @@ export function createStabilityRecorder({maxSamples=60000,maxEvents=2000}={}){
         queueReadbackMs:summarize(workers.map(s=>s.queueReadbackMs)),
         paintMs:summarize(paints.map(s=>s.paintMs)),
         visualWorkMs:summarize(paints.map(s=>s.visualWorkMs)),
+        deliveryRates:{paintsPerSecond:deliveredRate('paints'),freshFieldsPerSecond:deliveredRate('snapshots'),
+          flowStepsPerSecond:deliveredRate('steps'),requestsPerSecond:deliveredRate('requests'),
+          animationCallbacksPerSecond:deliveredRate('animationFrames')},
         paintIntervalMs:summarize(paints.map(s=>s.intervalMs).filter(v=>v!==null)),
         firstThirdFlowStepsPerSecond:earlyRate,lastThirdFlowStepsPerSecond:lateRate,
         throughputChangePercent:earlyRate>0&&lateRate!==null?(lateRate/earlyRate-1)*100:null,

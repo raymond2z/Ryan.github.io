@@ -8,7 +8,7 @@ import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,force
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs';
 import {createMatchedComparison,comparisonPlan,comparisonDifferences,setComparisonShape,COMPARISON_SHAPES,seededRandom} from './shape-comparison.mjs';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs';
-import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor} from './gpu-experiment.mjs';
+import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop} from './gpu-experiment.mjs';
 
 const settings={grid:{width:240,height:104},position:{x:72,y:52},speed:.085,viscosity:.025};
 test('every batch size reaches exactly the same observation point for A and B',()=>{
@@ -64,7 +64,7 @@ test('manual speed and angle experiments recognize the chosen variable instead o
 
 // Exercise the real application handlers with a small DOM and asynchronous
 // Worker protocol double; no browser, GPU adapter or changed solver is required.
-function appHarness(engine='webgpu',{path='/airflow-lab/',search='',page='index.html'}={}){
+function appHarness(engine='webgpu',{path='/airflow-lab/',search='',page='index.html',workerDelay=null}={}){
   const html=readFileSync(new URL('./'+page,import.meta.url),'utf8');
   const drawCalls=[],blobs=[];let rasters=0;
   const draw=new Proxy({putImageData:()=>rasters++,createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),measureText:t=>({width:t.length*9}),fillText:t=>drawCalls.push(t)},{get:(o,k)=>o[k]??(()=>{})});
@@ -78,6 +78,7 @@ function appHarness(engine='webgpu',{path='/airflow-lab/',search='',page='index.
     querySelector(){return this.child??=new Element('span');}
     append(...v){this.children.push(...v);}replaceChildren(...v){this.children=v;}remove(){}
     focus(){document.activeElement=this;}scrollIntoView(){}getContext(){return draw;}toDataURL(){return 'data:image/png;base64,test';}
+    setPointerCapture(){}
     toBlob(callback){callback(new Blob(['test'],{type:'image/png'}));}
     getBoundingClientRect(){return {left:0,top:0,width:1200,height:520};}
   }
@@ -98,12 +99,24 @@ function appHarness(engine='webgpu',{path='/airflow-lab/',search='',page='index.
   const query=selector=>selector.split(',').flatMap(s=>s[0]==='#'?[ids.get(s.slice(1))].filter(Boolean):s.startsWith('[data-')?elements.filter(el=>{
     const m=s.match(/\[data-([\w-]+)(?:="([^"]*)")?\]/);return m&&Object.hasOwn(el.dataset,m[1])&&(m[2]===undefined||el.dataset[m[1]]===m[2]);
   }):[]);
+  const documentHandlers=new Map();
   const document={hidden:false,body:new Element('body'),activeElement:null,getElementById:id=>ids.get(id)??null,
-    createElement:tag=>new Element(tag),querySelectorAll:query,querySelector:()=>null,addEventListener(){}};
-  const workers=[];let now=1;
+    createElement:tag=>new Element(tag),querySelectorAll:query,querySelector:()=>null,
+    addEventListener(name,fn){documentHandlers.set(name,fn);}};
+  const workers=[],timers=new Map();let now=1,timerId=0;
+  const schedule=(fn,delay)=>{const id=++timerId;timers.set(id,{fn,due:now+delay});return id;};
+  const advance=value=>{
+    for(let guard=0;guard<10000;guard++){
+      const next=[...timers].sort((a,b)=>a[1].due-b[1].due)[0];
+      if(!next||next[1].due>value){now=Math.max(now,value);return;}
+      now=Math.max(now,next[1].due);timers.delete(next[0]);next[1].fn();
+    }
+    throw Error('Timer loop did not yield');
+  };
   class Worker{
     constructor(){this.messages=[];workers.push(this);}
-    postMessage(m){this.messages.push(m);if(m.type==='reset'){this.time=0;this.revision=m.revision;this.speed=m.speed;}}
+    postMessage(m){this.messages.push(m);if(m.type==='reset'){this.time=0;this.revision=m.revision;this.speed=m.speed;}
+      if(m.type==='step'&&workerDelay!==null)schedule(()=>this.respond(m.count),workerDelay);}
     terminate(){this.terminated=true;}
     ready(){this.onmessage({data:{type:'ready',forceOptIn:true}});}
     respond(steps){const request=this.messages.filter(m=>m.type==='step').at(-1);this.time+=steps;
@@ -113,14 +126,14 @@ function appHarness(engine='webgpu',{path='/airflow-lab/',search='',page='index.
   }
   class Image{set src(value){this.onload();}}
   class TestURL extends URL{static createObjectURL(blob){blobs.push(blob);return 'blob:test';}static revokeObjectURL(){}}
-  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,learningChecks,makeLearningRecord,GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,
+  const context=vm.createContext({FluidSimulation,EXTRA_SHAPES,shapePreview,makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming,createStabilityRecorder,STABILITY_BUILD,createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom,learningChecks,makeLearningRecord,GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop:(options)=>createGpuFlowLoop({...options,clock:()=>now,schedule,cancel:id=>timers.delete(id)}),
     document,navigator:{gpu:{}},location:{pathname:path,search:'?quality=fast&engine='+engine+search,href:'https://example.test'+path},
     window:{addEventListener(){}},innerWidth:1200,matchMedia:()=>({matches:false}),Worker,WebAssembly,URL:TestURL,URLSearchParams,Image,Blob,
     performance:{now:()=>now++},Float32Array,Float64Array,Uint8ClampedArray,Math,Date,structuredClone,AbortController,
-    requestAnimationFrame(){},setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;},clearInterval(){},console});
+    requestAnimationFrame(){},setTimeout:schedule,clearTimeout:id=>timers.delete(id),setInterval(){return 1;},clearInterval(){},console});
   const source=readFileSync(new URL('./app.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'').replaceAll('import.meta.url',"'https://example.test/airflow-lab/app.mjs'");
   vm.runInContext(source,context);
-  return {ids,workers,drawCalls,blobs,rasterCount:()=>rasters,setClock:value=>now=value,run:s=>vm.runInContext(s,context),click:id=>ids.get(id).fire('click'),state:()=>structuredClone(vm.runInContext('({phase:comparison.phase,active:comparison.active,running,steps:sim.time,shape:sim.shape,captures:captures.map(({image,...r})=>r)})',context))};
+  return {ids,workers,drawCalls,blobs,advance,fireDocument:name=>documentHandlers.get(name)?.(),rasterCount:()=>rasters,setClock:value=>now=value,run:s=>vm.runInContext(s,context),click:id=>ids.get(id).fire('click'),state:()=>structuredClone(vm.runInContext('({phase:comparison.phase,active:comparison.active,running,steps:sim.time,shape:sim.shape,captures:captures.map(({image,...r})=>r)})',context))};
 }
 test('application captures exactly matched Worker frames, locks controls and restores free exploration',()=>{
   const app=appHarness();app.workers[0].ready();app.ids.get('prediction').value='b';app.click('startComparison');
@@ -303,7 +316,7 @@ test('actual experiment frame loop separates 60 paints from 30 new fields and ne
   const initialRasters=app.rasterCount();
   app.run('paintedFrames=0;windowGpuSnapshots=0;gpuFluidDirty=false;gpuParticleDebt=0;');
   for(let i=1;i<=120;i++){
-    const time=i*1000/60;app.setClock(time);app.run(`frame(${time})`);
+    const time=i*1000/60;app.advance(time);app.run(`frame(${time})`);
     const request=worker.messages.filter(m=>m.type==='step').at(-1);
     if(app.run('workerInFlight')){
       const before=worker.messages.filter(m=>m.type==='step').length;
@@ -320,7 +333,7 @@ test('actual experiment frame loop separates 60 paints from 30 new fields and ne
   assert.ok(requests.every(r=>r.count<=8));
   app.ids.get('gpuProfile').value='flow60';app.ids.get('gpuProfile').fire('change');
   const start=requests.length;
-  for(let i=121;i<=180;i++){const time=i*1000/60;app.setClock(time);app.run(`frame(${time})`);if(app.run('workerInFlight'))worker.respond(worker.messages.filter(m=>m.type==='step').at(-1).count);}
+  for(let i=121;i<=180;i++){const time=i*1000/60;app.advance(time);app.run(`frame(${time})`);if(app.run('workerInFlight'))worker.respond(worker.messages.filter(m=>m.type==='step').at(-1).count);}
   const newer=worker.messages.filter(m=>m.type==='step').length-start;assert.ok(newer>=58&&newer<=62,`60-flow requests: ${newer}`);
 });
 
@@ -342,4 +355,48 @@ test('research controller settings are disabled during recording and GPU fallbac
   app.workers[0].onmessage({data:{type:'error',message:'device lost'}});
   app.run('refreshPerformance()');assert.match(app.ids.get('gpuExperimentStatus').textContent,/inactive/);
   assert.equal(app.run('engineKind'),'wasm');
+});
+
+test('research GPU requests keep their cadence without animation callbacks and stop on pause, hide, drag or fallback',()=>{
+  const app=appHarness('webgpu',{path:'/airflow-lab/performance.html',page:'performance.html',search:'&profile=flow60&pace=2',workerDelay:2});
+  app.workers[0].ready();app.ids.get('animation').value='24';
+  const start=app.run('performance.now()'),worker=app.workers[0];
+  app.advance(start+5000);
+  const count=()=>worker.messages.filter(m=>m.type==='step').length;
+  assert.ok(count()>=295&&count()<=302,`60 flow requests without rAF: ${count()}`);
+  assert.ok(worker.messages.filter(m=>m.type==='step').every(m=>m.count<=8));
+  assert.equal(app.run('windowAnimationFrames'),0);
+  app.click('playButton');const paused=count();app.advance(start+10000);assert.equal(count(),paused);
+  app.click('playButton');app.advance(start+11000);assert.ok(count()>paused);
+  app.run('document.hidden=true');app.fireDocument('visibilitychange');const hidden=count();app.advance(start+16000);assert.equal(count(),hidden);
+  app.run('document.hidden=false');app.fireDocument('visibilitychange');app.advance(start+17000);assert.ok(count()>hidden);
+  const center=app.run('({x:sim.centerX/W*1200,y:sim.centerY/H*520})');
+  app.ids.get('tunnel').fire('pointerdown',{pointerId:5,clientX:center.x,clientY:center.y,pointerType:'mouse'});
+  assert.equal(app.run('pointer.action'),'move');const dragging=count();app.advance(start+22000);assert.equal(count(),dragging);
+  app.ids.get('tunnel').fire('pointerup',{pointerId:5});app.advance(start+23000);assert.ok(count()>dragging);
+  worker.onmessage({data:{type:'error',message:'device lost'}});const ended=count();app.advance(start+28000);assert.equal(count(),ended);
+  assert.equal(app.run('gpuFlowLoop.active'),false);
+});
+test('independent timer skips late deadlines and waits for a slow Worker without queues',()=>{
+  const app=appHarness('webgpu',{path:'/airflow-lab/performance.html',page:'performance.html',search:'&profile=flow60&pace=2',workerDelay:50});
+  app.workers[0].ready();app.ids.get('animation').value='24';
+  const start=app.run('performance.now()'),worker=app.workers[0];app.advance(start+3000);
+  const requests=worker.messages.filter(m=>m.type==='step');
+  assert.ok(requests.length>=40&&requests.length<=60,`slow Worker request count: ${requests.length}`);
+  assert.ok(app.run('pendingSteps')<=48);assert.ok(app.run('gpuParticleDebt')<=96);
+  const before=requests.length;app.setClock(start+60000);app.advance(start+60001);
+  assert.ok(worker.messages.filter(m=>m.type==='step').length-before<=1,'late clock jump cannot create catch-up requests');
+});
+test('recorded delivery windows distinguish request targets, callbacks and fresh fields',()=>{
+  const app=appHarness('webgpu',{path:'/airflow-lab/performance.html',page:'performance.html',search:'&profile=display60&pace=2',workerDelay:2});
+  app.workers[0].ready();app.ids.get('animation').value='24';app.click('startStability');
+  const start=app.run('performance.now()');
+  for(let i=1;i<=120;i++){const time=start+i*1000/60;app.advance(time);app.run(`frame(${time})`);}
+  const report=app.run('stability.report(performance.now())'),window=report.rateWindows.at(-1);
+  assert.equal(report.startConfig.performanceExperiment.flowScheduler,'independent timer + Worker completion');
+  assert.equal(window.experimentPolicy.paintHz,60);assert.equal(window.experimentPolicy.updateHz,30);
+  assert.ok(window.animationFrames>=55);assert.ok(window.requests>=28&&window.requests<=32);
+  assert.ok(window.snapshots>=28&&window.snapshots<=32);
+  assert.equal(window.demandStepsPerSecond,1440);
+  assert.match(app.ids.get('gpuExperimentStatus').textContent,/Browser callbacks:/);
 });

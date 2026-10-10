@@ -16,7 +16,7 @@
   <meta name="twitter:image" content="https://raymond2z.github.io/Ryan.github.io/airflow-lab/social-preview.png">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e1824'/%3E%3Cpath d='M4 9h12q8 0 12-4M4 16h9q6 0 9 4h6M4 23h10' fill='none' stroke='%235de4d1' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css?build=gpu-cadence-20261010">
-  <script type="module" src="app.mjs?build=gpu-cadence-20261010"></script>
+  <script type="module" src="app.mjs?build=gpu-cadence-feedback-20261010"></script>
 </head>
 <body>
   <header class="header">
@@ -27,7 +27,7 @@
   <main>
     <div class="intro"><div><span class="eyebrow">EXPLORE · TEST · DISCOVER</span><h1>Measure what gets smoother.</h1><p>Compare drawing cadence, fresh fields and actual simulation throughput.</p></div><span class="model-pill">2D learning model</span></div>
     <section id="gpuExperimentPanel" class="gpu-experiment-panel advanced-only" aria-labelledby="gpuExperimentTitle" hidden>
-      <div class="gpu-experiment-heading"><div><span class="eyebrow">RESEARCH · STAGE 3.4B</span><h2 id="gpuExperimentTitle">Display smoothness and fresh flow updates</h2></div><a href="./">Student Lab →</a></div>
+      <div class="gpu-experiment-heading"><div><span class="eyebrow">RESEARCH · STAGE 3.4B-2</span><h2 id="gpuExperimentTitle">Display smoothness and fresh flow updates</h2></div><a href="./">Student Lab →</a></div>
       <p>Compare profiles on the same device and grid. Paints show the latest field; only a new GPU snapshot counts as a fresh flow update. No profile promises 60 FPS.</p>
       <div class="gpu-experiment-controls">
         <label for="gpuProfile">Scheduling profile<select id="gpuProfile"><option value="baseline">Baseline · 30 paint / 30 flow</option><option value="display60">Display · 60 paint / 30 flow</option><option value="flow60">Flow probe · 60 paint / 60 flow</option><option value="auto60">Auto load · up to 60 paint / 60 flow</option></select></label>
@@ -36,7 +36,7 @@
       </div>
       <p class="gpu-preset-note">Preset: Circle · wind 0.150 · viscosity 0.025 · Super fast · Adaptive · particles on · Force off. It keeps your grid, profile and demand. Change only the profile for a fair scheduling comparison.</p>
       <output id="gpuExperimentStatus" role="status" aria-live="polite">Waiting for WebGPU…</output><p id="gpuAdjustmentStatus">Automatic changes will be shown here.</p>
-      <small>Super fast requests about 720 steps/s at 1×, or 1,440 at 2×. Actual throughput may be lower. The 24-step Worker cap stays fixed. Auto reduces load when measured work is high; it never lowers grid detail. Use the timed recorder below only when checking stability.</small>
+      <small>Super fast requests about 720 steps/s at 1×, or 1,440 at 2×. Actual throughput may be lower. The 24-step Worker cap stays fixed. Flow requests now run independently of drawing. Auto reduces load after sustained delivery shortfalls or high work time; it never lowers grid detail. Use the timed recorder below only when checking stability.</small>
     </section>
     <section class="launch-strip" aria-label="Quick start and learning mode">
       <div class="launch-copy"><span class="eyebrow">START HERE · QUICK DEMO</span><strong>Which shape leaves a narrower wake?</strong><p id="demoStatus" aria-live="polite">Try the Block, then switch to Streamlined. Keep the flow speed the same.</p></div>
