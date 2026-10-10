@@ -2,11 +2,12 @@
 // Same message contract as the existing Rust worker. Browser support is checked
 // at runtime; the UI falls back to Rust/WASM if shader/device creation fails.
 import {FluidSimulation} from './simulation.mjs';
+import {createGpuForceController} from './gpu-relative-force.mjs';
 const VERSION='student-gpu-v1-20261010';
 const STEP_LIMIT=8;
 let device=null,ready=false,W=0,H=0,n=0,revision=0,clock=0,speed=.085,viscosity=.025,inletSpeed=.085;
 let fieldA,fieldB,post,solidBuffer,macro,readback,uniform,stirUniform,stirPipeline,stirBind;
-let collision,streaming,macroscopic,collPairs,streamPairs,macroBind,groups=0,solid=null;
+let collision,streaming,macroscopic,collPairs,streamPairs,macroBind,groups=0,solid=null,gpuForce=null;
 const allocated=[],freeBuffers=[];
 const allocate=(size,usage)=>{
   const buffer=device.createBuffer({size,usage});
@@ -93,6 +94,10 @@ async function initialize(msg){
   groups=Math.ceil(n/64);
   if(groups>device.limits.maxComputeWorkgroupsPerDimension)
     throw new Error('GPU dispatch limit exceeded');
+  gpuForce=await createGpuForceController({
+    device,post,solid:solidBuffer,width:W,height:H,
+    trackBuffer:buffer=>allocated.push(buffer)
+  });
   solid=new Uint8Array(n);
   ready=true;
   self.postMessage({type:'ready',engine:'webgpu',version:VERSION,forceAvailable:false});
@@ -107,7 +112,7 @@ function reset(msg){
   model.reset();
   device.queue.writeBuffer(fieldA,0,new Float32Array(model.f));
   device.queue.writeBuffer(solidBuffer,0,new Uint32Array(solid));
-  uniforms();clock=0;
+  uniforms();gpuForce.reset();clock=0;
   self.postMessage({type:'resetDone',revision});
 }
 function parameters(msg){
@@ -149,6 +154,8 @@ async function step(msg){
     for(let half=0;half<2;half++){
       let pass=encoder.beginComputePass();
       dispatch(pass,collision,collPairs[half]);pass.end();
+      // Count momentum crossing fluid-solid links using post-collision populations.
+      gpuForce.encodeHalfStep(encoder);
       pass=encoder.beginComputePass();
       dispatch(pass,streaming,streamPairs[half]);pass.end();
     }
@@ -156,8 +163,9 @@ async function step(msg){
   let pass=encoder.beginComputePass();
   dispatch(pass,macroscopic,macroBind);pass.end();
   encoder.copyBufferToBuffer(macro,0,readback,0,n*16);
+  gpuForce.encodeReadback(encoder);
   device.queue.submit([encoder.finish()]);
-  await readback.mapAsync(GPUMapMode.READ);
+  const [,force]=await Promise.all([readback.mapAsync(GPUMapMode.READ),gpuForce.read()]);
   const packed=new Float32Array(readback.getMappedRange().slice(0));
   readback.unmap();
   validateFinite(packed);
@@ -165,7 +173,9 @@ async function step(msg){
   for(let i=0;i<n;i++){rho[i]=packed[i*4];ux[i]=packed[i*4+1];uy[i]=packed[i*4+2];}
   clock+=count;
   self.postMessage({type:'frame',requestId:msg.requestId,revision,steps:count,
-    fields:{rho,ux,uy},time:clock,inletSpeed,forceX:0,forceY:0,forceAvailable:false},
+    fields:{rho,ux,uy},time:clock,inletSpeed,
+    forceX:force.forceX,forceY:force.forceY,relativeForce:force,
+    forceAvailable:false},
     [rho.buffer,ux.buffer,uy.buffer]);
 }
 async function handle(msg){
