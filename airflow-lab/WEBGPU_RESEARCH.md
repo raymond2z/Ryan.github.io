@@ -120,3 +120,30 @@ Before enabling force arrows in Student Lab:
 - Profile the added force passes and readback against real Student Lab FPS. If too slow, lower force reporting frequency while still integrating the GPU-smoothed values every half-step.
 - Render Drag, Lift and Resultant from the same GPU force state using fixed, documented *relative* scales, while identifying that multiple barriers yield a **combined** force.
 - Only then add fixed-window A/B force averages and annotated comparison reports.
+
+## Stage 3.2 — Opt-in relative GPU force in the live Student Lab (experimental)
+
+The Stage 3 live WebGPU solver, worker, shape-dragging, viscosity controls, Stir, and engine selection were **already implemented** before this update. Stage 3.2 does not recreate or replace these working parts. It adds an opt-in bridge to the independently validated Stage 3.1 GPU momentum-exchange force controller.
+
+### Student controls and engineering approach
+
+- Advanced-mode **Force on shape** works on **WebGPU**, as well as existing Rust/WASM and JavaScript solvers. The WebGPU force feature is deliberately **off by default**. It displays a relative model Drag, Lift and Resultant readout alongside the Canvas force arrow. Values are explicitly **not newtons**.
+- The new `student-gpu-worker-v2.mjs` lazily loads `gpu-relative-force-v1.wgsl` and allocates the force buffers **only when the user enables the force switch**. When off, it dispatches **no force kernels or force readbacks**. The original verified `student-gpu-worker-v1.mjs` remains untouched.
+- When enabled, two extra force compute passes execute **after each lattice collision and before streaming**; force is exponentially smoothed using the same Rust/JS half-step scheme. The eight-byte GPU force state is copied **once per displayed frame**, not at each half-step. GPU population buffers remain resident.
+- `forceStatus` messages isolate *force setup errors* from ordinary GPU flow evolution: if the optional force controller cannot be created, disable the force checkbox with an explanation while continuing fluid animation.
+- The existing force display, interactive drag/draw, probe, animation pace, quality and engine selection remain available. A/B comparison captures include **instantaneous smoothed-model-force snapshots** when force is enabled and current, labeled as relative values; they are **not fixed-window force averages**.
+- A separate cache-safe page `stage3-force.html` provides a first-device-test entry point. The canonical `index.html` also adopts the versioned script and new force controls.
+
+### Evidence and remaining limits
+
+The latest supplied iPad 500-step, speed 0.150, 240×104 Block result had GPU full solver **1,457.7 Steps/s**, density RMS `6.03e-7`, velocity x RMS `1.10e-6`, and zero invalid cells. The final GPU relative model Drag (`0.7962894`) agreed closely with the independent compiled Rust Drag (`0.7963026`) with absolute difference `1.32e-5`. This validates **the Benchmark computation on the iPad**, not yet the live Student Lab integration or other geometry.
+
+For Student Lab validation:
+1. Open `stage3-force.html?engine=webgpu&quality=detail` on iPad or S24 Ultra, select Advanced mode, Block, Speed 0.150 and activate Force on shape after the flow settles.
+2. Verify fluid animation continues, the live Drag/Lift/Resultant values are finite and are explicitly labeled as model units, and the force direction resembles the Rust/WASM reference at the same simulation stage.
+3. Repeat with Force off and Force on (at least 3 trials), recording **actual Canvas FPS, Flow Steps/s and pointer responsiveness**. Disabled force must have no extra GPU force passes; the increase in work is expected to be measurable when enabled.
+4. Test normal shape dragging, custom barriers, viscosity changes, Stir, pause/Step and GPU → Rust fallback. The new force controller must reset its smoothing window whenever the flow is reset.
+5. Collect matching device samples for Block, Streamlined and Flat Plate at several wind speeds. **Do not interpret short-lived force samples as calibrated forces or average A/B drag coefficients.**
+
+CI verifies JavaScript integration, force kernel placement and force-toggle gating, Rust-vs-JS relative-force parity and WGSL syntax. Real device force readbacks, accuracy and animation responsiveness still require physical-device tests. Keep Stage 3.2 marked **experimental** until these tests pass. Stage 3.3 can add timed force-window averaging, cross-engine side-by-side capture and explicit fallback/device health reporting.
+

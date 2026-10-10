@@ -57,3 +57,8 @@ body[data-level=beginner] .advanced-only{display:none!important}
 #livePerformance{font-variant-numeric:tabular-nums;color:#a2bdcd;margin-left:auto;font-size:12px}
 @media(max-width:800px){.student-engine-row{padding:12px 17px}#livePerformance{margin-left:0;width:100%}}
 @media(max-width:520px){.student-engine-row{padding:12px 14px}.student-engine-control{width:100%;justify-content:space-between}.student-engine-control select{flex:1;min-width:160px}#engineStatus{width:100%}}
+
+/* Stage 3.2 · force snapshot controls (advanced mode only) */
+.gpu-force-readout{display:block;margin:9px 0 2px;padding:10px 12px;background:#edf8f5;color:#126e62;border-radius:8px;font-size:12px;line-height:1.55;font-variant-numeric:tabular-nums}
+body[data-level="beginner"] .gpu-force-readout{display:none}
+#forceNote{margin-top:8px}
