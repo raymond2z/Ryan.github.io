@@ -70,6 +70,7 @@
         <label class="toggle-row advanced-only"><span>Direction arrows</span><input id="vectors" type="checkbox"><span class="switch" aria-hidden="true"></span></label>
         <label class="toggle-row advanced-only"><span>Force on shape <small title="GPU model force is experimental and uses simulation units, not newtons.">· GPU experimental</small></span><input id="force" type="checkbox" aria-describedby="forceNote"><span class="switch" aria-hidden="true"></span></label>
         <p id="forceNote" class="units-note advanced-only">Optional GPU model force: only calculated while switched on; shows relative drag/lift direction, not real newtons. Extra GPU passes can lower FPS. If GPU force is unavailable, the airflow still works.</p>
+        <output id="forceReadout" class="gpu-force-readout advanced-only" aria-live="polite">Force overlay off.</output>
         <div class="observe-note"><span class="small-icon">◎</span><p id="observation">Look for alternating swirls behind the circle. This disturbed region is called the <b>wake</b>.</p></div>
       </aside>
     </div>
