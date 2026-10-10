@@ -375,7 +375,9 @@ function frame(now) {
     running:running||manualSteps>0,particlesEnabled:$('particles').checked
   })){
     if($('particles').checked&&gpuParticleDebt>0){
-      const portion=Math.min(8,gpuParticleDebt);
+      // Divide bursts across frames for smoother tracers, but catch up to the
+      // actual solver when GPU snapshots arrive faster than Canvas refreshes.
+      const portion=Math.min(24,Math.ceil(gpuParticleDebt/2));
       moveParticles(portion);gpuParticleDebt-=portion;
     }else if(!$('particles').checked)gpuParticleDebt=0;
     gpuFluidDirty=false;paint();lastPaint=now;
