@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="benchmark.css">
   <script type="module" src="benchmark.mjs"></script>
   <script type="module" src="gpu-probe-ui.mjs"></script>
-  <script type="module" src="gpu-solver-ui.mjs?build=stage2-r2-20261010"></script>
+  <script type="module" src="gpu-solver-ui.mjs?build=stage3-force-v1-20261010"></script>
 </head>
 <body>
   <header class="topbar">
@@ -118,7 +118,7 @@
           <p>Unlike Experiment 02, this runs the complete D2Q9 <strong>regularized BGK collision + streaming + obstacle bounce-back</strong> loop.
           Each displayed step contains two lattice half-steps. GPU populations stay resident until a single final readback.</p>
         </div>
-        <span class="gpu-experiment-label">Stage 2 r2 · fresh-test page</span>
+        <span class="gpu-experiment-label">Stage 3.1 · force research</span>
       </div>
       <div class="gpu-layout">
         <div>
@@ -142,7 +142,22 @@
             <div class="stat"><span>Final GPU field readback</span><strong id="gpuSolverReadback">—</strong><small>ms, one readback at end of run</small></div>
             <div class="stat"><span>CPU reference time</span><strong id="gpuSolverReference">—</strong><small>ms, f64 JS solver; NOT included in GPU throughput</small></div>
           </div>
-          <div class="preview gpu-field-preview">
+                    <div class="gpu-validation force-research" id="gpuForceValidation">
+            <strong>Stage 3.1 · Relative model force (research only)</strong>
+            <p>Drag (+x), Lift (up = −y) and resultant are model-unit values, not Newtons. Each row compares the same final step after the same warmup. GPU f32 versus independent Rust and JavaScript f64 references. The student's force arrows remain disabled until device validation.</p>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Component</th><th>WebGPU</th><th>Rust/WASM</th><th>JavaScript</th><th>|GPU−Rust|</th></tr></thead>
+                <tbody>
+                  <tr><td>Drag (Fx)</td><td id="gpuForceDrag">—</td><td id="rustForceDrag">—</td><td id="jsForceDrag">—</td><td id="forceErrorDrag">—</td></tr>
+                  <tr><td>Lift (−Fy)</td><td id="gpuForceLift">—</td><td id="rustForceLift">—</td><td id="jsForceLift">—</td><td id="forceErrorLift">—</td></tr>
+                  <tr><td>Resultant</td><td id="gpuForceResultant">—</td><td id="rustForceResultant">—</td><td id="jsForceResultant">—</td><td id="forceErrorResultant">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <small id="gpuForceNote">No force validation result yet.</small>
+          </div>
+<div class="preview gpu-field-preview">
             <div class="preview-head"><strong>GPU final simulated speed field</strong><span id="gpuSolverPreviewLabel">No result yet</span></div>
             <canvas id="gpuSolverPreview" width="640" height="280" role="img" aria-label="Calculated GPU D2Q9 fluid speed field with solid obstacle"></canvas>
             <p>Model units. Compare shapes under the same grid and speed; this remains a simplified 2D teaching model.</p>

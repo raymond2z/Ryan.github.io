@@ -29,6 +29,7 @@ jobs:
           node --check airflow-lab/gpu-worker.mjs
           node --check airflow-lab/gpu-probe-ui.mjs
           node --check airflow-lab/gpu-solver.mjs
+          node --check airflow-lab/gpu-relative-force.mjs
           node --check airflow-lab/gpu-solver-ui.mjs
           node --check airflow-lab/gpu-solver-worker.mjs
           node --check airflow-lab/student-gpu-worker-v1.mjs
@@ -41,9 +42,12 @@ jobs:
         run: node --test airflow-lab/gpu-solver.test.mjs
       - name: Student WebGPU integration regressions
         run: node --test airflow-lab/student-gpu-integration.test.mjs
+      - name: Verify GPU relative force and independent Rust WASM reference
+        run: node --test airflow-lab/gpu-relative-force.test.mjs
       - name: Validate WGSL shader syntax and semantics with Naga
         run: |
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9.wgsl
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9-solver.wgsl
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/d2q9-solver-r2-20261010.wgsl
           npx --yes naga-wasi-cli@0.1.0 airflow-lab/student-gpu-stir-v1.wgsl
+          npx --yes naga-wasi-cli@0.1.0 airflow-lab/gpu-relative-force-v1.wgsl

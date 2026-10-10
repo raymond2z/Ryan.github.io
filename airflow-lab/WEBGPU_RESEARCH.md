@@ -84,3 +84,39 @@ Measured GPU compute duration uses wall-clock time until `GPUQueue.onSubmittedWo
 
 CI checks shader structure, CPU algorithm assumptions, initial conditions and obstacle masks, bounce-back streaming equivalence, macroscopic field consistency, selector wiring and JavaScript syntax. **GitHub Actions does not certify runtime WebGPU shader compilation or numerical results on physical devices.** Use the actual iPad and S24 Ultra outputs before claiming a GPU speedup or activating GPU in Student Lab.
 
+
+## Stage 3.1 — Relative Force GPU Research (2026-10)
+
+**Choice A: classroom-relative force only.** This project does not assume physical dimensions or convert forces into SI newtons. A positive (F_x) is the model **Drag** along the left-to-right inlet; positive **Lift** is (-F_y), because Canvas Y increases downward. The **Resultant** is `Math.hypot(Fx,Fy)`. Negative Drag and Lift values may occur during unsteady flow and are *not* clamped to zero.
+
+### Matching the existing Rust/JS solver
+
+The original Rust and JavaScript solvers already use D2Q9 obstacle momentum exchange. At each `dt = 0.5` half-step, each fluid → solid link contributes `2 * f_post[q] * (CX[q], CY[q])`. The total is then exponentially smoothed with `s = 1 - 0.98 ** 0.5` and multiplied by `1 / (0.5 ** 2) = 4`.
+
+The new **`gpu-relative-force-v1.wgsl`** uses workgroup reductions, *not* contested floating-point atomics. Its first compute pass reads the **post-collision populations** already produced by the solver, detects adjacent solid links using the same D2Q9 directions and obstacle mask, and sums the boundary momentum exchange per workgroup. Its second compute pass sums the partial results into one GPU-resident smoothed `(Fx, Fy)` pair. The pair is copied to JavaScript only **once at the end of each Benchmark run**, alongside the full-field readback.
+
+**`gpu-relative-force.mjs`** creates those pipelines and buffers, and includes a separate CPU math reference for tests. The `gpu-solver.mjs` Benchmark engine now enables force calculations and reports the final **GPU f32**, **independently compiled Rust/WASM f64**, and **JavaScript f64** force values and the absolute GPU-vs-Rust discrepancies. Rust and JS are executed **after GPU timing** and are excluded from GPU solver Steps/s. Force evaluation itself is included in that GPU Steps/s metric, so the additional GPU cost is honestly measured.
+
+### Keep Student Lab stable during force verification
+
+The live Student Lab **has not enabled GPU force arrows or inserted the new per-half-step force dispatches**. Its proven GPU/Rust/JS engine selection and Canvas remain unchanged. This is intentional: the force pipeline adds GPU passes that may reduce mobile FPS and has not yet been verified on the user's physical devices.
+
+### Next device-side verification
+
+1. Open `benchmark.html` or `stage2-r2.html` and find **Experiment 03**.
+2. Choose **Detailed / Block / Speed 0.085 / 50 steps**, and run the GPU solver. Confirm that a force table shows **GPU, Rust/WASM and JavaScript** Drag/Lift/Resultant. Export `airflow-webgpu-full-solver.json`.
+3. If no error appears, try **150 and 500 steps** and then **Speed 0.150**. Repeat on iPad and Galaxy S24 Ultra as convenient.
+4. Compare absolute force discrepancies (particularly vertical Lift near zero), direction and sign, and GPU Steps/s with the previous force-free solver. Do not treat identical GPU and Rust fluid-field means as proof of matching boundary forces.
+5. Repeat **Block / Streamlined / Flat plate** and ±20° later in Stage 3.2. Existing Benchmark presets default to 0°; angled and custom-object validation requires a separate test path.
+
+**Automated tests** check force momentum-exchange links and sign convention, half-step smoothing, Rust WASM vs JavaScript f64 force parity for representative shapes, shader structure, benchmark UI references, Student Lab isolation, and Naga WGSL syntax/semantic validation. The workflow **cannot run a physical WebGPU adapter** or prove GPU↔Rust parity on an iPad/S24 Ultra; that must come from real exported GPU force results.
+
+### Promotion gates (Stage 3.2 → 3.3)
+
+Before enabling force arrows in Student Lab:
+
+- Verify GPU↔Rust force comparison on actual devices, including symmetric and tilted shapes (lift near zero needs absolute, not percentage tolerance).
+- Set practical tolerances based on observed absolute and RMS errors across steps, not just a single final snapshot.
+- Profile the added force passes and readback against real Student Lab FPS. If too slow, lower force reporting frequency while still integrating the GPU-smoothed values every half-step.
+- Render Drag, Lift and Resultant from the same GPU force state using fixed, documented *relative* scales, while identifying that multiple barriers yield a **combined** force.
+- Only then add fixed-window A/B force averages and annotated comparison reports.
