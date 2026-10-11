@@ -2,6 +2,7 @@
 // NOT a full fluid solver: repeated dispatches rewrite the same equilibrium populations.
 // Never report these dispatches as fluid simulation steps.
 import {FluidSimulation} from './simulation.mjs';
+import {EXTRA_SHAPES} from './shapes.mjs';
 
 export const GPU_GRID_OPTIONS=Object.freeze({
   fast:{width:168,height:72},
@@ -13,7 +14,7 @@ export const PROBE_TOLERANCE=2e-5;
 
 export function validateProbeSettings(raw){
   if(!raw||!Object.hasOwn(GPU_GRID_OPTIONS,raw.grid))throw new Error('Unknown GPU grid');
-  if(!['circle','block','streamlined','plate','car','bird','pikachu','none'].includes(raw.shape))
+  if(!['circle','block','streamlined','plate',...Object.keys(EXTRA_SHAPES),'none'].includes(raw.shape))
     throw new Error('Unknown obstacle');
   const speed=Number(raw.speed),dispatches=Number(raw.dispatches);
   if(![.04,.085,.15].includes(speed))throw new Error('Unsupported flow speed');

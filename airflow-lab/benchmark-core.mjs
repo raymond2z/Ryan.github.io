@@ -1,11 +1,12 @@
 // Shared experiment runner: exactly the same solver and initial state in both CPU modes.
 import {FluidSimulation} from './simulation.mjs';
+import {EXTRA_SHAPES} from './shapes.mjs';
 
 export const GRID_OPTIONS = Object.freeze({
   fast: {width:168,height:72,label:'Fast · 168 × 72'},
   detail:{width:240,height:104,label:'Detailed · 240 × 104'}
 });
-export const VALID_SHAPES=Object.freeze(['circle','block','streamlined','plate','car','bird','pikachu']);
+export const VALID_SHAPES=Object.freeze(['circle','block','streamlined','plate',...Object.keys(EXTRA_SHAPES)]);
 export const VALID_SPEEDS=Object.freeze([0.04,0.085,0.15]);
 export const VALID_STEPS=Object.freeze([50,150,500]);
 export const WARMUP_STEPS=8;

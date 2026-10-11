@@ -1,7 +1,7 @@
 // Independent D2Q9 lattice-Boltzmann implementation (regularized BGK collision).
 // Public quantities use simulation units; the collision kernel uses lattice units.
 // This is a qualitative teaching model.
-import {EXTRA_SHAPES,inExtraShape} from './shapes.mjs?build=animal-profiles-20261011';
+import {EXTRA_SHAPES,inExtraShape} from './shapes.mjs?build=shape-library-20261011';
 const CX = [0,1,0,-1,0,1,-1,-1,1];
 const CY = [0,0,1,0,-1,1,1,-1,-1];
 const WT = [4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36];
@@ -41,6 +41,7 @@ export class FluidSimulation {
     const centerX=Math.round(this.width*.30),centerY=this.height/2;
     this.centerX=centerX;this.centerY=centerY;
     const rad=angle*Math.PI/180,c=Math.cos(rad),s=Math.sin(rad);
+    const extraShape=Object.hasOwn(EXTRA_SHAPES,shape);
     for(let y=3;y<this.height-3;y++) for(let x=3;x<this.width-3;x++) {
       const dx=x-centerX,dy=y-centerY;
       const px=(dx*c+dy*s)/this.shapeScale,py=(-dx*s+dy*c)/this.shapeScale;
@@ -48,7 +49,7 @@ export class FluidSimulation {
       if(shape==='circle') inside=px*px+py*py<=15*15;
       if(shape==='block') inside=Math.abs(px)<=15&&Math.abs(py)<=15;
       if(shape==='plate') inside=Math.abs(px)<=2&&Math.abs(py)<=19;
-      if(Object.hasOwn(EXTRA_SHAPES,shape))inside=inExtraShape(shape,px,py);
+      if(extraShape)inside=inExtraShape(shape,px,py);
       if(shape==='streamlined') {
         const t=(px+21)/64;
         if(t>=0&&t<=1) {

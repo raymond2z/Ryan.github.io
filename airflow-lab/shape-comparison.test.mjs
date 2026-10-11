@@ -11,6 +11,27 @@ import {learningChecks,makeLearningRecord} from './learning-record.mjs';
 import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs';
 
 const settings={grid:{width:240,height:104},position:{x:72,y:52},speed:.085,viscosity:.025};
+test('new presets remain complete when tilted and present in student and research controls',()=>{
+  const added=['oval','triangle','diamond','bus','truck','airplane'];
+  for(const [width,height]of [[240,104],[168,72]]){
+    const sim=new FluidSimulation(width,height);
+    for(const shape of added)for(const angle of [-45,0,45]){
+      sim.setShape(shape,angle);const b=sim.obstacleBounds();
+      assert.ok(b,`${shape} must create a real obstacle`);
+      assert.ok(b.minX>3&&b.maxX<width-4&&b.minY>3&&b.maxY<height-4,`${shape} must not be clipped at ${angle} degrees`);
+      const mask=sim.solid.slice(),count=mask.reduce((a,v)=>a+v,0);
+      sim.translateMask(mask,-999,-999);
+      assert.equal(sim.solid.reduce((a,v)=>a+v,0),count,'Dragging must preserve every solid cell');
+    }
+  }
+  for(const page of ['index.html','performance.html','stability.html']){
+    const html=readFileSync(new URL('./'+page,import.meta.url),'utf8');
+    for(const shape of added){
+      assert.ok(html.includes(`data-shape="${shape}"`));
+      assert.equal([...html.matchAll(new RegExp(`<option value="${shape}">`,'g'))].length,2,'Both A/B selectors offer the shape');
+    }
+  }
+});
 test('every batch size reaches exactly the same observation point for A and B',()=>{
   for(const batch of [3,4,7,8,24,48]){
     const c=createMatchedComparison();c.start(settings);

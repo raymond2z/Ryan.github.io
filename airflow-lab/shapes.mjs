@@ -1,5 +1,38 @@
 // Functional obstacle geometry. The same outlines drive collisions and preset previews.
 export const EXTRA_SHAPES = {
+  oval: {
+    label:'Oval', scale:1, viewBox:'-34 -19 68 38',
+    polygons:[], ellipses:[[0,0,30,15]],
+    note:'Compare this long, rounded outline with the circle. How does the wake change when both shapes are equally tall?'
+  },
+  triangle: {
+    label:'Triangle', scale:1, viewBox:'-27 -19 54 38',
+    polygons:[[[-23,0],[23,-15],[23,15]]], ellipses:[],
+    note:'The point faces the incoming flow. Compare the flow around the pointed front and the flat rear, then try changing the angle.'
+  },
+  diamond: {
+    label:'Diamond', scale:1, viewBox:'-32 -19 64 38',
+    polygons:[[[-28,0],[0,-15],[28,0],[0,15]]], ellipses:[],
+    note:'Compare the pointed front and rear with the triangle. Look for changes where the flow passes the sharp corners.'
+  },
+  bus: {
+    label:'Bus', scale:1, viewBox:'-36 -22 72 44',
+    polygons:[[[-32,-10],[-27,-17],[27,-17],[32,-12],[32,11],[-32,11]]],
+    ellipses:[[-21,11,6,6],[21,11,6,6]],
+    note:'Compare this tall bus outline with the car. Use Equally tall to compare their silhouettes at the same front-facing height.'
+  },
+  truck: {
+    label:'Truck', scale:1, viewBox:'-38 -22 76 44',
+    polygons:[[[-34,-6],[-28,-6],[-22,-14],[-10,-14],[-10,10],[-34,10]],[[-8,-17],[33,-17],[33,10],[-8,10]]],
+    ellipses:[[-23,11,6,6],[15,11,6,6],[27,11,6,6]],
+    note:'Watch the flow around the cab, the gap and the box-shaped rear. This is a stationary 2D outline, not a road or vehicle test.'
+  },
+  airplane: {
+    label:'Airplane', scale:1, viewBox:'-38 -23 76 46',
+    polygons:[[[-34,0],[-25,-5],[-4,-5],[8,-20],[15,-20],[8,-5],[24,-4],[29,-13],[34,-13],[32,0],[34,13],[29,13],[24,4],[8,5],[15,20],[8,20],[-4,5],[-25,5]]],
+    ellipses:[],
+    note:'Explore the wake around this top-view airplane silhouette. It is a flat stationary obstacle; this view does not model wing lift or flight.'
+  },
   car: {
     label:'Car', scale:1, viewBox:'-36 -19 72 39',
     polygons:[[[-32,5],[-29,-1],[-17,-4],[-9,-13],[13,-13],[24,-3],[30,0],[32,10],[-32,10]]],

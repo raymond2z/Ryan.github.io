@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {FluidSimulation} from './simulation.mjs';
+import {EXTRA_SHAPES} from './shapes.mjs';
 import {validateSolverSettings,initialSolverFields,unpackMacroscopic,compareFullFields} from './gpu-solver.mjs';
 
 test('full WebGPU solver uses exactly the same validated benchmark settings',()=>{
@@ -13,7 +14,7 @@ test('full WebGPU solver uses exactly the same validated benchmark settings',()=
   assert.throws(()=>validateSolverSettings({grid:'fast',shape:'block',speed:9,steps:50}));
 });
 test('GPU input distributions start from the exact CPU obstacle mask and initial state',()=>{
-  for(const shape of ['circle','block','streamlined','plate','car','bird','pikachu']){
+  for(const shape of ['circle','block','streamlined','plate',...Object.keys(EXTRA_SHAPES)]){
     const {config,initial,solid,reference}=initialSolverFields({grid:'fast',shape,speed:.085,steps:50});
     assert.equal(initial.length,9*config.width*config.height);
     assert.equal(solid.length,config.width*config.height);

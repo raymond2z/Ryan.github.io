@@ -9,7 +9,9 @@ record download without adding grading or changing the simulation runtime.
 ## Student workflow
 
 1. In Compare shapes, choose Shape A and Shape B from Circle, Block,
-   Streamlined, Flat plate, Car, Bird or Pikachu. Choose two different presets.
+   Streamlined, Flat plate, Car, Bird, Pikachu, Oval, Triangle, Diamond,
+   Bus, Truck, Dolphin, Tuna or Airplane. Choose two different presets. The Airplane is a
+   top-view stationary outline; it does not model wing lift or flight.
 2. Leave **Make both shapes equally tall** on to control front-facing height.
    It uniformly scales each silhouette in the guide; it does not match length
    or area. Turning it off keeps the original preset sizes, and the result
