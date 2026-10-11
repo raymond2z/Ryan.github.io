@@ -29,7 +29,7 @@ export const EXTRA_SHAPES = {
   },
   airplane: {
     label:'Airplane', scale:1, viewBox:'-42 -25 86 42',
-    polygons:[[[-38,0],[-35,-3],[-28,-5],[-25,-8],[-20,-9],[-15,-8],[-11,-5],[22,-4],[29,-21],[35,-21],[32,-3],[40,-1],[36,2],[28,3],[38,7],[31,8],[22,5],[9,5],[20,13],[14,13],[-1,5],[-28,5],[-34,3]]],
+    polygons:[[[-38,0],[-35,-3],[-28,-5],[-25,-8],[-20,-9],[-15,-8],[-11,-5],[22,-4],[29,-14],[35,-14],[32,-3],[40,-1],[36,2],[28,3],[38,7],[31,8],[22,5],[9,5],[20,13],[14,13],[-1,5],[-28,5],[-34,3]]],
     ellipses:[[-2,7,6,3]],
     note:'This side view shows the nose, cockpit, fuselage, wing, engine and upright tail fin. The nose faces the incoming flow. Explore the wake around this stationary 2D silhouette; it does not simulate flight or measure real aircraft lift.'
   },

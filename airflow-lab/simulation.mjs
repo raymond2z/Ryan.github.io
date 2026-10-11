@@ -1,7 +1,7 @@
 // Independent D2Q9 lattice-Boltzmann implementation (regularized BGK collision).
 // Public quantities use simulation units; the collision kernel uses lattice units.
 // This is a qualitative teaching model.
-import {EXTRA_SHAPES,inExtraShape} from './shapes.mjs?build=airplane-side-20261011';
+import {EXTRA_SHAPES,inExtraShape} from './shapes.mjs?build=airplane-low-tail-20261011';
 const CX = [0,1,0,-1,0,1,-1,-1,1];
 const CY = [0,0,1,0,-1,1,1,-1,-1];
 const WT = [4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36];

@@ -1,5 +1,5 @@
-import {FluidSimulation} from './simulation.mjs?build=airplane-side-20261011';
-import {EXTRA_SHAPES} from './shapes.mjs?build=airplane-side-20261011';
+import {FluidSimulation} from './simulation.mjs?build=airplane-low-tail-20261011';
+import {EXTRA_SHAPES} from './shapes.mjs?build=airplane-low-tail-20261011';
 
 export const COMPARISON_STEPS=2000;
 export const COMPARISON_SHAPES=['circle','block','streamlined','plate',...Object.keys(EXTRA_SHAPES)];
