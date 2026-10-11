@@ -220,6 +220,38 @@ function finishWorkerTrial(app){
   }
 }
 function finishWorkerPair(app){finishWorkerTrial(app);app.click('nextComparison');finishWorkerTrial(app);}
+test('animal side views are selectable on each page and have connected masks after rotation',()=>{
+  for(const page of ['index.html','performance.html','stability.html']){
+    const html=readFileSync(new URL('./'+page,import.meta.url),'utf8');
+    for(const shape of ['bird','dolphin','tuna']){
+      assert.match(html,new RegExp('data-shape="'+shape+'"'));
+      assert.equal([...html.matchAll(new RegExp('<option value="'+shape+'">','g'))].length,2);
+    }
+  }
+  for(const [width,height]of [[240,104],[168,72]])for(const shape of ['bird','dolphin','tuna'])for(const angle of [0,45,90]){
+    const sim=new FluidSimulation(width,height);sim.setShape(shape,angle);
+    const start=sim.solid.findIndex(Boolean),seen=new Set([start]),queue=[start];
+    assert.ok(start>=0,shape+' must have a real obstacle');
+    for(let j=0;j<queue.length;j++){
+      const i=queue[j],x=i%width,y=Math.floor(i/width);
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        const next=i+dx+dy*width;
+        if(x+dx>=0&&x+dx<width&&y+dy>=0&&y+dy<height&&sim.solid[next]&&!seen.has(next)){seen.add(next);queue.push(next);}
+      }
+    }
+    assert.equal(seen.size,sim.solid.reduce((a,b)=>a+b,0),shape+' silhouette must remain connected');
+  }
+});
+test('dolphin and tuna finish the same 2,000-step comparison and export named evidence',async()=>{
+  const app=appHarness();app.workers[0].ready();
+  app.ids.get('comparisonShapeA').value='dolphin';app.ids.get('comparisonShapeB').value='tuna';app.ids.get('comparisonShapeA').fire('change');
+  app.ids.get('prediction').value='a';app.click('startComparison');finishWorkerPair(app);
+  const records=app.state().captures;
+  assert.deepEqual(records.map(r=>r.shape),['dolphin','tuna']);assert.ok(records.every(r=>r.steps===2000));
+  assert.deepEqual(comparisonDifferences(...records),[]);
+  app.click('exportLearningRecord');
+  const report=await app.blobs.at(-1).text();assert.match(report,/Dolphin/);assert.match(report,/Tuna/);
+});
 test('chosen silhouettes and prediction follow the pair while duplicate choices are blocked',()=>{
   const app=appHarness();app.workers[0].ready();
   app.ids.get('comparisonShapeA').value='car';app.ids.get('comparisonShapeB').value='bird';

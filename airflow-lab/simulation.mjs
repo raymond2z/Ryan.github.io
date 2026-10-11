@@ -1,7 +1,7 @@
 // Independent D2Q9 lattice-Boltzmann implementation (regularized BGK collision).
 // Public quantities use simulation units; the collision kernel uses lattice units.
 // This is a qualitative teaching model.
-import {inExtraShape} from './shapes.mjs';
+import {EXTRA_SHAPES,inExtraShape} from './shapes.mjs?build=animal-profiles-20261011';
 const CX = [0,1,0,-1,0,1,-1,-1,1];
 const CY = [0,0,1,0,-1,1,1,-1,-1];
 const WT = [4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36];
@@ -48,7 +48,7 @@ export class FluidSimulation {
       if(shape==='circle') inside=px*px+py*py<=15*15;
       if(shape==='block') inside=Math.abs(px)<=15&&Math.abs(py)<=15;
       if(shape==='plate') inside=Math.abs(px)<=2&&Math.abs(py)<=19;
-      if(shape==='car'||shape==='bird'||shape==='pikachu')inside=inExtraShape(shape,px,py);
+      if(Object.hasOwn(EXTRA_SHAPES,shape))inside=inExtraShape(shape,px,py);
       if(shape==='streamlined') {
         const t=(px+21)/64;
         if(t>=0&&t<=1) {

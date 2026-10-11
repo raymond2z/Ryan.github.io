@@ -1,7 +1,7 @@
-import {FluidSimulation} from './simulation.mjs';
+import {FluidSimulation} from './simulation.mjs?build=animal-profiles-20261011';
 
 export const COMPARISON_STEPS=2000;
-export const COMPARISON_SHAPES=['circle','block','streamlined','plate','car','bird','pikachu'];
+export const COMPARISON_SHAPES=['circle','block','streamlined','plate','car','bird','dolphin','tuna','pikachu'];
 
 function shapeGeometry(preview,shape,targetHeight){
   const baseScale=preview.width/240;

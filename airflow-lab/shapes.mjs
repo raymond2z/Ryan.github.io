@@ -7,10 +7,22 @@ export const EXTRA_SHAPES = {
     note:'Compare the wake behind this car silhouette with the streamlined shape. It is a 2D outline, not a real vehicle test.'
   },
   bird: {
-    label:'Bird', scale:.9, viewBox:'-37 -29 74 43',
-    polygons:[[[-33,-2],[-24,-6],[-20,-10],[-13,-9],[-8,-5],[0,-5],[10,-24],[16,-26],[12,-6],[27,-10],[32,-6],[23,1],[30,9],[24,10],[12,5],[3,8],[-9,5],[-17,0],[-24,0]]],
-    ellipses:[[-18,-5,6,5],[-2,1,15,6]],
-    note:'Follow the flow around the beak, wing and tail. This is a stationary bird silhouette; it does not model flapping flight.'
+    label:'Bird', scale:.9, viewBox:'-42 -29 84 45',
+    polygons:[[[-38,-3],[-29,-7],[-27,-10],[-23,-12],[-19,-11],[-16,-8],[-14,-3],[-9,-1],[-4,-2],[1,-10],[7,-19],[17,-26],[16,-18],[12,-9],[8,-2],[17,0],[26,-2],[37,-6],[32,1],[38,6],[25,5],[18,7],[11,11],[3,12],[-5,10],[-11,6],[-16,1],[-21,-3],[-28,-3]]],
+    ellipses:[],
+    note:'This side view shows a bird with a raised wing. Follow the flow around its beak, body and tail. The silhouette stays still; it does not model flapping flight.'
+  },
+  dolphin: {
+    label:'Dolphin', scale:.8, viewBox:'-45 -24 90 46',
+    polygons:[[[-41,-2],[-33,-4],[-30,-8],[-25,-11],[-17,-13],[-8,-13],[-3,-14],[1,-19],[6,-21],[5,-15],[9,-11],[17,-8],[24,-3],[31,0],[37,-3],[42,-7],[40,0],[35,3],[40,7],[42,12],[34,8],[29,4],[22,4],[14,5],[4,8],[3,13],[5,18],[0,16],[-6,8],[-13,8],[-21,5],[-28,1],[-33,0],[-40,1]]],
+    ellipses:[],
+    note:'Compare this dolphin side view with the tuna. Look at the rounded head, dorsal fin and tapered body. This is a stationary 2D outline in the same fluid model; it does not simulate swimming or measure real water resistance.'
+  },
+  tuna: {
+    label:'Tuna', scale:.8, viewBox:'-45 -26 94 52',
+    polygons:[[[-41,0],[-36,-5],[-29,-10],[-20,-13],[-10,-14],[-5,-22],[0,-15],[7,-12],[13,-16],[14,-10],[19,-7],[23,-10],[24,-5],[29,-3],[35,-2],[42,-17],[46,-22],[44,-9],[40,0],[44,9],[46,22],[42,17],[35,2],[29,3],[24,5],[23,9],[19,7],[13,10],[10,16],[5,12],[-2,14],[-8,13],[-13,20],[-15,12],[-23,11],[-31,7],[-37,3]]],
+    ellipses:[],
+    note:'Compare this tuna side view with the dolphin. Follow the flow around its pointed head, fins and forked tail. This is a stationary 2D outline in the same fluid model; it does not simulate swimming or measure real water resistance.'
   },
   pikachu: {
     label:'Pikachu', scale:.72, viewBox:'-26 -35 67 63',
