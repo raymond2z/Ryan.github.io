@@ -1,8 +1,8 @@
-import {FluidSimulation} from './simulation.mjs?build=shape-library-20261011';
-import {EXTRA_SHAPES,shapePreview} from './shapes.mjs?build=shape-library-20261011';
+import {FluidSimulation} from './simulation.mjs?build=airplane-side-20261011';
+import {EXTRA_SHAPES,shapePreview} from './shapes.mjs?build=airplane-side-20261011';
 import {makeAdaptiveStepper,STEP_FIXED,MAX_TRACER_DEBT,createGpuPaintPacer,forceFrameTiming} from './live-performance.mjs?build=fps-pacing-20261010';
 import {createStabilityRecorder,STABILITY_BUILD} from './stability-recorder.mjs?build=gpu-cadence-feedback-20261010';
-import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=shape-library-20261011';
+import {createMatchedComparison,comparisonDifferences,setComparisonShape,seededRandom} from './shape-comparison.mjs?build=airplane-side-20261011';
 import {learningChecks,makeLearningRecord} from './learning-record.mjs?build=stage4c-20261010';
 import {GPU_EXPERIMENT_BUILD,GPU_PROFILES,experimentSettings,createGpuRequestPacer,createGpuLoadGovernor,createGpuFlowLoop,createGpuTracerBudget} from './gpu-experiment.mjs?build=gpu-classroom-20261010';
 const $=id=>document.getElementById(id);
@@ -1237,4 +1237,3 @@ if(modelContext?.registerTool) {
 }
 syncComparisonChoices();setLevel(researchPage?'advanced':'beginner');resetParticles();syncRunning();setView('curl');toolSelected('move');beginRustEngine();requestAnimationFrame(frame);
 window.addEventListener('pagehide',()=>{if(wasmWorker)wasmWorker.terminate();},{once:true});
-

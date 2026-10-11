@@ -28,10 +28,10 @@ export const EXTRA_SHAPES = {
     note:'Watch the flow around the cab, the gap and the box-shaped rear. This is a stationary 2D outline, not a road or vehicle test.'
   },
   airplane: {
-    label:'Airplane', scale:1, viewBox:'-38 -23 76 46',
-    polygons:[[[-34,0],[-25,-5],[-4,-5],[8,-20],[15,-20],[8,-5],[24,-4],[29,-13],[34,-13],[32,0],[34,13],[29,13],[24,4],[8,5],[15,20],[8,20],[-4,5],[-25,5]]],
-    ellipses:[],
-    note:'Explore the wake around this top-view airplane silhouette. It is a flat stationary obstacle; this view does not model wing lift or flight.'
+    label:'Airplane', scale:1, viewBox:'-42 -25 86 42',
+    polygons:[[[-38,0],[-35,-3],[-28,-5],[-25,-8],[-20,-9],[-15,-8],[-11,-5],[22,-4],[29,-21],[35,-21],[32,-3],[40,-1],[36,2],[28,3],[38,7],[31,8],[22,5],[9,5],[20,13],[14,13],[-1,5],[-28,5],[-34,3]]],
+    ellipses:[[-2,7,6,3]],
+    note:'This side view shows the nose, cockpit, fuselage, wing, engine and upright tail fin. The nose faces the incoming flow. Explore the wake around this stationary 2D silhouette; it does not simulate flight or measure real aircraft lift.'
   },
   car: {
     label:'Car', scale:1, viewBox:'-36 -19 72 39',
