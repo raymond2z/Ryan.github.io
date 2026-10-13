@@ -6,6 +6,7 @@
 
 | 類型 | 作品 | 連結 |
 | --- | --- | --- |
+| STEM 教材 | Sim Lab Baseball Lab | [開啟](simlab-baseball-lab/) |
 | 抽籤工具 | CSK 抽籤器（新版） | [開啟](CSK_drawer2/) |
 | 抽籤工具 | CSK 抽籤器（舊版） | [開啟](CSK_drawer/) |
 | 小遊戲 | 點擊目標 | [開啟](clicking_game/) |
@@ -20,6 +21,7 @@
 ```text
 .
 ├── index.html                         # 作品集首頁與導覽
+├── simlab-baseball-lab/               # 英文 Tinkercad Sim Lab 棒球教學
 ├── CSK_drawer2/                       # CSK 抽籤器（目前版本）
 ├── CSK_drawer/                        # CSK 抽籤器（舊版）
 ├── clicking_game/                     # 點擊目標小遊戲
