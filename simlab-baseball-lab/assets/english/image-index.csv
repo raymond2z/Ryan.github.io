@@ -1,0 +1,35 @@
+﻿source_image_number,file,instruction,source_url,sha256
+2,images/step-02-en.png,Rotate the ramp 22.5° clockwise.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤2.png,dd59e11b75283d67231265f0b0f5b5dd41a159ee298bd44b6c654b4ca6945b69
+3,images/step-03-en.png,Raise the ramp until its bottom height is 0.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤3.png,73e2f245d672ec136a57fe8a9b0c499be0dc0360e513ecc95940ab2ffa7d6eb5
+4,images/step-04-en.png,Keep the height. Rotate the ramp back to horizontal.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤4.png,9986f07a224db414453aa0eb0b576d36e2316c44f86f501b405b1e20a922500c
+5,images/step-05-en.png,"Click ""Basic Shapes"", then choose ""Sim Lab"".",https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤5.png,c3b0ebdadf06a6815a30cb13e949a84376bfd91e8ed733cf13d7f94fa8a1914f
+6,images/step-06-en.png,Add an Axis Connector.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤6.png,ad7d5c85cd67cd4a543b75a2c1ec77101a5f9f4e83b6633cfa08f00101c85f66
+7,images/step-07-en.png,Drag the connector's Joint Point onto the ramp.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤7.png,3725c8f1235c23ad8db71ee5c2713694ec5e7b09883ace1a070af2ca403b6ad2
+8,images/step-08-en.png,Connect the Joint Point to the ramp.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤8.png,4a97745d7201fee46718c7704221c823f02e510566ee0654cc8ec6ba66b8ce86
+9,images/step-09-en.png,Rotate the Axis Connector 90° clockwise.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤9.png,6c894cd0ee257e0243c2fdb4c54f8f1e43a12b459c2888a0b742f55af9425867
+10,images/step-10-en.png,Use Align to place the connector at the middle of the ramp's right side.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤10.png,d47e3faab99fce894a5dc76718f733ee7c774c29ac213064bfee15c82b990210
+11,images/step-11-en.png,Select the Axis Connector and open the Motor Type menu.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤11.png,42a04159c6b94c0f03d390c2e55ce6dbdc615af0a44a42537e81de93be43e1d6
+12,images/step-12-en.png,Set the Axis Connector's Motor Type to Servo.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤12.png,89f7a7d8b83ebcdea7560db002039b8f30b06d929ace0b86413e829cb58973df
+13,images/step-13-en.png,Set Maximum Speed to 20 RPM to slow the ramp down.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤13.png,e383e8513a31f7c88ccd124fc5ecd4ae16f3bbf9b8a1d7d684a9e4e3af8ef63c
+14,images/step-14-en.png,Click Edit Interaction.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤14.png,ff10b6cb5f06595fd4d4932a4f73b4d400d60b5da6c0477440ee1345032bdd82
+15,images/step-15-en.png,Select the 1 key in the interaction keyboard.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤15.png,7f430ee6207d602b0bb615563e2de210c877db493e3ad7de165b804d8204cb81
+16,images/step-16-en.png,Choose Set Position for the 1 key.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤16.png,1e496edfd76783893a2d5d5734dd8ccf789aa37a0bcb9c9645047354d85c77d6
+17,images/step-17-en.png,Set the 1 key to rotate the ramp 22.5° clockwise.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤17.png,042003d11d7566a8e9b80e42437bc6cdd999230c8d5974a1583cb210c2877002
+18,images/step-18-en.png,Add an Axis Connector for the bat.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤18.png,1545847b770b83fd496b477a6b49ac9d7c8678e5de636f97174604b2278b0427
+19,images/step-19-en.png,Use Align to place the Axis Connector at the end of the bat.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤19.png,3f33c3d213df16624a1365726d59aa72bc7219f805428b6f897e7d59e4eebf89
+20,images/step-20-en.png,Drag the connector's Joint Point onto the bat.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤20.png,87fea4788ff55f9179dc0096e8cfcc15d3a427936b06d9d26abb1464d783756c
+21,images/step-21-en.png,Set the bat connector's Motor Type to Servo.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤21.png,c6d104abfb6b4319560be0c9e97717097c41d32bf580d70f7fc0de749f662a8d
+22,images/step-22-en.png,"Keep Maximum Speed at 400 RPM. Use Motor Torque 1000 N·m, lower limit 0° and upper limit 180°.",https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤22.png,30ec939c876acc4288c0f0173a0ac7406253dc2e07c4b3d8acaa7212a0cb038e
+23,images/step-23-en.png,Click Edit Interaction for the bat connector.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤23.png,8ec9f03b5ba322d9a3c054b33f917b7459e03556df656b300f799f06a744235f
+24,images/step-24-en.png,Select the 1 key in the interaction keyboard.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤24.png,ae45cf17a471a889c8fd3059bcd4462dbe464204509966b05f1c0e857c3cf7a2
+25,images/step-25-en.png,Choose Set Position for the 1 key.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤25.png,f26922bfd360e43c85657dff6fd174bcdadbda9a51fc10e5c548d363b15b0911
+26,images/step-26-en.png,Set the 1 key to rotate the bat 180° clockwise.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤26.png,139e74ffbd814011971148ba7d638dd0fd1aa31109e57dd80b8c43f9fa66a418
+27,images/step-27-en.png,Select the 2 key in the interaction keyboard.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤27.png,f9e732095b9806fe62ff1d556df9edb5846a955cb8689830f0d2fb3639564a01
+28,images/step-28-en.png,Choose Set Position for the 2 key too.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤28.png,0a58f01989dbf8470d67a732ca7a93f0944c0efbec29249f3a856317fdbdaf24
+29,images/step-29-en.png,Set the 2 key to return the bat to 0°.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤29.png,25e8d51745fd376bdc94d51e35db11a7c112eae9e2af215f6e63c1ec190129aa
+30,images/step-30-en.png,Click Sim Lab to test the baseball game. Start the simulation.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤30.png,475aebb8767c4ea66546c0ea3dae0123d0268af8657b1bd7e811cdf1325c8811
+31,images/step-31-en.png,Press 1 to roll the ball and prepare the bat.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤31.png,9849364101a5b2838663cea33d7f196cb214ed94bd2298a840eef81be743287f
+32,images/step-32-en.png,Press 2 at the right time to hit the ball.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤32.png,d0dfacffc0e30d93305bc327a917bb51399982160df1cb71cd37b4a5271f7fb9
+33,images/step-33-en.png,Alternative launch mechanism: connect a Slider Connector to the ball stopper.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤33.png,1e4c7ee42e69009ad51649cd7295e9f208ecf9d9fc083f2e0c6ac96961e4b131
+34,images/step-34-en.png,Set the Slider Connector's Motor Type to Continuous.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤34.png,36ee4cdfae1c903c2e7aeef4211ed2b703fd48a41456a426c04c8b87499e3736
+35,images/step-35-en.png,Assign Change Speed to the 1 key and set the speed to 200 units/s.,https://kidsprogram.co.jp/wp-content/uploads/2025/03/野球盤35.png,88ecd3f1594363712532ac84ee26196c2269cae2aa3df9135e7afd677adae347
