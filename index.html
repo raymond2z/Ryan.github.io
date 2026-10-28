@@ -1,67 +1,7 @@
 <!doctype html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Ryan 的互動小工具、實驗與學習筆記。">
-  <title>Ryan 的小作品</title>
-  <style>
-    :root { color-scheme: dark; --bg: #101827; --card: #1d293b; --text: #e5edf8; --muted: #a7b5c9; --accent: #62d5ff; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
-    main { width: min(100% - 2rem, 980px); margin: 0 auto; padding: 4rem 0; }
-    h1 { font-size: clamp(2.25rem, 8vw, 4.75rem); line-height: 1.1; margin: 0; }
-    .intro { color: var(--muted); font-size: 1.15rem; max-width: 42rem; margin: 1rem 0 3rem; }
-    h2 { margin: 3rem 0 1rem; font-size: 1.35rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
-    a.card { display: block; padding: 1.35rem; border: 1px solid #334155; border-radius: 1rem; color: inherit; background: var(--card); text-decoration: none; transition: transform .15s, border-color .15s; }
-    a.card:hover, a.card:focus-visible { transform: translateY(-3px); border-color: var(--accent); }
-    .card h3 { margin: 0 0 .35rem; color: var(--accent); }
-    .card p { margin: 0; color: var(--muted); }
-    footer { margin-top: 4rem; color: var(--muted); font-size: .9rem; }
-    footer a { color: var(--accent); }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <p>RYAN'S PLAYGROUND</p>
-      <h1>小工具、互動實驗與筆記</h1>
-      <p class="intro">這裡收集我做過的網頁小作品、課堂工具與學習紀錄。每個作品可直接在瀏覽器開啟使用。</p>
-    </header>
-
-    <section aria-labelledby="tools">
-      <h2 id="tools">小工具與互動作品</h2>
-      <div class="grid">
-        <a class="card" href="derby-lab/"><h3>Derby Lab</h3><p>Explore a 3D Pinewood Derby track, tune car parameters, and compare race simulations.</p></a>
-        <a class="card" href="simlab-baseball-lab/"><h3>Sim Lab Baseball Lab</h3><p>英文 Tinkercad 教材：36 個步驟、34 張英文教學圖與作者影片，製作可操作的棒球遊戲。</p></a>
-        <a class="card" href="airflow-lab/"><h3>Airflow Lab 氣流實驗室</h3><p>互動風洞模擬：比較形狀、調整流速、拖曳物件，觀察氣流與尾流。</p></a>
-        <a class="card" href="CSK_drawer2/"><h3>CSK 抽籤器</h3><p>可設定範圍、分組人數、排除號碼與是否允許重複的抽籤工具。</p></a>
-        <a class="card" href="CSK_drawer/"><h3>CSK 抽籤器（舊版）</h3><p>另一個分組抽籤版本，保留作為歷史實作。</p></a>
-        <a class="card" href="clicking_game/"><h3>點擊目標小遊戲</h3><p>在畫面中快速點擊目標、累積分數的小遊戲。</p></a>
-        <a class="card" href="GachaName%20PickingV2/gacha.html"><h3>Gacha Name Picking</h3><p>具音效的隨機抽選小工具。</p></a>
-        <a class="card" href="IR/"><h3>IR 實驗</h3><p>以 p5.js 與序列埠程式庫製作的互動實驗。</p></a>
-      </div>
-    </section>
-
-    <section aria-labelledby="experiments">
-      <h2 id="experiments">其他實驗</h2>
-      <div class="grid">
-        <a class="card" href="TeachableMachineTester.html"><h3>Teachable Machine Tester</h3><p>機器學習模型測試頁面。</p></a>
-        <a class="card" href="neon_math_sound.html"><h3>Neon Math Sound</h3><p>聲音與數學視覺效果實驗。</p></a>
-        <a class="card" href="LR_Hand_pingpong.html"><h3>Hand Ping Pong</h3><p>手部互動乒乓球實驗。</p></a>
-        <a class="card" href="interface.html"><h3>Interface</h3><p>介面設計練習。</p></a>
-      </div>
-    </section>
-
-    <section aria-labelledby="notes">
-      <h2 id="notes">筆記與文件</h2>
-      <div class="grid">
-        <a class="card" href="Python%E7%BC%96%E7%A8%8B%EF%BC%88%E4%BA%8C%E7%BA%A7%EF%BC%89.md"><h3>Python 編程（二級）</h3><p>Python 學習筆記。</p></a>
-      </div>
-    </section>
-
-    <footer>原始碼與完整目錄說明請見 <a href="README.md">README</a>。</footer>
-  </main>
-</body>
-</html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Ryan 的數位實驗室：探索互動 STEM 教材、課堂工具、小遊戲與學習筆記。"><meta name="theme-color" content="#f4f2eb"><title>Ryan 的數位實驗室｜讓好奇心動起來</title>
+<style>
+:root{--paper:#f4f2eb;--ink:#22362f;--muted:#607168;--line:#d4dbd1;--green:#d5edb1}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Noto Sans TC",system-ui,sans-serif;line-height:1.65}a{color:inherit;text-decoration:none}button{font:inherit}a:focus-visible,button:focus-visible{outline:3px solid #437723;outline-offset:5px}.wrap{width:min(1180px,90%);margin:auto}.skip{position:absolute;left:1rem;top:-100px;background:white;padding:1rem;z-index:10}.skip:focus{top:1rem}nav{display:flex;justify-content:space-between;align-items:center;padding:25px 0;border-bottom:1px solid var(--line)}.brand{font-size:20px;font-weight:800;letter-spacing:-1px}.brand b{display:inline-grid;place-items:center;background:var(--ink);color:var(--green);width:34px;height:34px;border-radius:50%;margin-right:10px}nav .links{display:flex;gap:26px;font-size:14px}.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:5%;align-items:center;padding:80px 0 70px}.eyebrow{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase}.dot{display:inline-block;width:8px;height:8px;background:#668646;border-radius:50%;margin-right:8px}h1{font-size:clamp(42px,5.5vw,72px);line-height:1.19;letter-spacing:-3px;margin:24px 0}h1 span{color:#668646}.intro{max-width:440px;color:var(--muted);font-size:17px}.button{display:inline-block;padding:13px 23px;background:var(--ink);color:white;border-radius:6px;margin-top:20px}.art{position:relative;background:#e4e9dc;border-radius:50% 50% 8px 8px;aspect-ratio:1;display:grid;place-items:center;overflow:hidden;background-image:linear-gradient(#ccd6c955 1px,transparent 1px),linear-gradient(90deg,#ccd6c955 1px,transparent 1px);background-size:30px 30px}.art svg{width:90%;height:90%}.art-label{position:absolute;bottom:22px;font-size:11px;letter-spacing:3px}.section-head{display:flex;align-items:end;justify-content:space-between;margin:25px 0}.section-head h2{font-size:28px;letter-spacing:-1px;margin:5px 0}.section-head p{color:var(--muted);font-size:14px}.featured{display:grid;grid-template-columns:1fr 1fr;gap:22px}.feature{padding:30px;border-radius:12px;background:#203c33;color:white;position:relative;overflow:hidden;min-height:300px;display:flex;flex-direction:column;align-items:start}.feature.baseball{background:#e5d9c3;color:var(--ink)}.feature h3{font-size:30px;line-height:1.3;margin:30px 0 10px;position:relative}.feature p{max-width:360px;position:relative;margin:0 0 25px}.feature .open{margin-top:auto}.feature .symbol{position:absolute;right:20px;top:12px;font-size:100px;opacity:.16;line-height:1}.tag{font-size:11px;letter-spacing:1px;border:1px solid currentColor;border-radius:30px;padding:3px 12px}.catalog{padding:55px 0}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}.filters button{border:1px solid var(--line);background:transparent;border-radius:30px;padding:8px 19px;cursor:pointer;color:var(--ink)}.filters button[aria-pressed=true]{background:var(--ink);color:white}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.card{border:1px solid var(--line);border-radius:10px;padding:25px;display:flex;flex-direction:column;min-height:240px;background:#faf9f5;transition:transform .2s,box-shadow .2s}.card:hover,.feature:hover{transform:translateY(-3px);box-shadow:0 10px 25px #22362f12}.card[hidden]{display:none}.meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}.card h3{font-size:21px;margin:22px 0 8px}.card p{font-size:14px;color:var(--muted);margin:0 0 22px}.open{font-size:13px;font-weight:700;margin-top:auto}.about{border-top:1px solid var(--line);padding:40px 0;display:flex;justify-content:space-between;gap:30px}.about h2{font-size:23px;margin:0}.about p{max-width:520px;margin:0;color:var(--muted)}footer{border-top:1px solid var(--line);padding:24px 0 35px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}@media(max-width:700px){.hero{grid-template-columns:1fr;padding:45px 0;gap:35px}.art{max-width:380px;width:100%;margin:auto}.featured,.grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.section-head p{margin:0}.about{flex-direction:column}.links a:last-child{display:none}nav .links{gap:16px}h1{letter-spacing:-2px}.feature{min-height:280px}footer{gap:20px}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style></head><body><a class="skip" href="#main">跳至主要內容</a><div class="wrap"><nav aria-label="主導覽"><a class="brand" href="./"><b>r.</b>Ryan’s Lab</a><div class="links"><a href="#projects">探索作品</a><a href="#about">關於這裡</a><a href="https://github.com/raymond2z/Ryan.github.io">GitHub ↗</a></div></nav><main id="main"><header class="hero"><div><div class="eyebrow"><span class="dot"></span>A playground for curious minds</div><h1>讓好奇心，<br><span>動起來。</span></h1><p class="intro">從一個小問題，開始一場新實驗。<br>這裡收藏我的互動教材、課堂工具，以及邊做邊學的靈感。</p><a class="button" href="#projects">探索我的作品　↘</a></div><div class="art" aria-hidden="true"><svg viewBox="0 0 400 400" fill="none"><circle cx="200" cy="190" r="128" stroke="#809477" stroke-dasharray="4 8"/><ellipse cx="200" cy="190" rx="165" ry="62" transform="rotate(-35 200 190)" stroke="#57754e" stroke-width="2"/><ellipse cx="200" cy="190" rx="165" ry="62" transform="rotate(35 200 190)" stroke="#57754e" stroke-width="2"/><circle cx="200" cy="190" r="67" fill="#d5edb1" stroke="#22362f" stroke-width="2"/><path d="M175 200l25-48 25 48h-50Zm25 0v28" stroke="#22362f" stroke-width="3"/><circle cx="65" cy="115" r="19" fill="#df9b64"/><circle cx="322" cy="276" r="13" fill="#22362f"/><path d="M310 83v26m-13-13h26" stroke="#22362f" stroke-width="2"/></svg><span class="art-label">IDEA → EXPERIMENT → DISCOVERY</span></div></header><section aria-labelledby="featured-title"><div class="section-head"><div><div class="eyebrow">Selected projects / 01</div><h2 id="featured-title">從這裡開始探索</h2></div><p>把抽象的概念，變成看得見的體驗。</p></div><div class="featured"><a class="feature" href="airflow-lab/"><span class="symbol" aria-hidden="true">≋</span><span class="tag">STEM · 互動模擬</span><h3>Airflow Lab<br>氣流實驗室</h3><p>改變形狀、調整流速，親眼觀察氣流與尾流的變化。</p><span class="open">進入風洞實驗　↗</span></a><a class="feature baseball" href="simlab-baseball-lab/"><span class="symbol" aria-hidden="true">↗</span><span class="tag">STEM · 圖解教材</span><h3>Baseball Lab<br>把棒球遊戲做出來</h3><p>跟著 36 個英文圖解步驟，在 Tinkercad Sim Lab 建立自己的棒球遊戲。</p><span class="open">開始動手製作　↗</span></a></div></section><section class="catalog" id="projects" aria-labelledby="projects-title"><div class="section-head"><div><div class="eyebrow">The collection / 02</div><h2 id="projects-title">小作品，大發現。</h2></div><p id="count" aria-live="polite">11 個工具、遊戲、實驗與筆記</p></div><div class="filters" aria-label="作品分類"><button type="button" aria-pressed="true" data-filter="全部">全部</button><button type="button" aria-pressed="false" data-filter="工具">工具</button><button type="button" aria-pressed="false" data-filter="遊戲">遊戲</button><button type="button" aria-pressed="false" data-filter="實驗">實驗</button><button type="button" aria-pressed="false" data-filter="筆記">筆記</button></div><div class="grid"><a class="card" href="derby-lab/" data-category="實驗"><div class="meta"><span>實驗</span><span>NEW ↗</span></div><h3>Derby Lab</h3><p>探索 3D 木製賽車跑道、調整車輛參數，並比較模擬賽果。</p><span class="open">探索作品 ↗</span></a><a class="card" href="CSK_drawer2/" data-category="工具"><div class="meta"><span>工具</span><span>01 ↗</span></div><h3>CSK 抽籤器</h3><p>分組、排除號碼與重複設定，讓課堂抽籤更輕鬆。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="GachaName%20PickingV2/gacha.html" data-category="工具"><div class="meta"><span>工具</span><span>02 ↗</span></div><h3>Gacha Name Picking</h3><p>把隨機抽選變成一場有聲有色的小活動。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="clicking_game/" data-category="遊戲"><div class="meta"><span>遊戲</span><span>03 ↗</span></div><h3>點擊目標</h3><p>眼明手快的挑戰，點擊目標、累積分數。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="TeachableMachineTester.html" data-category="實驗"><div class="meta"><span>實驗</span><span>04 ↗</span></div><h3>Teachable Machine</h3><p>探索機器學習模型，從觀察開始認識 AI。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="neon_math_sound.html" data-category="實驗"><div class="meta"><span>實驗</span><span>05 ↗</span></div><h3>Neon Math Sound</h3><p>在數學、聲音與霓虹視覺之間，發現新的連結。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="LR_Hand_pingpong.html" data-category="遊戲"><div class="meta"><span>遊戲</span><span>06 ↗</span></div><h3>Hand Ping Pong</h3><p>用手部互動探索不一樣的乒乓球體驗。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="IR/" data-category="實驗"><div class="meta"><span>實驗</span><span>07 ↗</span></div><h3>IR 序列埠實驗</h3><p>以 p5.js 連接序列埠，探索數位與實體互動。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="interface.html" data-category="實驗"><div class="meta"><span>實驗</span><span>08 ↗</span></div><h3>Interface</h3><p>介面設計與互動方式的練習場。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="CSK_drawer/" data-category="工具"><div class="meta"><span>工具</span><span>09 ↗</span></div><h3>CSK 抽籤器 · 經典版</h3><p>保留最初的分組抽籤版本與實作紀錄。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a><a class="card" href="Python%E7%BC%96%E7%A8%8B%EF%BC%88%E4%BA%8C%E7%BA%A7%29.md" data-category="筆記"><div class="meta"><span>筆記</span><span>10 ↗</span></div><h3>Python 編程（二級）</h3><p>把學習過程整理成可以回頭查閱的筆記。</p><span class="open">探索作品 <span aria-hidden="true">↗</span></span></a></div></section><section class="about" id="about"><div><div class="eyebrow">Always exploring</div><h2>保持好奇，持續創作。</h2></div><p>我是 Ryan。這裡是我的數位實驗室，也是一份持續累積的學習紀錄。希望每個小作品，都能為課堂與日常帶來一點發現。</p></section></main><footer><span>Ryan’s Lab · 邊做邊學，從未停止。</span><a href="README.md">專案說明 ↗</a></footer></div><script>
+const buttons=document.querySelectorAll('[data-filter]');const cards=document.querySelectorAll('[data-category]');buttons.forEach(button=>button.addEventListener('click',()=>{buttons.forEach(b=>b.setAttribute('aria-pressed',String(b===button)));let n=0;cards.forEach(card=>{card.hidden=button.dataset.filter!=='全部'&&card.dataset.category!==button.dataset.filter;if(!card.hidden)n++});document.querySelector('#count').textContent=n+' 個'+(button.dataset.filter==='全部'?'工具、遊戲、實驗與筆記':button.dataset.filter)}));
+</script></body></html>
