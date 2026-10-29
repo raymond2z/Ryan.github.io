@@ -1,6 +1,7 @@
 (function(global){
 'use strict';
 const P=global.DerbyPhysics||(typeof require==='function'?require('./physics.js'):null);
+const F=global.DerbyFit||(typeof require==='function'?require('./fit.js'):null);
 const minor=f=>f.maxHeight<.001&&f.duration<.020;
 const peakImpact=r=>Math.max(0,...r.flights.filter(f=>f.landed).map(f=>f.impact));
 const defaults={objective:'fastest',maxMass:142,maxImpact:1};
@@ -34,12 +35,13 @@ function cleanName(s){return typeof s==='string'?s.trim().slice(0,40)||'Untitled
 function parseDocument(text){
  if(typeof text!=='string'||text.length>262144)throw Error('Setup file is too large (maximum 256 KB).');
  let raw;try{raw=JSON.parse(text);}catch{throw Error('This is not valid JSON.');}
- if(!raw||raw.format!=='derby-lab'||raw.version!==2)throw Error('Unsupported setup format. Export a Derby Lab v2 setup first.');
+ if(!raw||raw.format!=='derby-lab'||![2,3].includes(raw.version))throw Error('Unsupported setup format. Expected Derby Lab v2 or v3.');
  const params=validParams(raw.params),name=cleanName(raw.name);
  if(raw.records!==undefined&&(!Array.isArray(raw.records)||raw.records.length>12))throw Error('A setup file can contain at most 12 saved setups.');
- const records=(raw.records||[]).map(r=>({name:cleanName(r?.name),p:validParams(r?.p)}));
- return {params,name,records,options:settings(raw.options)};
+ if(raw.version===3&&(raw.geometry===undefined||(raw.records||[]).some(r=>r?.geometry===undefined)))throw Error('Missing v3 fit dimensions.');
+ const records=(raw.records||[]).map(r=>({name:cleanName(r?.name),p:validParams(r?.p),geometry:raw.version===2?{...F.defaults}:F.validate(r.geometry)}));
+ return {params,name,records,options:settings(raw.options),geometry:raw.version===2?{...F.defaults}:F.validate(raw.geometry)};
 }
-function documentFor(params,name,options,records=[]){return {format:'derby-lab',version:2,params:validParams(params),name:cleanName(name),options:settings(options),records:records.map(r=>({name:cleanName(r.name),p:validParams(r.p)}))};}
+function documentFor(params,name,options,records=[],geometry=F.defaults){return {format:'derby-lab',version:3,params:validParams(params),name:cleanName(name),options:settings(options),geometry:F.validate(geometry),records:records.map(r=>({name:cleanName(r.name),p:validParams(r.p),geometry:F.validate(r.geometry)}))};}
 const api={minor,peakImpact,defaults,settings,reason,candidates,validParams,cleanName,parseDocument,documentFor};global.DerbyLabTools=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -32,20 +32,20 @@ class DerbyRenderer{
  }
  // End marker painted onto both lanes.
  for(let n=0;n<8;n++){const e=road.at(-1),a=road[road.length-13],y=-.07525+n*.0188125;poly([[a.x,y,a.z+.0005],[e.x,y,e.z+.0005],[e.x,y+.0188125,e.z+.0005],[a.x,y+.0188125,a.z+.0005]],n%2?'#384440':'#e2dfcc');}
- const car=(sp,p,lane,color,alpha)=>{
+ const car=(sp,p,lane,color,alpha,geometry)=>{
  const ca=Math.cos(sp.angle),sa=Math.sin(sp.angle),r=p.radius/1000;const point=(x,y,z)=>[sp.x+x*ca-z*sa,lane+y,sp.z+x*sa+z*ca];
- const length=.14,width=.036,bodyTop=.017,bodyBottom=.003;
- const corners=[[-length/2,-width/2,bodyBottom],[length/2,-width/2,bodyBottom],[length/2,width/2,bodyBottom],[-length/2,width/2,bodyBottom],[-length/2,-width/2,bodyTop],[length/2,-width/2,.008],[length/2,width/2,.008],[-length/2,width/2,bodyTop]].map(a=>point(...a));
+ const g=geometry||global.DerbyFit.defaults,length=g.length/1000,width=g.bodyWidth/1000,bodyBottom=g.clearance/1000-r,bodyTop=bodyBottom+.014,halfAxle=g.wheelbase/2000,wheelY=(g.inner+g.wheelWidth)/2000;
+ const corners=[[-length/2,-width/2,bodyBottom],[length/2,-width/2,bodyBottom],[length/2,width/2,bodyBottom],[-length/2,width/2,bodyBottom],[-length/2,-width/2,bodyTop],[length/2,-width/2,bodyTop],[length/2,width/2,bodyTop],[-length/2,width/2,bodyTop]].map(a=>point(...a));
  for(const face of [[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7],[4,5,6,7]])poly(face.map(i=>corners[i]),color,alpha);
- poly([point(-.047,-.009,.0175),point(-.01,-.009,.014),point(-.01,.009,.014),point(-.047,.009,.0175)],'#263734',alpha);
- for(const wx of [-.047,.047])for(const wy of [-.025,.025]){
- const side=wy<0?-1:1,outer=wy+side*.004;const ring=[];for(let j=0;j<14;j++){let a=2*Math.PI*j/14;ring.push(point(wx+r*Math.cos(a),outer,r*Math.sin(a)));}
+ poly([point(-halfAxle,-.009,bodyTop+.0005),point(-.01,-.009,bodyTop+.0005),point(-.01,.009,bodyTop+.0005),point(-halfAxle,.009,bodyTop+.0005)],'#263734',alpha);
+ for(const wx of [-halfAxle,halfAxle])for(const wy of [-wheelY,wheelY]){
+ const side=wy<0?-1:1,outer=wy+side*g.wheelWidth/2000;const ring=[];for(let j=0;j<14;j++){let a=2*Math.PI*j/14;ring.push(point(wx+r*Math.cos(a),outer,r*Math.sin(a)));}
  poly(ring,'#1b2223',alpha);const hub=[];for(let j=0;j<12;j++){let a=2*Math.PI*j/12;hub.push(point(wx+r*.27*Math.cos(a),outer+side*.0002,r*.27*Math.sin(a)));}poly(hub,'#a2aeab',alpha);
  const spin=sp.s/r;poly([point(wx+r*.3*Math.cos(spin),outer+side*.0004,r*.3*Math.sin(spin)),point(wx+r*.9*Math.cos(spin),outer+side*.0004,r*.9*Math.sin(spin)),point(wx+r*.9*Math.cos(spin+.09),outer+side*.0004,r*.9*Math.sin(spin+.09))],'#bac6c0',alpha);
  }
  };
- if(ghost)car(ghost.sample,ghost.p,.037625,'#8ebec9',.7);
- car(sample,run.p,-.037625,'#d4ec8e',1);
+ if(ghost)car(ghost.sample,ghost.p,.037625,'#8ebec9',.7,ghost.geometry);
+ car(sample,run.p,-.037625,'#d4ec8e',1,run.geometry);
  polygons.sort((a,b)=>a.depth-b.depth);
  for(const face of polygons){ctx.beginPath();face.ps.forEach((p,i)=>{const a=project(p);i?ctx.lineTo(a.x,a.y):ctx.moveTo(a.x,a.y);});ctx.closePath();ctx.globalAlpha=face.alpha;ctx.fillStyle=face.color;ctx.fill();}ctx.globalAlpha=1;
  for(const cut of run.track.cuts){const q=global.DerbyPhysics.lookup(run.track.path,cut),a=global.DerbyPhysics.lookup(road,q.rawX,'rawX');line([[a.x,-.07525,a.z+.001],[a.x,.07525,a.z+.001]],'#4c594e',.65);}
