@@ -47,7 +47,10 @@ function simulate(data,raw,options={}){
  const samples=[],events=[],flights=[];let activeFlight=null;
  const beginFlight=(at,cause)=>{activeFlight={start:at,s,x,z,speed:Math.hypot(vx,vz),maxHeight:0,cause};flightCount++;events.push({type:'takeoff',t:at,x,z,s,cause});};
  const endFlight=(at,impact=null)=>{if(activeFlight){flights.push({...activeFlight,end:at,duration:Math.max(0,at-activeFlight.start),impact,landed:impact!==null});activeFlight=null;}};
- const capture=()=>samples.push({t,x,z,s,v:ground?v:Math.hypot(vx,vz),angle,ground,normal});
+ // Wheel rim speed is held in flight; landing synchronizes it to tangential speed.
+ let spin=v,dissipated=0;
+ const rotationalMass=me-m;
+ const capture=()=>samples.push({t,x,z,s,v:ground?v:Math.hypot(vx,vz),angle,ground,normal,spin,dissipated});
  capture();
  for(let step=0;step<Math.ceil(20/dt);step++){
    const oldX=x,oldZ=z,oldS=s;
@@ -61,11 +64,14 @@ function simulate(data,raw,options={}){
      const next=v+acceleration*dt;
      if(next<=0&&acceleration<=0){status='stalled';events.push({type:'stall',t,x,z,s});break;}
      const vn=Math.max(0,next);s+=(v+vn)*.5*dt;v=vn;
-     while(seamIndex<track.cuts.length&&s>=track.cuts[seamIndex]){if(oldS<track.cuts[seamIndex])v*=Math.sqrt(1-p.seam/100);seamIndex++;}
+     dissipated+=resistance*(s-oldS);
+     while(seamIndex<track.cuts.length&&s>=track.cuts[seamIndex]){if(oldS<track.cuts[seamIndex]){dissipated+=.5*me*v*v*p.seam/100;v*=Math.sqrt(1-p.seam/100);}seamIndex++;}
+     spin=v;
      q=lookup(track.path,s);x=q.x;z=q.z;angle=q.theta;vx=v*Math.cos(angle);vz=v*Math.sin(angle);
    }else{
      const speed=Math.hypot(vx,vz),drag=.5*RHO*p.cda*.0001*speed/m;
      const ax=-drag*vx,az=-G-drag*vz;
+     dissipated+=m*drag*speed*speed*dt;
      x+=vx*dt+.5*ax*dt*dt;z+=vz*dt+.5*az*dt*dt;vx+=ax*dt;vz+=az*dt;v=Math.hypot(vx,vz);airTime+=dt;normal=0;
      // Orientation is illustrative; pitching inertia is outside this model.
      angle+=clamp(Math.atan2(vz,vx)-angle,-dt*2,dt*2);
@@ -74,6 +80,9 @@ function simulate(data,raw,options={}){
        const ct=Math.cos(q.theta),st=Math.sin(q.theta),vn=-vx*st+vz*ct;
        if(vn<0){
          const tangential=Math.max(0,(vx*ct+vz*st)*p.landing),bounce=-vn*p.restitution;
+         const beforeImpact=.5*m*(vx*vx+vz*vz)+.5*rotationalMass*spin*spin;
+         const afterImpact=.5*me*tangential*tangential+.5*m*(bounce>.08?bounce*bounce:0);
+         dissipated+=Math.max(0,beforeImpact-afterImpact);spin=tangential;
          events.push({type:'landing',t:t+dt,x,z:q.z,s,impact:-vn,airDuration:t+dt-airStart});
          endFlight(t+dt,-vn);
          x=q.x;z=q.z;v=tangential;angle=q.theta;
@@ -94,7 +103,11 @@ function simulate(data,raw,options={}){
    }
  }
  endFlight(t);capture();
- return {p,track,samples,events,flights,status,time:t,peak,airTime,maxAir,flightCount,finished:status==='finished'||status==='airborne-finish',distance:clamp(s,0,track.length)};
+ const energyDatum=Math.min(...track.path.map(q=>q.z),...samples.map(q=>q.z));
+ for(const a of samples){a.potential=m*G*(a.z-energyDatum);a.translational=.5*m*a.v*a.v;a.rotational=.5*rotationalMass*a.spin*a.spin;a.kinetic=a.translational+a.rotational;}
+ const initialEnergy=samples[0].potential+samples[0].kinetic;
+ for(const a of samples)a.energyResidual=initialEnergy-a.potential-a.kinetic-a.dissipated;
+ return {p,track,samples,events,flights,initialEnergy,energyDatum,status,time:t,peak,airTime,maxAir,flightCount,finished:status==='finished'||status==='airborne-finish',distance:clamp(s,0,track.length)};
 }
 function sampleAt(run,t){return lookup(run.samples,clamp(t,0,run.time),'t');}
 const api={defaults,specs,sanitize,makeTrack,simulate,sampleAt,lookup};global.DerbyPhysics=api;if(typeof module!=='undefined')module.exports=api;
