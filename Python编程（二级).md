@@ -1,3 +1,7 @@
+> **Updated learning page:** [Python Programming · Level 2](python-level-2/) — English lessons, worked examples and practice based on the supplied Level 2 training notes.
+>
+> This Chinese outline is retained as the original reference. Its exam distribution reflects the supplied training material, not a verified current specification.
+
 *Python编程（二级）*
 # 考试大纲
 ## 考试标准

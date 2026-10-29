@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Python Programming · Level 2 — Ryan’s Lab</title><meta name="description" content="Learn Python lists, tuples, dictionaries, strings, decisions and loops with worked examples and practice tasks adapted from Level 2 training notes.">
+<meta name="theme-color" content="#fafaf8"><style>
+:root{color-scheme:light;--ink:#26332e;--muted:#66706b;--line:#dce1dc;--accent:#41634f;--paper:#fafaf8;--wash:#f0f4ef}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 system-ui,sans-serif}a{color:var(--accent);text-underline-offset:4px}a:hover{text-decoration-thickness:2px}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #41634f;outline-offset:4px}.skip{position:absolute;top:-100px;padding:12px;background:white}.skip:focus{top:8px;z-index:10}.wrap{width:min(1160px,92%);margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0;border-bottom:1px solid var(--line)}.brand{font-size:20px;font-weight:650;text-decoration:none}.toplinks{display:flex;gap:22px;font-size:14px}.hero{max-width:860px;padding:54px 0 36px}.eyebrow,.lesson-number{font-size:12px;font-weight:650;letter-spacing:1.4px;color:var(--accent)}h1{font-size:clamp(34px,5vw,54px);letter-spacing:-1.5px;line-height:1.13;margin:14px 0 20px;font-weight:600}h1 span{color:var(--accent)}.hero>p{font-size:18px;color:var(--muted);max-width:720px}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}.chips span{font-size:12px;background:var(--wash);border:1px solid var(--line);border-radius:4px;padding:5px 10px}.setup{border:1px solid var(--line);border-left:3px solid #77917d;padding:18px 22px;margin:0 0 38px;background:white;border-radius:4px}.setup p{margin:0}.setup p+p{margin-top:8px}.layout{display:grid;grid-template-columns:245px minmax(0,1fr);gap:52px;align-items:start}aside{position:sticky;top:24px;padding-bottom:30px}aside h2{font-size:14px;margin:0 0 12px}aside a{display:block;text-decoration:none;padding:7px 0;font-size:13px}aside a:hover{color:#162c1e;text-decoration:underline}aside a span{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:7px}aside .print{margin-top:20px}.lesson{border-top:1px solid var(--line);padding:30px 0 46px;scroll-margin-top:24px}.lesson h2{font-size:30px;letter-spacing:-.6px;line-height:1.25;margin:9px 0 12px;font-weight:600}.intro{font-size:18px;color:var(--muted);margin-top:0}h3{font-size:21px;font-weight:600;line-height:1.4;margin:28px 0 12px}h4{font-size:15px;margin:0;font-weight:650}p{margin:14px 0}.muted,.input-note{color:var(--muted);font-size:13px}button{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:4px;background:white;color:var(--accent);padding:7px 12px;cursor:pointer}button:hover{background:var(--wash)}code{font: .9em/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;background:#eaf0e9;padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}pre{margin:0;padding:20px;background:#f0f3ef;overflow-x:auto;tab-size:4;font:14px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace}pre code{padding:0;background:none;overflow-wrap:normal;font:inherit}.example{border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:22px 0;background:white}.code-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}.example .input-note{padding:0 16px}.output{padding:12px 16px}.output pre{margin-top:12px;background:#fafaf8;font-size:13px}summary{cursor:pointer;color:var(--accent);font-weight:550;font-size:14px}details>p{font-size:14px}.task{border:1px solid #cfdccd;border-radius:5px;padding:20px 22px;margin:26px 0;background:#f4f7f2}.task>h4{font-size:16px}.task>p{margin-top:8px}.task>details{border-top:1px solid var(--line);padding:12px 0 0;margin-top:12px}.task .example{margin-bottom:0}.callout{border-left:3px solid #77917d;padding:12px 18px;background:var(--wash);font-size:14px}.table-wrap{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;font-size:14px;width:100%;background:white}td,th{border-bottom:1px solid var(--line);text-align:left;padding:11px 13px;vertical-align:top}thead{background:var(--wash)}.index-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:5px;background:white;overflow:hidden;margin:22px 0}.index-strip div{padding:12px;text-align:center;border-right:1px solid var(--line)}.index-strip div:last-child{border:0}.index-strip small{display:block;color:var(--muted);font-size:12px}.index-strip b{font-weight:550}.extension{border:1px solid var(--line);padding:16px 20px;border-radius:5px;margin-top:22px}.checklist{display:grid;gap:9px;margin:20px 0}.checklist label{display:flex;align-items:flex-start;gap:12px;background:white;border:1px solid var(--line);border-radius:4px;padding:12px 15px;font-size:14px}.checklist input{accent-color:var(--accent);width:17px;height:17px;flex-shrink:0;margin-top:4px}.source{border-top:1px solid var(--line);padding:30px 0;font-size:13px;color:var(--muted)}.source h2{font-size:18px;color:var(--ink)}footer{display:flex;justify-content:space-between;padding:24px 0;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}#copy-status{min-height:1.5em;font-size:12px;color:var(--muted)}
+@media(max-width:860px){.layout{grid-template-columns:1fr;gap:0}aside{position:static;display:block;border:1px solid var(--line);padding:18px 22px;margin-bottom:30px;border-radius:5px;background:white}aside .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.hero{padding-top:36px}.hero>p{font-size:17px}}
+@media(max-width:520px){.wrap{width:90%}.topbar{align-items:flex-start}.toplinks{gap:12px;font-size:12px}.lesson h2{font-size:26px}aside .topics{grid-template-columns:1fr}.code-heading{align-items:flex-start}.task{padding:16px}.example pre{padding:14px;font-size:12px}.index-strip div{padding:10px 5px}.toplinks .source-link{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{body{font-size:11pt;background:white}.wrap{width:100%}.topbar,.toplinks,aside,button,.skip,#copy-status{display:none}.layout{display:block}.hero{padding:0 0 15px}h1{font-size:28pt}.lesson{padding:20px 0}.lesson h2{font-size:21pt}details>summary{list-style:none}details> :not(summary){display:block!important}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:9pt}.task,.example{break-inside:avoid}.source a{overflow-wrap:anywhere}.checklist label{padding:5px}.source details{display:none}}
+</style></head><body id="top"><a class="skip" href="#main">Skip to lessons</a><div class="wrap">
+<nav class="topbar" aria-label="Main navigation"><a class="brand" href="../">Ryan’s Lab</a><div class="toplinks"><a href="../#projects">All projects</a><a class="source-link" href="#source">About the notes</a></div></nav>
+<header class="hero"><div class="eyebrow">PYTHON / LEARN · <li>Lists & indexing: notebook cells 4–58.</li><li>Change, search & sort lists: notebook cells 60–215.</li><li>range() & repetition: notebook cells 97–99; 218–234; 363–367.</li><li>Tuples & immutability: notebook cells 235–272.</li><li>Dictionaries & key–value pairs: notebook cells 273–306.</li><li>Strings & formatting: notebook cells 307–332.</li><li>Decisions with if: notebook cells 204–211; 333–351.</li><li>for, while, break & continue: notebook cells 352–380.</li><li>Apply it: four challenges: notebook cells 179–183; 216–217; 381–407.</li><li>Review & readiness: notebook cells 0; 398–407.</li> · BUILD</div><h1>Python Programming<br><span>Level 2</span></h1><p>Work with collections. Make decisions. Repeat useful work. Turn the training notes into programs you can explain.</p><div class="chips"><span>10 learning sections</span><span>Worked Python 3 examples</span><span>Practice + revealable solutions</span></div></header>
+<div class="setup"><p><strong>Before you start:</strong> you should know variables, numbers, basic operators, <code>input()</code> and <code>print()</code>. Use a Python 3 editor or a notebook.</p><p>Read an example, predict its output, copy it into your editor and run it. Code is not executed in this webpage. Example outputs with input show the prompts together; your editor also displays what you type. Input examples assume correctly typed integers.</p></div>
+<div class="layout"><aside aria-label="Lesson contents"><h2>Learning path</h2><div class="topics"><a href="#lists"><span>01</span> Lists & indexing</a><a href="#list-tools"><span>02</span> Change, search & sort lists</a><a href="#range"><span>03</span> range() & repetition</a><a href="#tuples"><span>04</span> Tuples & immutability</a><a href="#dictionaries"><span>05</span> Dictionaries & key–value pairs</a><a href="#strings"><span>06</span> Strings & formatting</a><a href="#decisions"><span>07</span> Decisions with if</a><a href="#loops"><span>08</span> for, while, break & continue</a><a href="#projects"><span>09</span> Apply it: four challenges</a><a href="#review"><span>10</span> Review & readiness</a></div><button type="button" class="print" id="print-page">Print / save as PDF</button><p id="copy-status" role="status" aria-live="polite"></p></aside><main id="main"><section class="lesson" id="lists" aria-labelledby="title-lists"><div class="lesson-number">LESSON 01</div><h2 id="title-lists">Lists & indexing</h2><p class="intro">Store several values in one ordered, changeable collection.</p>
+<p>Write a list with square brackets. Its first item has index <code>0</code>. A negative index counts from the end: <code>-1</code> means the last item.</p>
+<div class="index-strip" aria-label="A list with four items and their indexes"><div><small>0 / −4</small><b>Ada</b></div><div><small>1 / −3</small><b>Ben</b></div><div><small>2 / −2</small><b>Cara</b></div><div><small>3 / −1</small><b>Dan</b></div></div>
+<div class="example"><div class="code-heading"><h4>Read, update and count</h4><button type="button" class="copy">Copy code</button></div><pre><code>names = [&quot;Ada&quot;, &quot;Ben&quot;, &quot;Cara&quot;, &quot;Dan&quot;]
+print(names[0])
+print(names[-1])
+names[1] = &quot;Bo&quot;
+print(names)
+print(len(names))
+print(&quot;Cara&quot; in names)</code></pre><details class="output"><summary>Check the output</summary><pre>Ada
+Dan
+[&#x27;Ada&#x27;, &#x27;Bo&#x27;, &#x27;Cara&#x27;, &#x27;Dan&#x27;]
+4
+True</pre></details></div><h3>Slices leave out the stop index</h3><p><code>items[start:stop:step]</code> selects part of a list. Missing bounds use the beginning or end. A slice creates a new outer list.</p><div class="example"><div class="code-heading"><h4>Choose a slice</h4><button type="button" class="copy">Copy code</button></div><pre><code>numbers = [10, 20, 30, 40, 50, 60]
+print(numbers[1:4])
+print(numbers[:2])
+print(numbers[-4:])
+print(numbers[::2])
+print(numbers[::-1])</code></pre><details class="output"><summary>Check the output</summary><pre>[20, 30, 40]
+[10, 20]
+[30, 40, 50, 60]
+[10, 30, 50]
+[60, 50, 40, 30, 20, 10]</pre></details></div><h3>Lists inside lists</h3><p>Use one index to choose a row and another to choose an item in that row.</p><div class="example"><div class="code-heading"><h4>Read a nested list</h4><button type="button" class="copy">Copy code</button></div><pre><code>scores = [[98, 97, 96], [79, 98, 97]]
+print(scores[0][2])
+print(len(scores))
+print(sum(scores[1]))</code></pre><details class="output"><summary>Check the output</summary><pre>96
+2
+274</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Create a six-name class list. Display the first two names and the last four names. Then print the number of students.</p><details><summary>Need a hint?</summary><p>Use <code>[:2]</code>, <code>[-4:]</code> and <code>len()</code>.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Class list solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>names = [&quot;Ada&quot;, &quot;Ben&quot;, &quot;Cara&quot;, &quot;Dan&quot;, &quot;Eva&quot;, &quot;Finn&quot;]
+print(names[:2])
+print(names[-4:])
+print(len(names))</code></pre><details class="output"><summary>Check the output</summary><pre>[&#x27;Ada&#x27;, &#x27;Ben&#x27;]
+[&#x27;Cara&#x27;, &#x27;Dan&#x27;, &#x27;Eva&#x27;, &#x27;Finn&#x27;]
+6</pre></details></div></details></div></section><section class="lesson" id="list-tools" aria-labelledby="title-list-tools"><div class="lesson-number">LESSON 02</div><h2 id="title-list-tools">Change, search & sort lists</h2><p class="intro">Choose the right operation and understand what it changes.</p>
+<div class="table-wrap"><table><thead><tr><th>Operation</th><th>What it does</th></tr></thead><tbody>
+<tr><td><code>append(x)</code></td><td>Add one item at the end; a list is added as one nested item.</td></tr>
+<tr><td><code>extend(values)</code></td><td>Add each item from another iterable.</td></tr>
+<tr><td><code>insert(i, x)</code></td><td>Insert an item before index i.</td></tr>
+<tr><td><code>pop(i)</code></td><td>Remove and return an item by index; omit i for the last item.</td></tr>
+<tr><td><code>remove(x)</code></td><td>Remove the first matching value; missing values raise ValueError.</td></tr>
+<tr><td><code>del items[i:j]</code></td><td>Delete an item or a slice.</td></tr>
+<tr><td><code>clear()</code></td><td>Remove all items.</td></tr>
+<tr><td><code>index(x)</code> / <code>count(x)</code></td><td>Find the first index / count matching items.</td></tr>
+</tbody></table></div><div class="example"><div class="code-heading"><h4>Build and edit a roster</h4><button type="button" class="copy">Copy code</button></div><pre><code>names = [&quot;Ada&quot;, &quot;Ben&quot;]
+names.append(&quot;Cara&quot;)
+names.extend([&quot;Dan&quot;, &quot;Eva&quot;])
+names.insert(1, &quot;Bo&quot;)
+print(names)
+print(names.pop())
+names.remove(&quot;Ben&quot;)
+del names[0]
+print(names)
+print(names.index(&quot;Cara&quot;))
+print(names.count(&quot;Cara&quot;))
+names.clear()
+print(names)</code></pre><details class="output"><summary>Check the output</summary><pre>[&#x27;Ada&#x27;, &#x27;Bo&#x27;, &#x27;Ben&#x27;, &#x27;Cara&#x27;, &#x27;Dan&#x27;, &#x27;Eva&#x27;]
+Eva
+[&#x27;Bo&#x27;, &#x27;Cara&#x27;, &#x27;Dan&#x27;]
+1
+1
+[]</pre></details></div><div class="example"><div class="code-heading"><h4>append() and extend() are different</h4><button type="button" class="copy">Copy code</button></div><pre><code>a = [1, 2]
+b = [1, 2]
+a.append([3, 4])
+b.extend([3, 4])
+print(a, len(a))
+print(b, len(b))</code></pre><details class="output"><summary>Check the output</summary><pre>[1, 2, [3, 4]] 3
+[1, 2, 3, 4] 4</pre></details></div><h3>Sorting is different from reversing</h3><p><code>sort()</code> changes the list and returns <code>None</code>. <code>sorted()</code> creates a new sorted list. <code>reverse()</code> reverses the current order without sorting.</p><div class="example"><div class="code-heading"><h4>Compare the three operations</h4><button type="button" class="copy">Copy code</button></div><pre><code>scores = [82, 95, 71]
+print(sorted(scores))
+print(scores)
+scores.reverse()
+print(scores)
+scores.sort(reverse=True)
+print(scores)</code></pre><details class="output"><summary>Check the output</summary><pre>[71, 82, 95]
+[82, 95, 71]
+[71, 95, 82]
+[95, 82, 71]</pre></details></div><h3>A second name is not a copy</h3><p><code>b = a</code> gives the same list another name. <code>a.copy()</code> or <code>a[:]</code> makes a shallow copy. Nested lists inside a shallow copy are still shared.</p><div class="example"><div class="code-heading"><h4>Compare an alias and a copy</h4><button type="button" class="copy">Copy code</button></div><pre><code>original = [1, 2, 3]
+alias = original
+copied = original.copy()
+alias.append(4)
+print(original)
+print(copied)</code></pre><details class="output"><summary>Check the output</summary><pre>[1, 2, 3, 4]
+[1, 2, 3]</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Remove repeated student numbers and display them in ascending order: <code>[5, 2, 5, 1, 2, 4]</code>.</p><details><summary>Need a hint?</summary><p>Build a new list. Add a number only when it is not already in that list.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Remove duplicates solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>numbers = [5, 2, 5, 1, 2, 4]
+unique = []
+for number in numbers:
+    if number not in unique:
+        unique.append(number)
+unique.sort()
+print(unique)</code></pre><details class="output"><summary>Check the output</summary><pre>[1, 2, 4, 5]</pre></details></div></details></div></section><section class="lesson" id="range" aria-labelledby="title-range"><div class="lesson-number">LESSON 03</div><h2 id="title-range">range() & repetition</h2><p class="intro">Generate integer sequences and visit a list using its indexes.</p>
+<p><code>range(start, stop, step)</code> includes the start and excludes the stop. The default start is 0 and the default step is 1. A step must not be zero. A range is an immutable sequence, not a list; use <code>list()</code> to display its values.</p><div class="example"><div class="code-heading"><h4>Start, stop and step</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(list(range(5)))
+print(list(range(1, 6)))
+print(list(range(2, 11, 2)))
+print(list(range(10, 0, -2)))
+print(sum(range(1, 101)))</code></pre><details class="output"><summary>Check the output</summary><pre>[0, 1, 2, 3, 4]
+[1, 2, 3, 4, 5]
+[2, 4, 6, 8, 10]
+[10, 8, 6, 4, 2]
+5050</pre></details></div><div class="example"><div class="code-heading"><h4>Print student numbers and names</h4><button type="button" class="copy">Copy code</button></div><pre><code>names = [&quot;Ada&quot;, &quot;Ben&quot;, &quot;Cara&quot;]
+for i in range(len(names)):
+    print(i + 1, names[i])</code></pre><details class="output"><summary>Check the output</summary><pre>1 Ada
+2 Ben
+3 Cara</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Display all multiples of 5 from 5 to 100, including 100, without writing a loop.</p><details><summary>Need a hint?</summary><p>Convert a range to a list. The stop must be greater than 100.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Multiples of five solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(list(range(5, 101, 5)))</code></pre><details class="output"><summary>Check the output</summary><pre>[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]</pre></details></div></details></div></section><section class="lesson" id="tuples" aria-labelledby="title-tuples"><div class="lesson-number">LESSON 04</div><h2 id="title-tuples">Tuples & immutability</h2><p class="intro">Represent an ordered record whose item references cannot be replaced.</p>
+<p>A tuple supports indexing, slicing and loops like a list, but you cannot assign to, add to or delete its individual positions. A single-item tuple needs a comma: <code>(23,)</code>. Concatenating tuples creates a new tuple.</p><div class="example"><div class="code-heading"><h4>Read and rebuild a record</h4><button type="button" class="copy">Copy code</button></div><pre><code>student = (23, &quot;Ada&quot;, &quot;2008-03-20&quot;)
+print(student[2])
+print(type((23)).__name__)
+print(type((23,)).__name__)
+updated = student + (&quot;Macau&quot;,)
+print(updated)
+print(student)
+print(tuple(sorted((3, 1, 2))))</code></pre><details class="output"><summary>Check the output</summary><pre>2008-03-20
+int
+tuple
+(23, &#x27;Ada&#x27;, &#x27;2008-03-20&#x27;, &#x27;Macau&#x27;)
+(23, &#x27;Ada&#x27;, &#x27;2008-03-20&#x27;)
+(1, 2, 3)</pre></details></div><p class="callout"><strong>Watch the distinction:</strong> <code>student[0] = 24</code> raises TypeError. A list stored inside a tuple can still change. <code>del student</code> removes the name; it does not delete a position inside the tuple.</p><div class="example"><div class="code-heading"><h4>A mutable object inside a tuple</h4><button type="button" class="copy">Copy code</button></div><pre><code>record = (&quot;Ada&quot;, [90, 80])
+record[1].append(95)
+print(record)</code></pre><details class="output"><summary>Check the output</summary><pre>(&#x27;Ada&#x27;, [90, 80, 95])</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Create a tuple containing a student number, name and birthday. Add a city by constructing a new tuple, then print each item.</p><details><summary>Need a hint?</summary><p>Use <code>record + ("Macau",)</code>, then a for loop.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Tuple record solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>record = (12, &quot;Ben&quot;, &quot;2015-05-09&quot;)
+record = record + (&quot;Macau&quot;,)
+for item in record:
+    print(item)</code></pre><details class="output"><summary>Check the output</summary><pre>12
+Ben
+2015-05-09
+Macau</pre></details></div></details></div></section><section class="lesson" id="dictionaries" aria-labelledby="title-dictionaries"><div class="lesson-number">LESSON 05</div><h2 id="title-dictionaries">Dictionaries & key–value pairs</h2><p class="intro">Look up a value by its key instead of a numbered position.</p>
+<p>Use braces for key–value pairs: <code>{"name": "Ada"}</code>. Keys are unique and must be hashable; strings and numbers are common choices. A list cannot be a key. Reusing a key replaces its earlier value. <code>key in dictionary</code> checks keys, not values.</p><div class="example"><div class="code-heading"><h4>Create, read, add, update and delete</h4><button type="button" class="copy">Copy code</button></div><pre><code>prices = {&quot;milk&quot;: 18, &quot;eggs&quot;: 30}
+print(prices[&quot;milk&quot;])
+prices[&quot;bread&quot;] = 12
+prices[&quot;milk&quot;] = 23
+print(prices)
+print(&quot;eggs&quot; in prices)
+del prices[&quot;eggs&quot;]
+print(prices.get(&quot;eggs&quot;, &quot;Not found&quot;))
+for product, price in prices.items():
+    print(product, price)</code></pre><details class="output"><summary>Check the output</summary><pre>18
+{&#x27;milk&#x27;: 23, &#x27;eggs&#x27;: 30, &#x27;bread&#x27;: 12}
+True
+Not found
+milk 23
+bread 12</pre></details></div><p class="callout"><strong>Missing key?</strong> <code>prices["rice"]</code> raises KeyError if the key is absent. Check membership first or use <code>get()</code>. Use <code>keys()</code>, <code>values()</code> and <code>items()</code> to iterate over keys, values and pairs.</p><div class="task"><h4>Try it yourself</h4><p>Create a fictional contact book with two entries. Add a third entry, update one contact and print every name and contact.</p><details><summary>Need a hint?</summary><p>Use strings for contacts so leading zeros are preserved. Use made-up contact values.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Contact book solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>contacts = {&quot;Ada&quot;: &quot;001&quot;, &quot;Ben&quot;: &quot;002&quot;}
+contacts[&quot;Cara&quot;] = &quot;003&quot;
+contacts[&quot;Ben&quot;] = &quot;020&quot;
+for name, contact in contacts.items():
+    print(name, contact)</code></pre><details class="output"><summary>Check the output</summary><pre>Ada 001
+Ben 020
+Cara 003</pre></details></div></details></div></section><section class="lesson" id="strings" aria-labelledby="title-strings"><div class="lesson-number">LESSON 06</div><h2 id="title-strings">Strings & formatting</h2><p class="intro">Split, join, replace and search text, then format clear messages.</p>
+<p>A string is an immutable sequence of characters. It supports indexing, slicing, <code>len()</code>, concatenation with <code>+</code>, repetition with <code>*</code>, and membership with <code>in</code>. Methods such as <code>replace()</code> return a new string.</p><div class="example"><div class="code-heading"><h4>Work with text</h4><button type="button" class="copy">Copy code</button></div><pre><code>text = &quot;apple;banana;orange&quot;
+fruit = text.split(&quot;;&quot;)
+print(fruit)
+print(&quot;, &quot;.join(fruit))
+print(text.replace(&quot;banana&quot;, &quot;pear&quot;))
+print(text)
+print(text[:5])
+print(len(&quot;Python&quot;))
+print(&quot;Py&quot; + &quot;thon&quot;)
+print(&quot;ha&quot; * 3)
+print(&quot;banana&quot; in text)</code></pre><details class="output"><summary>Check the output</summary><pre>[&#x27;apple&#x27;, &#x27;banana&#x27;, &#x27;orange&#x27;]
+apple, banana, orange
+apple;pear;orange
+apple;banana;orange
+apple
+6
+Python
+hahaha
+True</pre></details></div><h3>Search results need checking</h3><p><code>find()</code> returns the first matching index, or <code>-1</code> when absent. <code>index()</code> raises ValueError when absent. Do not use a missing <code>find()</code> result as an index: <code>-1</code> also selects the last character.</p><div class="example"><div class="code-heading"><h4>Find a word</h4><button type="button" class="copy">Copy code</button></div><pre><code>message = &quot;Hello Python&quot;
+print(message.find(&quot;Python&quot;))
+print(message.find(&quot;Java&quot;))
+print(message.index(&quot;Hello&quot;))</code></pre><details class="output"><summary>Check the output</summary><pre>6
+-1
+0</pre></details></div><h3>Format values for display</h3><p>The notes cover <code>%s</code> (text), <code>%d</code> (integer), <code>%f</code> (fixed-point) and <code>str.format()</code>. <code>%.2f</code> displays two decimal places. An f-string is another convenient way to format a message.</p><div class="example"><div class="code-heading"><h4>Three ways to format a score</h4><button type="button" class="copy">Copy code</button></div><pre><code>name = &quot;Ada&quot;
+score = 87.5
+print(&quot;%s: %.2f&quot; % (name, score))
+print(&quot;{}: {:.2f}&quot;.format(name, score))
+print(f&quot;{name}: {score:.2f}&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Ada: 87.50
+Ada: 87.50
+Ada: 87.50</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Change <code>"red,blue,red"</code> into <code>"green | blue | green"</code>. Keep the original string unchanged.</p><details><summary>Need a hint?</summary><p>Replace red with green, split at commas, then join with <code>" | "</code>.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Text editing solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>original = &quot;red,blue,red&quot;
+edited = &quot; | &quot;.join(original.replace(&quot;red&quot;, &quot;green&quot;).split(&quot;,&quot;))
+print(edited)
+print(original)</code></pre><details class="output"><summary>Check the output</summary><pre>green | blue | green
+red,blue,red</pre></details></div></details></div></section><section class="lesson" id="decisions" aria-labelledby="title-decisions"><div class="lesson-number">LESSON 07</div><h2 id="title-decisions">Decisions with if</h2><p class="intro">Choose one path using a condition, then test the boundaries.</p>
+<p>Use <code>if</code> for a condition, <code>elif</code> for another possibility and <code>else</code> for the remaining case. Python runs only the first matching branch in one chain. Every condition line ends with a colon; indent its body consistently.</p>
+<p>Compare with <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code> and <code>&gt;=</code>. Combine conditions using <code>and</code>, <code>or</code> and <code>not</code>. <code>=</code> assigns a value; <code>==</code> compares values.</p><div class="example"><div class="code-heading"><h4>Grade boundaries</h4><button type="button" class="copy">Copy code</button></div><pre><code>score = 80
+if score &lt; 0 or score &gt; 100:
+    print(&quot;Invalid score&quot;)
+elif score &gt;= 90:
+    print(&quot;Excellent&quot;)
+elif score &gt;= 80:
+    print(&quot;Good&quot;)
+elif score &gt;= 60:
+    print(&quot;Pass&quot;)
+else:
+    print(&quot;Try again&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Good</pre></details></div><div class="example"><div class="code-heading"><h4>Nested decisions: divisibility</h4><button type="button" class="copy">Copy code</button></div><pre><code>number = 12
+if number % 2 == 0:
+    if number % 3 == 0:
+        print(&quot;Divisible by both 2 and 3&quot;)
+    else:
+        print(&quot;Divisible by 2 only&quot;)
+else:
+    if number % 3 == 0:
+        print(&quot;Divisible by 3 only&quot;)
+    else:
+        print(&quot;Divisible by neither&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Divisible by both 2 and 3</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Ask for a month number. Print Spring for 3–5, Summer for 6–8, Autumn for 9–11 and Winter for 12, 1 or 2. Reject numbers outside 1–12.</p><details><summary>Need a hint?</summary><p>Convert input with <code>int()</code> and check the invalid range first. Assume the learner enters an integer.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Season checker solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>month = int(input(&quot;Month (1–12): &quot;))
+if month &lt; 1 or month &gt; 12:
+    print(&quot;Invalid month&quot;)
+elif month in [3, 4, 5]:
+    print(&quot;Spring&quot;)
+elif month in [6, 7, 8]:
+    print(&quot;Summer&quot;)
+elif month in [9, 10, 11]:
+    print(&quot;Autumn&quot;)
+else:
+    print(&quot;Winter&quot;)</code></pre><p class="input-note">Example input, one value per line: <code>12</code></p><details class="output"><summary>Check the output</summary><pre>Month (1–12): Winter</pre></details></div></details></div></section><section class="lesson" id="loops" aria-labelledby="title-loops"><div class="lesson-number">LESSON 08</div><h2 id="title-loops">for, while, break & continue</h2><p class="intro">Repeat work, update your state and know when the loop stops.</p>
+<p>Use <code>for</code> to visit each item in an iterable. Use <code>while</code> to repeat while a condition remains true. A <code>while</code> loop needs a way for its condition to become false or a reachable <code>break</code>.</p><div class="example"><div class="code-heading"><h4>Accumulate a total</h4><button type="button" class="copy">Copy code</button></div><pre><code>total = 0
+for number in range(1, 6):
+    total += number
+print(total)
+
+counter = 1
+total = 0
+while counter &lt;= 5:
+    total += counter
+    counter += 1
+print(total)</code></pre><details class="output"><summary>Check the output</summary><pre>15
+15</pre></details></div><div class="table-wrap"><table><thead><tr><th>Statement</th><th>Effect</th></tr></thead><tbody><tr><td><code>break</code></td><td>Exit the innermost loop immediately.</td></tr><tr><td><code>continue</code></td><td>Skip the rest of this iteration and begin the next one.</td></tr><tr><td>Loop <code>else</code></td><td>Run when the loop finishes without a break.</td></tr></tbody></table></div><div class="example"><div class="code-heading"><h4>Skip one number, stop at another</h4><button type="button" class="copy">Copy code</button></div><pre><code>for number in range(1, 8):
+    if number == 3:
+        continue
+    if number == 6:
+        break
+    print(number)</code></pre><details class="output"><summary>Check the output</summary><pre>1
+2
+4
+5</pre></details></div><div class="example"><div class="code-heading"><h4>Search using loop else</h4><button type="button" class="copy">Copy code</button></div><pre><code>names = [&quot;Ada&quot;, &quot;Ben&quot;, &quot;Cara&quot;]
+for name in names:
+    if name == &quot;Dan&quot;:
+        print(&quot;Found&quot;)
+        break
+else:
+    print(&quot;Not found&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Not found</pre></details></div><h3>Trace before running</h3><p>Write a row for each iteration: the counter, the condition and the output. This catches off-by-one mistakes. Starting at 0 with <code>while attempts &lt;= 5</code> gives six iterations; use <code>attempts &lt; 5</code> for five.</p><div class="task"><h4>Try it yourself</h4><p>Print the odd numbers from 1 to 9 using a while loop and continue.</p><details><summary>Need a hint?</summary><p>Increase the counter before a possible continue; otherwise the loop can get stuck.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Odd numbers solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>number = 0
+while number &lt; 9:
+    number += 1
+    if number % 2 == 0:
+        continue
+    print(number)</code></pre><details class="output"><summary>Check the output</summary><pre>1
+3
+5
+7
+9</pre></details></div></details></div></section><section class="lesson" id="projects" aria-labelledby="title-projects"><div class="lesson-number">LESSON 09</div><h2 id="title-projects">Apply it: four challenges</h2><p class="intro">Combine collections, decisions and loops to solve a complete problem.</p>
+<p>For each challenge: predict a result, write the program, test a normal case and a boundary case, then explain one improvement. Open the solution only after your own attempt.</p>
+<div class="task"><h4>Try it yourself</h4><p>Class score report: for <code>[98, 99, 97, 67, 89, 95, 92, 89, 88, 90, 93, 99, 91, 100, 45, 88, 87]</code>, calculate the count, total, highest, lowest, range and mean. Decide what to do if there are no scores.</p><details><summary>Need a hint?</summary><p>Use len, sum, max and min. Check that the list is non-empty before dividing or finding an extreme.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Score report solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>scores = [98, 99, 97, 67, 89, 95, 92, 89, 88, 90, 93, 99, 91, 100, 45, 88, 87]
+if scores:
+    print(&quot;Count:&quot;, len(scores))
+    print(&quot;Total:&quot;, sum(scores))
+    print(&quot;Highest:&quot;, max(scores))
+    print(&quot;Lowest:&quot;, min(scores))
+    print(&quot;Range:&quot;, max(scores) - min(scores))
+    print(&quot;Mean: {:.2f}&quot;.format(sum(scores) / len(scores)))
+else:
+    print(&quot;No scores yet&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Count: 17
+Total: 1507
+Highest: 100
+Lowest: 45
+Range: 55
+Mean: 88.65</pre></details></div></details></div><div class="task"><h4>Try it yourself</h4><p>Number guessing game: choose a secret integer from 1 to 20, give higher/lower feedback and count the guesses. Stop when the player is correct.</p><details><summary>Need a hint?</summary><p>Use random.randint(1, 20), a counter, a while loop and break. The worked test fixes the secret to 12 for a repeatable example; replace that line when playing.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Guessing game solution — fixed secret for testing</h4><button type="button" class="copy">Copy code</button></div><pre><code># To play, replace the next line with:
+# import random
+# secret = random.randint(1, 20)
+secret = 12
+attempts = 0
+while True:
+    guess = int(input(&quot;Guess (1–20): &quot;))
+    attempts += 1
+    if guess &lt; secret:
+        print(&quot;Too low&quot;)
+    elif guess &gt; secret:
+        print(&quot;Too high&quot;)
+    else:
+        print(&quot;Correct! Guesses:&quot;, attempts)
+        break</code></pre><p class="input-note">Example input, one value per line: <code>8 → 15 → 12</code></p><details class="output"><summary>Check the output</summary><pre>Guess (1–20): Too low
+Guess (1–20): Too high
+Guess (1–20): Correct! Guesses: 3</pre></details></div></details></div><div class="task"><h4>Try it yourself</h4><p>Multiplication table: print a triangular table from 1 × 1 through 9 × 9, with one new row for each number.</p><details><summary>Need a hint?</summary><p>Use an outer loop for rows and an inner loop from 1 to the current row number.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Multiplication table solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>for row in range(1, 10):
+    for column in range(1, row + 1):
+        print(&quot;{}x{}={}&quot;.format(column, row, column * row), end=&quot;	&quot;)
+    print()</code></pre><details class="output"><summary>Check the output</summary><pre>1x1=1	
+1x2=2	2x2=4	
+1x3=3	2x3=6	3x3=9	
+1x4=4	2x4=8	3x4=12	4x4=16	
+1x5=5	2x5=10	3x5=15	4x5=20	5x5=25	
+1x6=6	2x6=12	3x6=18	4x6=24	5x6=30	6x6=36	
+1x7=7	2x7=14	3x7=21	4x7=28	5x7=35	6x7=42	7x7=49	
+1x8=8	2x8=16	3x8=24	4x8=32	5x8=40	6x8=48	7x8=56	8x8=64	
+1x9=9	2x9=18	3x9=27	4x9=36	5x9=45	6x9=54	7x9=63	8x9=72	9x9=81</pre></details></div></details></div><div class="task"><h4>Try it yourself</h4><p>Unique three-digit numbers: use digits 1, 2, 3 and 4 with no repeated digit. Display all possibilities and count them.</p><details><summary>Need a hint?</summary><p>Use three nested loops. Keep only choices where all three digits differ. You should count 24 numbers.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Three-digit numbers solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>count = 0
+for hundreds in range(1, 5):
+    for tens in range(1, 5):
+        for ones in range(1, 5):
+            if hundreds != tens and tens != ones and hundreds != ones:
+                print(100 * hundreds + 10 * tens + ones)
+                count += 1
+print(&quot;Count:&quot;, count)</code></pre><details class="output"><summary>Check the output</summary><pre>123
+124
+132
+134
+142
+143
+213
+214
+231
+234
+241
+243
+312
+314
+321
+324
+341
+342
+412
+413
+421
+423
+431
+432
+Count: 24</pre></details></div></details></div><details class="extension"><summary>Creative extension: Turtle pattern</summary><p>The source also includes concentric circles and colourful square patterns. In a local Python environment with Turtle graphics, repeat a square, rotate 10°, change its colour, then repeat 36 times. Predict the total turn. This requires a graphics window and is not run inside this page.</p></details></section><section class="lesson" id="review" aria-labelledby="title-review"><div class="lesson-number">LESSON 10</div><h2 id="title-review">Review & readiness</h2><p class="intro">Explain your choices, trace unfamiliar code and test your own programs.</p>
+<h3>Choose a useful data type</h3><div class="table-wrap"><table><thead><tr><th>Type</th><th>Example</th><th>Useful for</th></tr></thead><tbody>
+<tr><td>list</td><td><code>["Ada", "Ben"]</code></td><td>An ordered collection you can change.</td></tr>
+<tr><td>tuple</td><td><code>(23, "Ada")</code></td><td>An ordered record with fixed item references.</td></tr>
+<tr><td>dict</td><td><code>{"Ada": 90}</code></td><td>Finding values by unique keys.</td></tr>
+<tr><td>str</td><td><code>"Python"</code></td><td>Text, indexing and text operations.</td></tr>
+<tr><td>range</td><td><code>range(1, 6)</code></td><td>An immutable integer sequence.</td></tr>
+<tr><td>set</td><td><code>{1, 2, 3}</code></td><td>Unique hashable values; no positional indexing. Mentioned in the source outline.</td></tr>
+</tbody></table></div>
+<h3>Common bugs to recognise</h3><ul><li>Using index 1 for the first item, or including the stop of a slice or range.</li><li>Writing <code>scores = scores.sort()</code> and replacing the list with None.</li><li>Confusing append with extend, or reverse with descending sort.</li><li>Trying to change a tuple position or a string character.</li><li>Using a missing key, or calling index on a value that is absent.</li><li>Forgetting a colon, changing indentation or failing to update a while-loop counter.</li><li>Naming variables <code>list</code>, <code>sum</code>, <code>str</code> or <code>dict</code>, which hides useful built-ins.</li></ul>
+<h3>My learning checklist</h3><p class="muted">These checks are saved only in this browser on this device.</p><div class="checklist">
+<label><input type="checkbox" data-check="0"> I can read, slice and update a list, including a nested list.</label><label><input type="checkbox" data-check="1"> I can add, delete, find, count, sort and copy list items.</label><label><input type="checkbox" data-check="2"> I can predict range values and explain why the stop is excluded.</label><label><input type="checkbox" data-check="3"> I can explain how tuples differ from lists.</label><label><input type="checkbox" data-check="4"> I can create, read, update and delete dictionary entries.</label><label><input type="checkbox" data-check="5"> I can split, join, replace, search and format strings.</label><label><input type="checkbox" data-check="6"> I can write and test single, two-way, multiple and nested decisions.</label><label><input type="checkbox" data-check="7"> I can trace for and while loops, including break and continue.</label><label><input type="checkbox" data-check="8"> I can combine these ideas and explain a test that found a bug.</label></div><p id="progress-text" role="status"></p><button type="button" id="reset-progress">Reset checklist</button>
+<details class="extension"><summary>Exam outline from the supplied notes</summary><p>This is the distribution recorded in the supplied 2023 training material, retained for reference. It is not a claim about the current exam specification.</p><div class="table-wrap"><table><thead><tr><th>Topic</th><th>Single choice</th><th>True / false</th><th>Programming</th><th>Total marks</th></tr></thead><tbody>
+<tr><td>Lists</td><td>18</td><td>2</td><td>5</td><td>25</td></tr><tr><td>Tuples</td><td>6</td><td>4</td><td>0</td><td>10</td></tr><tr><td>Strings</td><td>6</td><td>4</td><td>5</td><td>15</td></tr><tr><td>Dictionaries</td><td>8</td><td>2</td><td>0</td><td>10</td></tr><tr><td>Flow control</td><td>12</td><td>8</td><td>10</td><td>30</td></tr><tr><td>Computational thinking</td><td>0</td><td>0</td><td>10</td><td>10</td></tr><tr><th>Total</th><td>50</td><td>20</td><td>30</td><td>100</td></tr></tbody></table></div><p>Recorded question counts: 25 single-choice, 10 true/false and 2 programming tasks.</p></details></section>
+<section class="source" id="source"><h2>About these learning notes</h2><p>English learning adaptation of <em>电子学会Python编程等级考试二级培训.ipynb</em> in the supplied <a href="https://drive.google.com/file/d/1g5kK9pWCEvAFk5wDRgJC-q_PCPjROGyt/view?usp=sharing">Google Drive archive</a> (Level 2 training files dated 2023). The archive also contains Level 1 resources; this page focuses on Level 2.</p><p>Examples have been translated, shortened and corrected for Python 3. Corrections include tuple immutability, explicit tuple conversion after sorting, a five-attempt loop boundary, the inclusive upper bound of randint, and avoiding names that hide built-ins. The four applied challenges and Turtle extension follow the supplied training themes. Dictionary deletion, a brief set comparison, f-strings and the readiness checklist support the outline.</p><p><a href="../Python%E7%BC%96%E7%A8%8B%EF%BC%88%E4%BA%8C%E7%BA%A7%29.md">Original Chinese exam outline</a></p><details><summary>Source mapping for teachers</summary><p>Cell numbers below are zero-based positions in the supplied Level 2 notebook.</p><ul><li>Lists & indexing: notebook cells 4–58.</li><li>Change, search & sort lists: notebook cells 60–215.</li><li>range() & repetition: notebook cells 97–99; 218–234; 363–367.</li><li>Tuples & immutability: notebook cells 235–272.</li><li>Dictionaries & key–value pairs: notebook cells 273–306.</li><li>Strings & formatting: notebook cells 307–332.</li><li>Decisions with if: notebook cells 204–211; 333–351.</li><li>for, while, break & continue: notebook cells 352–380.</li><li>Apply it: four challenges: notebook cells 179–183; 216–217; 381–407.</li><li>Review & readiness: notebook cells 0; 398–407.</li></ul></details></section>
+</main></div><footer><span>Ryan’s Lab · Python Level 2</span><a href="#top" id="back-top">Back to top ↑</a></footer></div>
+<script>
+const status = document.querySelector('#copy-status');
+document.querySelectorAll('.copy').forEach(button => button.addEventListener('click', async () => {
+  const code = button.closest('.example').querySelector('pre code').textContent;
+  try {
+    if (!navigator.clipboard || !window.isSecureContext) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(code);
+    status.textContent = 'Code copied. Paste it into your Python editor.';
+    button.textContent = 'Copied';
+    setTimeout(() => button.textContent = 'Copy code', 1800);
+  } catch {
+    const range = document.createRange();
+    range.selectNodeContents(button.closest('.example').querySelector('pre code'));
+    const selection = window.getSelection();
+    selection.removeAllRanges(); selection.addRange(range);
+    status.textContent = 'Code selected. Use your device’s Copy command.';
+    button.textContent = 'Code selected';
+  }
+}));
+const storageKey = 'ryan-python-level-2-checklist-v1';
+const checks = [...document.querySelectorAll('[data-check]')];
+let persistent = true;
+function updateProgress() {
+  document.querySelector('#progress-text').textContent = checks.filter(c => c.checked).length + ' of ' + checks.length + ' skills checked.' + (persistent ? '' : ' Storage is unavailable; changes last for this visit only.');
+}
+try {
+  const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  if (Array.isArray(saved)) checks.forEach(c => c.checked = saved.includes(c.dataset.check));
+} catch { persistent = false; }
+function saveProgress() {
+  try { localStorage.setItem(storageKey, JSON.stringify(checks.filter(c => c.checked).map(c => c.dataset.check))); }
+  catch { persistent = false; }
+  updateProgress();
+}
+checks.forEach(c => c.addEventListener('change', saveProgress));
+document.querySelector('#reset-progress').addEventListener('click', () => { checks.forEach(c => c.checked = false); saveProgress(); });
+updateProgress();
+document.querySelector('#print-page').addEventListener('click', () => {
+  const states = [...document.querySelectorAll('details')].map(d => [d, d.open]);
+  states.forEach(([d]) => d.open = true);
+  window.print();
+  states.forEach(([d, open]) => d.open = open);
+});
+document.querySelector('#back-top').addEventListener('click', e => { e.preventDefault(); window.scrollTo({top:0, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}); });
+</script></body></html>
