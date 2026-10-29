@@ -7,8 +7,7 @@
 | 類型 | 作品 | 連結 |
 | --- | --- | --- |
 | STEM 教材 | Sim Lab Baseball Lab | [開啟](simlab-baseball-lab/) |
-| 抽籤工具 | CSK 抽籤器（新版） | [開啟](CSK_drawer2/) |
-| 抽籤工具 | CSK 抽籤器（舊版） | [開啟](CSK_drawer/) |
+| 抽籤工具 | Classroom Picker | [開啟](classroom-picker/) |
 | 小遊戲 | 點擊目標 | [開啟](clicking_game/) |
 | 抽選工具 | Gacha Name Picking | [開啟](GachaName%20PickingV2/gacha.html) |
 | 互動實驗 | IR／序列埠實驗 | [開啟](IR/) |
@@ -22,8 +21,7 @@
 .
 ├── index.html                         # 作品集首頁與導覽
 ├── simlab-baseball-lab/               # 英文 Tinkercad Sim Lab 棒球教學
-├── CSK_drawer2/                       # CSK 抽籤器（目前版本）
-├── CSK_drawer/                        # CSK 抽籤器（舊版）
+├── classroom-picker/                 # 隨機抽選與平均分組工具
 ├── clicking_game/                     # 點擊目標小遊戲
 ├── GachaName PickingV2/               # 名稱隨機抽選工具與音效
 ├── IR/                                # p5.js／序列埠互動實驗

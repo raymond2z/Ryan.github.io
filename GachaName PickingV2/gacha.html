@@ -26,7 +26,7 @@
             
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; margin: 0; flex-direction: column; padding: 20px;
-            overflow: hidden;
+            overflow-x: hidden;
             color: var(--machine-dark);
         }
 
@@ -299,7 +299,7 @@
         <h1 style="transform: none; border: none; background: none; font-size: 3rem;">Student Picker</h1>
         <p>Gacha Style & Group Generator</p>
         <button class="start-btn">Click to Start</button>
-        <p style="margin-top: 20px; opacity: 0.8; font-size: 14px;">(Requires coins.wav, shake.mp3...)</p>
+        <p style="margin-top: 20px; opacity: 0.8; font-size: 14px;">Starts with anonymous student labels.</p>
     </div>
 
     <h1>Student Picker</h1>
@@ -362,8 +362,8 @@
                 <h2 style="margin:0;">📝 Class Setup</h2>
             </div>
             <div class="modal-body">
-                <p style="font-size: 0.9em; text-align: left; margin-bottom: 5px;">Paste list (Format: "Number Name"):</p>
-                <textarea id="importText" class="input-area" placeholder="1 Harry Potter&#10;2 Hermione Granger"></textarea>
+                <p style="font-size: 0.9em; text-align: left; margin-bottom: 5px;">Paste list (Format: "Number Label"). Custom lists are not saved:</p>
+                <textarea id="importText" class="input-area" placeholder="1 Student 01&#10;2 Student 02"></textarea>
                 <div style="display:flex; justify-content:center; gap:10px;">
                     <button class="action-btn btn-green" onclick="saveStudents()">Save List</button>
                     <button class="action-btn btn-yellow" onclick="closeModal('importModal')">Cancel</button>
@@ -408,13 +408,11 @@
             '#6c5ce7', '#00cec9', '#fab1a0', '#ffeaa7', '#d63031'
         ];
 
-        let allStudents = [
-            { num: '1', name: 'Alice', color: '#FF6B81' },
-            { num: '2', name: 'Bob', color: '#70A1FF' },
-            { num: '3', name: 'Charlie', color: '#FFA502' },
-            { num: '4', name: 'Diana', color: '#7BED9F' },
-            { num: '5', name: 'Ethan', color: '#5352ED' }
-        ];
+        const demoStudents = () => Array.from({length: 20}, (_, i) => ({
+            num: String(i + 1), name: `Student ${String(i + 1).padStart(2, '0')}`,
+            color: colors[i % colors.length]
+        }));
+        let allStudents = demoStudents();
 
         // State for picking logic
         let remainingStudents = [];
@@ -433,10 +431,9 @@
         }
 
         function loadStudents() {
-            const saved = localStorage.getItem('classData');
-            if (saved) {
-                allStudents = JSON.parse(saved);
-            }
+            // Start with anonymous labels; do not reload names saved by older versions.
+            allStudents = demoStudents();
+            try { localStorage.removeItem('classData'); } catch {}
             // Reset state on load
             remainingStudents = [...allStudents];
             pickedStudents = [];
@@ -491,6 +488,9 @@
             }
         }
 
+        function escapeText(value) {
+            const el = document.createElement('span'); el.textContent = String(value); return el.innerHTML;
+        }
         function renderLists() {
             // Update Counts
             document.getElementById('remainingCount').innerText = remainingStudents.length;
@@ -504,8 +504,8 @@
                 let html = '';
                 remainingStudents.forEach(s => {
                     html += `<div class="list-item">
-                            <div class="list-num" style="background:${s.color}">${s.num}</div>
-                            <div style="font-weight:bold;">${s.name}</div>
+                            <div class="list-num" style="background:${s.color}">${escapeText(s.num)}</div>
+                            <div style="font-weight:bold;">${escapeText(s.name)}</div>
                         </div>`;
                 });
                 listRemain.innerHTML = html;
@@ -520,8 +520,8 @@
                 // Show latest picked on top
                 [...pickedStudents].reverse().forEach(s => {
                     html += `<div class="list-item" style="opacity:0.7;">
-                            <div class="list-num" style="background:#ccc;">${s.num}</div>
-                            <div style="font-weight:bold; color:#666; text-decoration:line-through;">${s.name}</div>
+                            <div class="list-num" style="background:#ccc;">${escapeText(s.num)}</div>
+                            <div style="font-weight:bold; color:#666; text-decoration:line-through;">${escapeText(s.name)}</div>
                         </div>`;
                 });
                 listPicked.innerHTML = html;
@@ -530,6 +530,7 @@
 
         // --- 5. Import & Group Logic ---
         function openImportModal() {
+            if (isSpinning) return;
             const text = allStudents.map(s => `${s.num} ${s.name}`).join('\n');
             document.getElementById('importText').value = text;
             document.getElementById('importModal').style.display = 'flex';
@@ -563,7 +564,7 @@
                 allStudents = newStudents;
                 remainingStudents = [...allStudents]; // Reset picking on new import
                 pickedStudents = [];
-                localStorage.setItem('classData', JSON.stringify(allStudents));
+                // Custom lists stay in this tab only.
                 updateUI();
                 closeModal('importModal');
             } else {
@@ -572,6 +573,7 @@
         }
 
         function resetPicking() {
+            if (isSpinning) return;
             if(confirm("Put all balls back in the machine?")) {
                 remainingStudents = [...allStudents];
                 pickedStudents = [];
@@ -583,15 +585,17 @@
 
         function generateGroups() {
             if(allStudents.length < 2) { alert("Not enough students!"); return; }
-            const size = parseInt(document.getElementById('groupSize').value);
-            const shuffled = [...allStudents].sort(() => 0.5 - Math.random());
+            const size = Number(document.getElementById('groupSize').value);
+            if (!Number.isInteger(size) || size < 1 || size > allStudents.length) { alert('Enter a valid group size.'); return; }
+            const shuffled = [...allStudents];
+            for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
             const groups = [];
             while(shuffled.length > 0) groups.push(shuffled.splice(0, size));
 
             let html = '';
             groups.forEach((group, index) => {
                 html += `<div class="group-card"><div class="group-title">Group ${index + 1}</div><div class="group-list">`;
-                group.forEach(s => { html += `<div style="margin-bottom:2px;"><span style="color:${s.color}">●</span> ${s.name}</div>`; });
+                group.forEach(s => { html += `<div style="margin-bottom:2px;"><span style="color:${s.color}">●</span> ${escapeText(s.name)}</div>`; });
                 html += `</div></div>`;
             });
             document.getElementById('groupResults').innerHTML = html;
