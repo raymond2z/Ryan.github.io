@@ -10,7 +10,7 @@ class DerbyRenderer{
  }
  setView(view){this.view=view;this.zoom=1;if(view==='side'){this.yaw=0;this.elevation=.05;}else if(view==='top'){this.yaw=0;this.elevation=1.5;}else{this.yaw=-.38;this.elevation=.34;}this.redraw();}
  redraw(){if(this.last)this.draw(...this.last);}
- draw(run,sample,ghost){this.last=[run,sample,ghost];const ctx=this.ctx,canvas=this.canvas,w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(window.devicePixelRatio||1,2);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ draw(run,sample,ghost){this.last=[run,sample,ghost];const ctx=this.ctx,canvas=this.canvas,w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(window.devicePixelRatio||1,2);if(w<=0||h<=0)return;if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
  const road=run.track.road,low=Math.min(...road.map(p=>p.z)),high=Math.max(...road.map(p=>p.z)),floor=low-.09,center={x:(road[0].x+road.at(-1).x)/2,y:0,z:(high+low)/2};
  const cy=Math.cos(this.yaw),sy=Math.sin(this.yaw),ce=Math.cos(this.elevation),se=Math.sin(this.elevation),distance=4;
  const camera=p=>{const x=p[0]-center.x,y=p[1],z=p[2]-center.z,across=-sy*x+cy*y,depth=across*ce+z*se,k=1/(1-depth/distance);return {u:(cy*x+sy*y)*k,v:(z*ce-across*se)*k,depth};};
