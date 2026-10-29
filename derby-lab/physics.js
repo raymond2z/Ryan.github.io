@@ -44,14 +44,16 @@ function simulate(data,raw,options={}){
  const p=sanitize(raw),track=makeTrack(data,p),m=p.mass/1000,me=m+p.inertia*p.wheels/1000,dt=options.dt||.001;
  let s=0,v=p.v0,t=0,q=lookup(track.path,0),x=q.x,z=q.z,vx=v*Math.cos(q.theta),vz=v*Math.sin(q.theta),ground=true;
  let peak=v,airTime=0,maxAir=0,airStart=0,flightCount=0,status='timeout',normal=1,angle=q.theta,seamIndex=0;
- const samples=[],events=[];
+ const samples=[],events=[],flights=[];let activeFlight=null;
+ const beginFlight=(at,cause)=>{activeFlight={start:at,s,x,z,speed:Math.hypot(vx,vz),maxHeight:0,cause};flightCount++;events.push({type:'takeoff',t:at,x,z,s,cause});};
+ const endFlight=(at,impact=null)=>{if(activeFlight){flights.push({...activeFlight,end:at,duration:Math.max(0,at-activeFlight.start),impact,landed:impact!==null});activeFlight=null;}};
  const capture=()=>samples.push({t,x,z,s,v:ground?v:Math.hypot(vx,vz),angle,ground,normal});
  capture();
  for(let step=0;step<Math.ceil(20/dt);step++){
    const oldX=x,oldZ=z,oldS=s;
    if(ground){
      q=lookup(track.path,s);normal=Math.cos(q.theta)+v*v*q.k/G;
-     if(normal<0&&v>.05){ground=false;vx=v*Math.cos(q.theta);vz=v*Math.sin(q.theta);airStart=t;flightCount++;events.push({type:'takeoff',t,x,z,s});}
+     if(normal<0&&v>.05){ground=false;vx=v*Math.cos(q.theta);vz=v*Math.sin(q.theta);airStart=t;beginFlight(t,'takeoff');}
    }
    if(ground){
      const resistance=p.crr*m*G*Math.max(0,normal)+p.axle*.001/(p.radius/1000)+.5*RHO*p.cda*.0001*v*v;
@@ -67,14 +69,15 @@ function simulate(data,raw,options={}){
      x+=vx*dt+.5*ax*dt*dt;z+=vz*dt+.5*az*dt*dt;vx+=ax*dt;vz+=az*dt;v=Math.hypot(vx,vz);airTime+=dt;normal=0;
      // Orientation is illustrative; pitching inertia is outside this model.
      angle+=clamp(Math.atan2(vz,vx)-angle,-dt*2,dt*2);
-     q=lookup(track.path,x,'x');s=q.s;maxAir=Math.max(maxAir,z-q.z);
+     q=lookup(track.path,x,'x');s=q.s;maxAir=Math.max(maxAir,z-q.z);if(activeFlight)activeFlight.maxHeight=Math.max(activeFlight.maxHeight,z-q.z);
      if(x<=track.path.at(-1).x&&z<=q.z&&vx>0){
        const ct=Math.cos(q.theta),st=Math.sin(q.theta),vn=-vx*st+vz*ct;
        if(vn<0){
          const tangential=Math.max(0,(vx*ct+vz*st)*p.landing),bounce=-vn*p.restitution;
          events.push({type:'landing',t:t+dt,x,z:q.z,s,impact:-vn,airDuration:t+dt-airStart});
+         endFlight(t+dt,-vn);
          x=q.x;z=q.z;v=tangential;angle=q.theta;
-         if(bounce>.08){vx=tangential*ct-bounce*st;vz=tangential*st+bounce*ct;z+=.00005;airStart=t+dt;}
+         if(bounce>.08){vx=tangential*ct-bounce*st;vz=tangential*st+bounce*ct;z+=.00005;airStart=t+dt;beginFlight(t+dt,'rebound');}
          else{ground=true;normal=Math.max(0,Math.cos(angle)+v*v*q.k/G);vx=v*ct;vz=v*st;}
          while(seamIndex<track.cuts.length&&track.cuts[seamIndex]<=s)seamIndex++;
        }
@@ -90,8 +93,8 @@ function simulate(data,raw,options={}){
      s=track.length;status=ground?'finished':'airborne-finish';break;
    }
  }
- capture();
- return {p,track,samples,events,status,time:t,peak,airTime,maxAir,flightCount,finished:status==='finished'||status==='airborne-finish',distance:clamp(s,0,track.length)};
+ endFlight(t);capture();
+ return {p,track,samples,events,flights,status,time:t,peak,airTime,maxAir,flightCount,finished:status==='finished'||status==='airborne-finish',distance:clamp(s,0,track.length)};
 }
 function sampleAt(run,t){return lookup(run.samples,clamp(t,0,run.time),'t');}
 const api={defaults,specs,sanitize,makeTrack,simulate,sampleAt,lookup};global.DerbyPhysics=api;if(typeof module!=='undefined')module.exports=api;
