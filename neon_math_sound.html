@@ -1,754 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Math Sound — Ryan’s Lab</title>
-    <style>
-        :root {
-            --bg-color: #050505;
-            --panel-bg: rgba(20, 20, 20, 0.95);
-            --neon-blue: #00ffff;
-            --neon-pink: #ff33cc;
-            --neon-yellow: #ffff00;
-            --neon-red: #ff4444;
-            --grid-line: #1f1f1f;
-            --axis-line: #888;
-        }
-
-        * { box-sizing: border-box; }
-
-        body {
-            background-color: var(--bg-color);
-            color: #e0e0e0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* Header */
-        header {
-            width: 100%;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--panel-bg);
-            border-bottom: 1px solid #333;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-
-        h1 {
-            margin: 0;
-            font-weight: 300;
-            letter-spacing: 2px;
-            font-size: 1.2rem;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-        }
-
-        .audio-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        input[type=range] {
-            width: 100px;
-            accent-color: var(--neon-blue);
-            cursor: pointer;
-        }
-
-        /* Canvas */
-        .canvas-wrapper {
-            position: relative;
-            width: 95%;
-            max-width: 1000px;
-            height: 50vh;
-            min-height: 350px;
-            margin: 20px 0;
-            border: 1px solid #444;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            background: #000;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        .formula-display {
-            position: absolute;
-            bottom: 15px;
-            right: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #aaa;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px 12px;
-            border-radius: 4px;
-            pointer-events: none;
-        }
-
-        /* Controls */
-        .controls-panel {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 10px;
-            width: 95%;
-            max-width: 1000px;
-            padding-bottom: 40px;
-        }
-
-        button {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #555;
-            color: #aaa;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        button:hover { background: rgba(255, 255, 255, 0.15); color: #fff; border-color: #999; }
-        
-        .btn-cartesian.active { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) inset; }
-        .btn-polar.active { border-color: var(--neon-yellow); color: var(--neon-yellow); box-shadow: 0 0 15px rgba(255, 255, 0, 0.2) inset; }
-        .btn-special.active { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(255, 51, 204, 0.2) inset; }
-        
-        .btn-stop { grid-column: 1 / -1; border-color: var(--neon-red); color: var(--neon-red); margin-top: 15px; }
-        .btn-stop:hover { background: var(--neon-red); color: white; }
-
-        /* Start Overlay */
-        #start-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            backdrop-filter: blur(5px);
-            transition: opacity 0.5s ease;
-        }
-        
-        .start-btn {
-            padding: 20px 60px;
-            font-size: 1.5rem;
-            border: 2px solid var(--neon-blue);
-            color: var(--neon-blue);
-            background: transparent;
-            box-shadow: 0 0 30px var(--neon-blue);
-            letter-spacing: 2px;
-            cursor: pointer;
-        }
-        .start-btn:hover { background: var(--neon-blue); color: #000; }
-        
-        .hidden { opacity: 0; pointer-events: none; }
-        .transport { width:95%; max-width:1000px; display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
-        .transport a { color:#b9dada; font-size:14px; margin-right:auto; }
-        select { background:#181818; color:#eee; padding:8px; border:1px solid #777; border-radius:4px; }
-        progress { width:100%; height:8px; accent-color:var(--neon-blue); }
-        .guide { width:95%; max-width:1000px; color:#aaa; font-size:13px; line-height:1.6; }
-        #playbackStatus { font-size:13px; color:#bbb; }
-        button:disabled { opacity:.45; cursor:default; }
-        button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline:2px solid #00ffff; outline-offset:4px; }
-        #start-overlay[hidden] { display:none; }
-        .formula-display { max-width:90%; font-size:clamp(12px,2.5vw,19px); }
-        @media(max-width:600px) { header { position:static; flex-wrap:wrap; gap:14px; } h1 { font-size:1rem; } .audio-controls { gap:10px; } .canvas-wrapper { min-height:280px; height:42vh; } .start-btn { padding:16px 24px; font-size:1.1rem; } }
-        @media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080d16">
+<meta name="description" content="See a mathematical curve. Hear its shape. An interactive maths and sound playground from Ryan’s Lab.">
+<title>Neon Math Sound — Ryan’s Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#080d16;--panel:#101925;--line:#263445;--ink:#edf5fc;--muted:#a2b3c6;--cyan:#6bf6dc;--yellow:#f5d879;--pink:#f798c6;--accent:var(--cyan)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}button,input,select{font:inherit}button,a,input,select{touch-action:manipulation}button{cursor:pointer}button,select{color:var(--ink);border:1px solid var(--line);background:#172333;border-radius:8px;min-height:44px;padding:9px 14px}button:hover{border-color:var(--accent);background:#203343}button:disabled{opacity:.4;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:4px}a{color:var(--muted);text-decoration:none}a:hover{color:var(--cyan)}input[type=range]{accent-color:var(--accent);min-height:30px;cursor:pointer;max-width:100%}h1,h2,p{margin:0}h2{font-size:16px;letter-spacing:.01em}small,.muted{color:var(--muted)}.shell{width:min(1320px,94%);margin:auto}header{border-bottom:1px solid var(--line)}.top{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px 0}.brand{display:flex;align-items:center;gap:12px}.mark{display:grid;place-items:center;width:40px;height:40px;border:1px solid #49746e;border-radius:12px;color:var(--cyan);font-size:26px}.brand strong{font-size:15px;letter-spacing:.07em}.brand small{display:block;font-size:11px;letter-spacing:.12em}.top a{font-size:13px}.intro{display:flex;align-items:end;justify-content:space-between;gap:20px;padding:30px 0 23px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px}h1{font-size:clamp(26px,3.4vw,42px);font-weight:600;letter-spacing:-.04em;line-height:1.2}.intro p{color:var(--muted);margin-top:8px;font-size:14px}.badge{color:var(--cyan);font-size:12px;border:1px solid #31534f;border-radius:20px;padding:6px 12px;white-space:nowrap}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}.graph-card,.panel,.library,.explore{border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}.graph-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;border-bottom:1px solid var(--line)}.graph-heading h2{font-size:15px}.graph-heading small{font-size:11px;color:var(--accent)}.canvas-wrapper{position:relative;height:clamp(300px,44vh,500px);background:#080f19}canvas{display:block;width:100%;height:100%}.formula{font:clamp(12px,1.5vw,16px)/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent);padding:12px 20px;border-top:1px solid var(--line);overflow-wrap:anywhere;min-height:49px}.readouts{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line)}.readout{padding:10px 20px;border-right:1px solid var(--line)}.readout:last-child{border:0}.readout span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.12em;display:block}.readout output{font:17px/1.7 ui-monospace,monospace}.transport{padding:15px 20px;background:#0e1723;border-top:1px solid var(--line)}.transport-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.primary{background:var(--cyan);color:#08251f;border-color:var(--cyan);font-weight:700;min-width:105px}.primary:hover{color:var(--ink)}.transport-row select{padding:8px;min-width:76px}.speed-label{font-size:12px;color:var(--muted);margin-left:auto}.check{font-size:12px;display:flex;align-items:center;gap:5px;color:var(--muted);cursor:pointer;min-height:35px}.timeline{display:flex;gap:10px;align-items:center;margin-top:8px}.timeline input{width:100%;margin:0}.timeline output{min-width:39px;text-align:right;font:11px ui-monospace,monospace;color:var(--muted)}#playbackStatus{display:block;color:var(--muted);font-size:12px;margin-top:7px;min-height:18px}.panel{padding:20px}.panel h2{margin-bottom:16px}.param{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:16px}.param label{display:flex;justify-content:space-between;gap:12px;font-size:13px}.param output{font:13px ui-monospace,monospace;color:var(--accent)}.param input{width:100%;margin:8px 0 0}.param p{font-size:11px;color:var(--muted);line-height:1.5}.param:has(input:disabled){opacity:.45}.sound-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.sound-title h2{margin:0}.sound-title button{font-size:12px;padding:7px 10px}.volume-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}.volume-row input{width:100%}.volume-row output{min-width:31px}.sound-note{font-size:11px;color:var(--muted);margin:10px 0 14px}.pitch-key{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted)}.pitch-bar{height:5px;flex:1;border-radius:4px;background:linear-gradient(90deg,#5288d6,var(--cyan),var(--yellow))}.panel .reset{width:100%;margin-top:18px;font-size:12px;background:transparent}.library{margin-top:18px;padding:20px}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.section-top small{font-size:12px}.curve-group+.curve-group{margin-top:18px}.group-title{font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}.curve-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.curve-btn{padding:12px 8px;min-height:82px;display:flex;flex-direction:column;align-items:start;gap:4px;text-align:left;background:#0c1420;font-size:12px}.curve-btn svg{width:45px;height:22px;overflow:visible}.curve-btn[aria-pressed=true]{border-color:var(--accent);background:#182c31;color:var(--accent);box-shadow:inset 0 -2px var(--accent)}.curve-btn[data-group=polar]{color:var(--yellow)}.curve-btn[data-group=special]{color:var(--pink)}.curve-grid.art{grid-template-columns:repeat(6,minmax(0,1fr))}.explore{margin:18px 0 30px;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:30px}.explore p{font-size:13px;color:var(--muted);margin-top:7px}.explore strong{color:var(--ink);font-weight:500}.step{color:var(--accent);font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}.explore details{margin-top:14px;font-size:12px;color:var(--muted)}.explore summary{cursor:pointer;color:var(--ink)}footer{padding:0 0 25px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:15px}.keyboard{font-size:11px;color:var(--muted)}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(min-width:1100px){.panel{min-height:590px}}@media(max-width:1000px){.workspace{grid-template-columns:minmax(0,1fr) 260px}.panel{padding:16px}.curve-grid,.curve-grid.art{grid-template-columns:repeat(3,minmax(0,1fr))}.intro{padding-top:22px}.canvas-wrapper{height:360px}.readout{padding:10px 12px}.transport{padding:12px}}
+@media(max-width:700px){.shell{width:94%}.top{padding:14px 0}.brand strong{font-size:12px}.top a{font-size:12px}.badge{display:none}.intro{padding:22px 0 18px}.intro p{font-size:13px}.workspace{grid-template-columns:1fr}.canvas-wrapper{height:320px}.panel{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel>h2{grid-column:1/-1;margin:0}.param{margin:0;padding-bottom:12px}.audio-section{grid-column:1/-1}.sound-title{margin-top:0}.panel .reset{grid-column:1/-1;margin:0}.library{padding:16px}.curve-btn{font-size:11px;min-height:78px}.explore{grid-template-columns:1fr;gap:22px;padding:18px}.section-top{align-items:start}.section-top small{font-size:10px}.keyboard{display:none}.speed-label{margin-left:auto}.transport-row{gap:6px}.transport-row button{padding:8px 10px}.check{margin-left:auto}.formula{padding:10px 14px}.graph-heading{padding:13px 14px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
 </head>
 <body>
-
-    <div id="start-overlay">
-        <button class="start-btn" id="initBtn">START WITH SOUND</button>
-        <button id="silentBtn">Explore without sound</button><p style="margin-top: 20px; color: #aaa; text-align:center; padding:0 20px;">Watch a curve unfold. Hear its vertical position as pitch.</p>
-    </div>
-
-    <header>
-        <h1>NEON MATH SOUND</h1>
-        <div class="audio-controls">
-            <label for="volumeSlider" style="font-size:0.8rem; color:#aaa;">VOL</label>
-            <input type="range" id="volumeSlider" min="0" max="100" value="30">
-            <button id="muteBtn" style="padding: 6px 12px; width: 70px;">MUTE</button>
-        </div>
-    </header>
-
-    <div class="canvas-wrapper" id="canvasContainer">
-        <canvas id="mainCanvas" role="img" aria-label="Animated mathematical curve. Its formula appears below the graph."></canvas>
-        <div class="formula-display" id="formulaText">READY</div>
-    </div>
-
-    <section class="transport" aria-label="Playback controls">
-        <a href="./">← Ryan’s Lab</a>
-        <button id="pauseBtn" disabled>Pause</button>
-        <button id="replayBtn" disabled>Replay</button>
-        <label for="speedSelect">Speed</label>
-        <select id="speedSelect"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
-        <span id="playbackStatus" role="status">Choose a curve to begin.</span>
-        <progress id="progress" max="1" value="0" aria-label="Drawing progress"></progress>
-    </section>
-    <p class="guide">Higher on the graph means a higher pitch (100–1,600 Hz). Volume controls loudness, not pitch. Curves are illustrations; reciprocal and tangent values are clipped near their asymptotes.</p>
-    <main class="controls-panel" aria-label="Choose a mathematical curve">
-        <button class="btn-cartesian" data-type="linear">Linear</button>
-        <button class="btn-cartesian" data-type="parabola">Parabola</button>
-        <button class="btn-cartesian" data-type="wavyLine">Wavy Line</button>
-        <button class="btn-cartesian" data-type="sine">Sine Wave</button>
-        <button class="btn-cartesian" data-type="bars">Reciprocal sine</button>
-        <button class="btn-cartesian" data-type="tan">Tan(x)</button>
-        
-        <button class="btn-special" data-type="heart">ECG Heart</button>
-        <button class="btn-special" data-type="filledHeart">Complex Heart</button>
-        
-        <button class="btn-polar" data-type="spiral">Polar Spiral</button>
-        <button class="btn-polar" data-type="polarFlower">Polar Flower</button>
-        <button class="btn-polar" data-type="chaosFlower">Compound Flower</button>
-        <button class="btn-polar" data-type="polarHeart">Polar Heart</button>
-
-        <button class="btn-stop" id="stopBtn">STOP & RESET</button>
-    </main>
-
-    <script type="module">
-        // --- CONFIGURATION ---
-        const CONFIG = {
-            duration: 10000,
-            colors: {
-                cyan: '#00ffff',
-                pink: '#ff33cc',
-                yellow: '#ffff00',
-                red: '#ff4444',
-                white: '#ffffff',
-                grid: '#1f1f1f',
-                axis: '#888888'
-            }
-        };
-
-        // --- AUDIO MODULE ---
-        class AudioEngine {
-            constructor() {
-                this.ctx = null;
-                this.masterGain = null;
-                this.osc = null;
-                this.oscGain = null;
-                this.isMuted = false;
-                this.volume = 0.3;
-            }
-
-            async init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    this.masterGain = this.ctx.createGain();
-                    this.masterGain.connect(this.ctx.destination);
-                    this.setVolume(this.volume);
-                }
-                if (this.ctx.state === 'suspended') await this.ctx.resume();
-            }
-
-            setVolume(val) {
-                this.volume = val;
-                if (this.masterGain && !this.isMuted) {
-                    this.masterGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.1);
-                }
-            }
-
-            toggleMute() {
-                this.isMuted = !this.isMuted;
-                if (this.masterGain) {
-                    const target = this.isMuted ? 0 : this.volume;
-                    this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.1);
-                }
-                return this.isMuted;
-            }
-
-            playTone(type) {
-                this.stopTone();
-                if (!this.ctx) return;
-                this.oscGain = this.ctx.createGain();
-                this.oscGain.connect(this.masterGain);
-                this.osc = this.ctx.createOscillator();
-                
-                if (['bars', 'chaosFlower', 'filledHeart'].includes(type)) {
-                    this.osc.type = type === 'filledHeart' ? 'sine' : 'sawtooth';
-                } else if (['spiral', 'polarFlower', 'polarHeart'].includes(type)) {
-                    this.osc.type = 'triangle';
-                } else {
-                    this.osc.type = 'sine';
-                }
-
-                this.osc.connect(this.oscGain);
-                this.osc.start();
-                this.oscGain.gain.setValueAtTime(0, this.ctx.currentTime);
-                this.oscGain.gain.linearRampToValueAtTime(1, this.ctx.currentTime + 0.1);
-            }
-
-            updateFrequency(freq) {
-                if (this.osc && isFinite(freq) && freq > 0) {
-                    this.osc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.01);
-                }
-            }
-
-            stopTone() {
-                if (this.osc && this.oscGain) {
-                    const oldOsc = this.osc;
-                    const oldGain = this.oscGain;
-                    oldGain.gain.cancelScheduledValues(this.ctx.currentTime);
-                    oldGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
-                    setTimeout(() => {
-                        try { oldOsc.stop(); oldOsc.disconnect(); oldGain.disconnect(); } catch(e){}
-                    }, 100);
-                    this.osc = null;
-                    this.oscGain = null;
-                }
-            }
-        }
-
-        // --- MATH MODULE ---
-        const MathLogic = {
-            getPoint(type, progress, width, height) {
-                const polarScale = Math.min(width, height) * 0.42 / 302;
-                const cx = width / 2;
-                const cy = height / 2;
-                let x = 0, y = 0, mathX = 0, mathY = 0;
-                const isPolar = ['spiral', 'polarFlower', 'chaosFlower', 'polarHeart'].includes(type);
-
-                // Check for invalid progress
-                if (!Number.isFinite(progress)) return { x: cx, y: cy };
-
-                if (!isPolar) {
-                    x = progress * width;
-                    mathX = (x - cx) / 40; 
-                    
-                    try {
-                        switch(type) {
-                            case 'linear': mathY = mathX; break;
-                            case 'parabola': mathY = 0.1 * mathX * mathX - 4; break;
-                            case 'wavyLine': mathY = mathX + 2 * Math.sin(3 * mathX); break;
-                            case 'sine': mathY = 4 * Math.sin(mathX); break;
-                            case 'tan': mathY = Math.max(-10, Math.min(10, Math.tan(mathX * 0.5))); break;
-                            case 'bars': 
-                                let s = Math.sin(2 * mathX);
-                                mathY = (Math.abs(s) < 0.1) ? (s > 0 ? 10 : -10) : 1/s;
-                                mathY = Math.max(-8, Math.min(8, mathY)); break;
-                            case 'heart':
-                                let beat = (mathX + 500) % (Math.PI * 2);
-                                mathY = (beat > 0 && beat < 1) ? Math.sin(beat*10) * Math.exp(-beat*3) * 5 : 0;
-                                break;
-                            case 'filledHeart':
-                                let fhX = mathX / 2.5;
-                                let limit = 1.8;
-                                if (Math.abs(fhX) < limit) {
-                                    let base = Math.pow(Math.abs(fhX), 2/3);
-                                    let rootTerm = 3.3 - fhX*fhX;
-                                    let shape = rootTerm > 0 ? 0.9 * Math.sqrt(rootTerm) : 0;
-                                    let osc = Math.sin(200 * fhX); 
-                                    mathY = (base + shape * osc) * 2.5;
-                                } else {
-                                    mathY = Math.pow(Math.abs(fhX), 2/3) * 2.5;
-                                }
-                                break;
-                        }
-                    } catch(e) { mathY = 0; }
-                    
-                    if (!Number.isFinite(mathY)) mathY = 0;
-                    y = cy - (mathY * 30);
-                } 
-                else {
-                    const maxTheta = Math.PI * 8;
-                    const theta = progress * maxTheta;
-                    let r = 0;
-                    
-                    try {
-                        switch(type) {
-                            case 'spiral': r = theta * 12; break;
-                            case 'polarFlower': r = 150 * Math.sin(4 * theta); break;
-                            case 'chaosFlower': r = 80 * (Math.cos(3 * theta) + Math.sin(20 * theta)); break;
-                            case 'polarHeart':
-                                let ht = progress * Math.PI * 2;
-                                r = 100 * (1 - Math.sin(ht)) * polarScale;
-                                return { 
-                                    x: cx + r * Math.cos(ht + Math.PI/2), 
-                                    y: cy - r * Math.sin(ht + Math.PI/2) 
-                                };
-                        }
-                    } catch(e) { r = 0; }
-
-                    if (!Number.isFinite(r)) r = 0;
-                    r *= polarScale;
-                    x = cx + r * Math.cos(theta);
-                    y = cy - r * Math.sin(theta);
-                }
-                return { x, y };
-            },
-
-            getConfig(type) {
-                const map = {
-                    linear: { label: 'f(x) = x', color: CONFIG.colors.cyan },
-                    parabola: { label: 'f(x) = 0.1x² - 4', color: CONFIG.colors.cyan },
-                    wavyLine: { label: 'f(x) = x + 2sin(3x)', color: CONFIG.colors.cyan },
-                    sine: { label: 'f(x) = 4sin(x)', color: CONFIG.colors.cyan },
-                    bars: { label: 'f(x) = csc(2x)', color: CONFIG.colors.cyan },
-                    tan: { label: 'f(x) = tan(0.5x)', color: CONFIG.colors.cyan },
-                    heart: { label: 'Heartbeat Pattern', color: CONFIG.colors.pink },
-                    filledHeart: { label: 'Complex Heart Fill', color: CONFIG.colors.pink, highDensity: true },
-                    spiral: { label: 'r = 12θ', color: CONFIG.colors.yellow, isPolar: true },
-                    polarFlower: { label: 'r = 150 sin(4θ)', color: CONFIG.colors.yellow, isPolar: true },
-                    chaosFlower: { label: 'r = 80(cos(3θ) + sin(20θ))', color: CONFIG.colors.yellow, isPolar: true },
-                    polarHeart: { label: 'r = 100(1 - sin(θ))', color: CONFIG.colors.red, isPolar: true },
-                };
-                return map[type] || { label: 'Unknown', color: '#fff' };
-            }
-        };
-
-        // --- RENDERER MODULE ---
-        class Renderer {
-            constructor(canvasId) {
-                this.canvas = document.getElementById(canvasId);
-                this.ctx = this.canvas.getContext('2d');
-                this.container = document.getElementById('canvasContainer');
-                this.width = 0;
-                this.height = 0;
-                this.lastWidth = 0;
-                
-                // Debounce resize
-                let resizeTimer;
-                this.resizeObserver = new ResizeObserver(entries => {
-                    clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => {
-                         const entry = entries[0];
-                         if (Math.abs(entry.contentRect.width - this.width) > 2 || Math.abs(entry.contentRect.height - this.height) > 2) {
-                             this.resize();
-                         }
-                    }, 100);
-                });
-                this.resizeObserver.observe(this.container);
-            }
-
-            resize() {
-                const dpr = window.devicePixelRatio || 1;
-                const rect = this.container.getBoundingClientRect();
-                if (rect.width === 0) return;
-
-                this.width = Math.floor(rect.width);
-                this.height = Math.floor(rect.height);
-                this.lastWidth = this.width;
-
-                this.canvas.width = this.width * dpr;
-                this.canvas.height = this.height * dpr;
-                this.ctx.scale(dpr, dpr);
-                
-                this.clear();
-                this.drawGrid(false);
-                this.onResize?.();
-            }
-
-            clear() {
-                this.ctx.shadowBlur = 0;
-                this.ctx.fillStyle = '#000';
-                this.ctx.fillRect(0, 0, this.width, this.height);
-            }
-
-            drawGrid(isPolar) {
-                const w = this.width;
-                const h = this.height;
-                const cx = w / 2;
-                const cy = h / 2;
-
-                this.ctx.lineWidth = 1;
-                
-                if (isPolar) {
-                    this.ctx.strokeStyle = '#222';
-                    for (let r = 50; r < Math.max(w, h); r += 50) {
-                        this.ctx.beginPath(); this.ctx.arc(cx, cy, r, 0, Math.PI * 2); this.ctx.stroke();
-                    }
-                } else {
-                    this.ctx.strokeStyle = CONFIG.colors.grid;
-                    this.ctx.beginPath();
-                    for (let i = 0; i <= w; i += 50) { this.ctx.moveTo(i, 0); this.ctx.lineTo(i, h); }
-                    for (let i = 0; i <= h; i += 50) { this.ctx.moveTo(0, i); this.ctx.lineTo(w, i); }
-                    this.ctx.stroke();
-                }
-
-                this.ctx.strokeStyle = CONFIG.colors.axis;
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
-                this.ctx.moveTo(0, cy); this.ctx.lineTo(w, cy);
-                this.ctx.moveTo(cx, 0); this.ctx.lineTo(cx, h);
-                this.ctx.stroke();
-
-                // Arrows
-                this.ctx.fillStyle = CONFIG.colors.axis;
-                this.ctx.beginPath();
-                this.ctx.moveTo(w, cy); this.ctx.lineTo(w - 10, cy - 5); this.ctx.lineTo(w - 10, cy + 5);
-                this.ctx.moveTo(cx, 0); this.ctx.lineTo(cx - 5, 10); this.ctx.lineTo(cx + 5, 10);
-                this.ctx.fill();
-            }
-
-            drawFunctionStep(prevPoint, currPoint, type, config, isHighDensity) {
-                if (!Number.isFinite(prevPoint.x) || !Number.isFinite(currPoint.x)) return;
-
-                this.ctx.strokeStyle = config.color;
-                this.ctx.shadowColor = config.color;
-                this.ctx.lineCap = 'round';
-                this.ctx.lineJoin = 'round';
-
-                if (isHighDensity) {
-                    this.ctx.lineWidth = 1.5;
-                    this.ctx.shadowBlur = 15;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(prevPoint.x, prevPoint.y);
-                    if (currPoint.x > prevPoint.x) {
-                        const step = 0.5;
-                        for (let px = prevPoint.x; px <= currPoint.x; px += step) {
-                            const subProg = px / this.width;
-                            const subP = MathLogic.getPoint(type, subProg, this.width, this.height);
-                            this.ctx.lineTo(subP.x, subP.y);
-                        }
-                    }
-                    this.ctx.stroke();
-                } else {
-                    this.ctx.lineWidth = 3;
-                    this.ctx.shadowBlur = 10;
-                    this.ctx.beginPath();
-                    const dist = Math.hypot(currPoint.x - prevPoint.x, currPoint.y - prevPoint.y);
-                    if (dist > 100) {
-                        this.ctx.moveTo(currPoint.x, currPoint.y);
-                    } else {
-                        this.ctx.moveTo(prevPoint.x, prevPoint.y);
-                        this.ctx.lineTo(currPoint.x, currPoint.y);
-                    }
-                    this.ctx.stroke();
-                }
-            }
-
-            drawHead(point, isPolar, isHighDensity) {
-                if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
-                
-                this.ctx.beginPath();
-                this.ctx.moveTo(point.x, point.y);
-                if (isPolar) this.ctx.lineTo(point.x, point.y);
-                else this.ctx.lineTo(point.x + 2, point.y);
-                
-                this.ctx.strokeStyle = CONFIG.colors.white;
-                this.ctx.shadowColor = CONFIG.colors.white;
-                this.ctx.lineWidth = isHighDensity ? 3 : 5;
-                this.ctx.shadowBlur = 20;
-                this.ctx.stroke();
-            }
-        }
-
-        // --- MAIN APP ---
-        class App {
-            constructor() {
-                this.audio = new AudioEngine();
-                this.renderer = new Renderer('mainCanvas');
-                
-                this.state = {
-                    currentType: null,
-                    startTime: null,
-                    prevPoint: { x: 0, y: 0 },
-                    animationId: null
-                };
-
-                this.ui = {
-                    initBtn: document.getElementById('initBtn'),
-                    overlay: document.getElementById('start-overlay'),
-                    volumeSlider: document.getElementById('volumeSlider'),
-                    muteBtn: document.getElementById('muteBtn'),
-                    stopBtn: document.getElementById('stopBtn'),
-                    formula: document.getElementById('formulaText'),
-                    btns: document.querySelectorAll('button[data-type]')
-                };
-
-                this.progress = 0;
-                this.lastTimestamp = null;
-                this.paused = false;
-                this.soundEnabled = false;
-                this.lastType = null;
-                this.renderer.onResize = () => this.redraw();
-                this.bindEvents();
-                setTimeout(() => this.renderer.resize(), 100);
-            }
-
-            bindEvents() {
-                const enter = async sound => {
-                    if (sound) {
-                        try { await this.audio.init(); this.soundEnabled = true; }
-                        catch { this.setStatus('Audio unavailable. Visual mode is ready.'); }
-                    }
-                    this.ui.muteBtn.textContent = this.soundEnabled ? 'MUTE' : 'SOUND';
-                    this.ui.overlay.hidden = true;
-                    this.ui.btns[0].focus();
-                };
-                this.ui.initBtn.addEventListener('click', () => enter(true));
-                document.getElementById('silentBtn').addEventListener('click', () => enter(false));
-                document.getElementById('pauseBtn').onclick = () => this.togglePause();
-                document.getElementById('replayBtn').onclick = () => this.startAnimation(this.lastType);
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden && this.state.currentType && !this.paused) this.togglePause();
-                });
-                window.addEventListener('pagehide', () => this.audio.stopTone());
-                this.ui.btns.forEach(b => b.setAttribute('aria-pressed', 'false'));
-                this.ui.muteBtn.setAttribute('aria-pressed', 'false');
-                this.ui.volumeSlider.addEventListener('input', (e) => this.audio.setVolume(e.target.value / 100));
-                
-                this.ui.muteBtn.addEventListener('click', async () => {
-                    if (!this.soundEnabled) {
-                        try { await this.audio.init(); this.soundEnabled = true; if (this.state.currentType && !this.paused) this.audio.playTone(this.state.currentType); }
-                        catch { this.setStatus('Audio unavailable. Visual mode remains active.'); return; }
-                        this.ui.muteBtn.textContent = 'MUTE'; return;
-                    }
-                    const muted = this.audio.toggleMute();
-                    this.ui.muteBtn.setAttribute('aria-pressed', String(muted));
-                    this.ui.muteBtn.textContent = muted ? "UNMUTE" : "MUTE";
-                    this.ui.muteBtn.style.color = muted ? CONFIG.colors.red : '#aaa';
-                });
-                
-                this.ui.btns.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        this.ui.btns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-                        btn.classList.add('active'); btn.setAttribute('aria-pressed','true');
-                        this.startAnimation(btn.dataset.type);
-                    });
-                });
-                
-                this.ui.stopBtn.addEventListener('click', () => this.stopAnimation(true));
-            }
-
-            startAnimation(type) {
-                this.stopAnimation(false);
-                this.progress = 0; this.lastTimestamp = null; this.paused = false; this.lastType = type;
-                document.getElementById('pauseBtn').disabled = false;
-                document.getElementById('pauseBtn').textContent = 'Pause';
-                document.getElementById('replayBtn').disabled = false;
-                document.getElementById('progress').value = 0;
-                this.ui.btns.forEach(b => { const active = b.dataset.type === type; b.classList.toggle('active', active); b.setAttribute('aria-pressed', String(active)); });
-                this.setStatus('Playing');
-                const config = MathLogic.getConfig(type);
-                this.renderer.clear();
-                this.renderer.drawGrid(config.isPolar);
-                
-                this.ui.formula.innerText = config.label;
-                this.ui.formula.style.color = config.color;
-                this.ui.formula.style.textShadow = `0 0 10px ${config.color}`;
-                
-                this.state.currentType = type;
-                this.state.startTime = null; // Reset time
-                
-                const startP = MathLogic.getPoint(type, 0, this.renderer.width, this.renderer.height);
-                this.state.prevPoint = startP;
-
-                if (this.soundEnabled) this.audio.playTone(type);
-
-                // [CRITICAL FIX] Use requestAnimationFrame to start loop, ensuring proper timestamp
-                this.state.animationId = requestAnimationFrame(this.loop.bind(this));
-            }
-
-            loop(timestamp) {
-                if (!this.state.currentType) return;
-                
-                if (this.paused) return;
-                if (this.lastTimestamp === null) this.lastTimestamp = timestamp;
-                const delta = Math.max(0, timestamp - this.lastTimestamp);
-                this.lastTimestamp = timestamp;
-                this.progress = Math.min(1, this.progress + delta * Number(document.getElementById('speedSelect').value) / CONFIG.duration);
-                const progress = this.progress;
-                document.getElementById('progress').value = progress;
-                const type = this.state.currentType;
-                const config = MathLogic.getConfig(type);
-                const currPoint = MathLogic.getPoint(type, progress, this.renderer.width, this.renderer.height);
-                
-                const useHighDensity = config.highDensity && !config.isPolar;
-
-                this.renderer.drawFunctionStep(this.state.prevPoint, currPoint, type, config, useHighDensity);
-                this.renderer.drawHead(currPoint, config.isPolar, useHighDensity);
-
-                // Audio
-                const h = this.renderer.height || 1;
-                const heightRatio = 1 - (currPoint.y / h);
-                const safeRatio = Math.max(0, Math.min(1, heightRatio));
-                const rangeFreq = (type === 'filledHeart' || type === 'bars') ? 1500 : 1000;
-                this.audio.updateFrequency(100 + (safeRatio * rangeFreq));
-
-                this.state.prevPoint = currPoint;
-
-                if (progress < 1.0) {
-                    this.state.animationId = requestAnimationFrame(this.loop.bind(this));
-                } else {
-                    this.stopAnimation(false);
-                    this.state.currentType = null;
-                    document.getElementById('pauseBtn').disabled = true;
-                    this.setStatus('Complete — replay or choose another curve.');
-                }
-            }
-
-            setStatus(text) { document.getElementById('playbackStatus').textContent = text; }
-
-            togglePause() {
-                if (!this.state.currentType) return;
-                this.paused = !this.paused;
-                document.getElementById('pauseBtn').textContent = this.paused ? 'Resume' : 'Pause';
-                this.setStatus(this.paused ? 'Paused' : 'Playing');
-                if (this.paused) { cancelAnimationFrame(this.state.animationId); this.audio.stopTone(); }
-                else {
-                    this.lastTimestamp = null;
-                    if (this.soundEnabled) this.audio.playTone(this.state.currentType);
-                    this.state.animationId = requestAnimationFrame(this.loop.bind(this));
-                }
-            }
-
-            redraw() {
-                if (!this.lastType) return;
-                const type = this.lastType, config = MathLogic.getConfig(type);
-                this.renderer.clear(); this.renderer.drawGrid(config.isPolar);
-                let prev = MathLogic.getPoint(type, 0, this.renderer.width, this.renderer.height);
-                const steps = Math.ceil(this.progress * 1800);
-                for (let i = 1; i <= steps; i++) {
-                    const point = MathLogic.getPoint(type, this.progress * i / steps, this.renderer.width, this.renderer.height);
-                    this.renderer.drawFunctionStep(prev, point, type, config, config.highDensity);
-                    prev = point;
-                }
-                this.state.prevPoint = prev;
-            }
-
-            stopAnimation(fullReset) {
-                if (this.state.animationId) {
-                    cancelAnimationFrame(this.state.animationId);
-                    this.state.animationId = null;
-                }
-                this.audio.stopTone();
-                
-                if (fullReset) {
-                    this.lastType = null; this.progress = 0; this.paused = false;
-                    document.getElementById('progress').value = 0;
-                    document.getElementById('pauseBtn').disabled = true;
-                    document.getElementById('pauseBtn').textContent = 'Pause';
-                    document.getElementById('replayBtn').disabled = true;
-                    this.setStatus('Choose a curve to begin.');
-                    this.ui.btns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-                    this.state.currentType = null;
-                    this.renderer.clear();
-                    this.renderer.drawGrid(false);
-                    this.ui.formula.innerText = "READY";
-                    this.ui.formula.style.color = "#aaa";
-                    this.ui.formula.style.textShadow = "none";
-                }
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => new App());
-    </script>
+<header><div class="shell top"><div class="brand"><span class="mark" aria-hidden="true">∿</span><div><strong>NEON MATH SOUND</strong><small>RYAN’S LAB / INTERACTIVE EXPLORATIONS</small></div></div><a href="./">← Back to the lab</a></div></header>
+<main class="shell">
+<section class="intro"><div><div class="eyebrow">Mathematics × sound</div><h1>What does a curve sound like?</h1><p>Choose a shape. Change a parameter. Follow the sound.</p></div><span class="badge">12 curves · endless discoveries</span></section>
+<div class="workspace">
+<section class="graph-card" aria-label="Curve explorer">
+<div class="graph-heading"><h2 id="curveName">Sine wave</h2><small id="coordinateMode">CARTESIAN · x → y</small></div>
+<div class="canvas-wrapper" id="canvasContainer"><canvas id="mainCanvas" role="img" aria-label="Sine wave graph. Use Play to trace the curve or move the Trace position slider." aria-describedby="curveDescription"></canvas></div>
+<div class="formula" id="formulaText">y = 4 sin(x)</div>
+<div class="readouts"><div class="readout"><span id="inputLabel">x position</span><output id="inputValue">−10.00</output></div><div class="readout"><span>y position</span><output id="yValue">2.18</output></div><div class="readout"><span>Pitch</span><output id="pitchValue">584 Hz</output></div></div>
+<div class="transport"><div class="transport-row"><button class="primary" id="playBtn">▶ Play</button><button id="replayBtn" aria-label="Replay curve from beginning">↻ Replay</button><label class="speed-label" for="speedSelect">Speed</label><select id="speedSelect"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select><label class="check"><input type="checkbox" id="loopCheck"> Loop</label></div>
+<div class="timeline"><label class="sr-only" for="seekSlider">Trace position</label><input id="seekSlider" type="range" min="0" max="1000" value="0" step="1"><output id="progressValue">0%</output></div><span id="playbackStatus" role="status">Ready — press Play. Sound is off.</span></div>
+</section>
+<aside class="panel" aria-label="Experiment controls"><h2>Make it your own</h2>
+<div class="param"><label for="amplitudeSlider"><span id="amplitudeLabel">Height · A</span><output id="amplitudeValue">1.00×</output></label><input type="range" id="amplitudeSlider" min="0.25" max="1.5" step="0.05" value="1"><p id="amplitudeHint">Stretch the curve up and down.</p></div>
+<div class="param"><label for="frequencySlider"><span id="frequencyLabel">Wave count · k</span><output id="frequencyValue">1</output></label><input type="range" id="frequencySlider" min="1" max="4" step="1" value="1"><p id="frequencyHint">Fit more waves into the same space.</p></div>
+<div class="audio-section"><div class="sound-title"><h2>Listen to the shape</h2><button id="soundBtn" aria-pressed="false">Sound off</button></div><div class="volume-row"><label for="volumeSlider">Vol</label><input type="range" id="volumeSlider" min="0" max="100" value="25"><output id="volumeValue">25%</output></div><p class="sound-note" id="audioNote" role="status">Enable sound, then press Play. Start with a low volume.</p><div class="pitch-key"><span>Lower</span><div class="pitch-bar" aria-hidden="true"></div><span>Higher</span></div><p class="sound-note">Higher on the graph → higher pitch.<br>Volume changes loudness, not pitch.</p></div>
+<button class="reset" id="resetBtn">Reset this experiment</button>
+</aside>
+</div>
+<section class="library" aria-label="Choose a mathematical curve"><div class="section-top"><h2>Choose your curve</h2><small>Start simple. Explore something unexpected.</small></div><div class="curve-group"><div class="group-title">01 / Lines & waves</div><div class="curve-grid" id="cartesianCurves"></div></div><div class="curve-group"><div class="group-title">02 / Polar patterns & mathematical art</div><div class="curve-grid art" id="artCurves"></div></div></section>
+<section class="explore" aria-label="Exploration guide"><div><div class="step">Observe</div><h2 id="observationTitle">A wave that repeats</h2><p id="curveDescription">The curve rises and falls in a repeating pattern. Listen for the pitch rising and falling with it.</p><details><summary>How does the sound work?</summary><p>The faint line previews the full shape; the bright line shows the path already traced. The moving dot’s vertical position controls a sine tone from 100 Hz at the bottom to 1,600 Hz at the top. The centre is 400 Hz. Equal vertical steps change pitch by equal musical intervals. This is a way to turn a graph into sound, not a recording of the waveform.</p><p>All angles use radians. Cartesian graphs keep x from −10 to 10 and y from −8 to 8 on every screen. Polar graphs use equal scales on both axes; their viewing range is shown on the graph. Points outside the viewing range and gaps at undefined values are silent.</p></details></div><div><div class="step">Predict → change → listen</div><h2>Try a small experiment</h2><p id="challengeText">Keep k at 1. Predict how a taller wave will sound, then change A. Does it repeat more often, or reach higher and lower pitches?</p><p><strong>Explain your discovery:</strong> “When I changed ___, I noticed ___ because ___.”</p></div></section>
+<footer><span>Ryan’s Lab · See the maths. Hear the pattern.</span><span class="keyboard">Space: play / pause · R: replay · M: sound</span></footer>
+</main>
+<script type="module">
+// Pure mathematical samples stay independent of screen size and playback speed.
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const CURVES = {
+ linear:{name:'Linear',group:'cartesian',formula:(a)=>`y = ${a}x`,desc:'A straight line has a steady slope. As the dot rises, the pitch rises smoothly.',title:'A steady climb',challenge:'Make A smaller. Predict whether the pitch will change through a wider or narrower range.',icon:'M0 20L44 2'},
+ parabola:{name:'Parabola',group:'cartesian',formula:(a)=>`y = ${a}(0.1x² − 4)`,desc:'The dot falls towards the lowest point, then climbs again. The two sides are symmetrical.',title:'Down, then up',challenge:'Pause at the lowest point. Compare the pitch at x = −5 and x = 5. Why should they match?',icon:'M0 2Q22 40 44 2'},
+ wavyLine:{name:'Wavy line',group:'cartesian',variable:true,formula:(a,k)=>`y = ${a}(x + 2 sin(${3*k}x))`,desc:'A repeating wiggle is added to a rising line. Listen for small changes inside a bigger upward trend.',title:'A wave on a slope',challenge:'Keep A fixed and increase k. Does the overall slope change, or do you hear more small rises and falls?',icon:'M0 20Q5 2 11 15T22 9T33 4T44 0'},
+ sine:{name:'Sine wave',group:'cartesian',variable:true,formula:(a,k)=>`y = ${4*a} sin(${k===1?'':k}x)`,desc:'The curve rises and falls in a repeating pattern. Listen for the pitch rising and falling with it.',title:'A wave that repeats',challenge:'Keep k at 1. Predict how a taller wave will sound, then change A. Does it repeat more often, or reach higher and lower pitches?',icon:'M0 11Q5 -8 11 11T22 11T33 11T44 11'},
+ bars:{name:'Reciprocal sine',group:'cartesian',formula:a=>`y = ${a} / sin(2x)`,desc:'Dividing by a value near zero makes very large values. At zero, the function is undefined: the graph has gaps, with no connecting lines.',title:'What happens near zero?',challenge:'Find a gap. Can the graph cross it? Watch the dot leave the viewing window and listen for the silence.',icon:'M0 1Q5 35 10 1M15 21Q20 -13 25 21M30 1Q35 35 40 1'},
+ tan:{name:'Tangent',group:'cartesian',formula:a=>`y = ${a} tan(0.5x)`,desc:'Each branch climbs steeply. The vertical asymptotes separate branches; the curve never joins across them.',title:'A curve with separate branches',challenge:'Compare this with the linear curve. Does the pitch rise at a steady rate, or speed up near the edge?',icon:'M0 21Q10 21 14 0M16 22Q27 22 29 0M31 22Q41 22 44 0'},
+ spiral:{name:'Polar spiral',group:'polar',range:340,formula:a=>`r = ${12*a}θ · 0 ≤ θ ≤ 8π`,desc:'The angle turns while the radius grows. Each turn moves farther from the centre.',title:'Around and out',challenge:'Watch one complete turn. Does the pitch only rise, or does it rise and fall? Explain using the dot’s height.',icon:'M23 11C13 2 8 19 23 20S49 1 24 1S-1 28 43 22'},
+ polarFlower:{name:'Polar flower',group:'polar',variable:true,range:180,formula:(a,k)=>`r = ${150*a} sin(${4*k}θ) · 0 ≤ θ ≤ 2π`,desc:'A changing radius creates petals around the centre. Negative radii place points in the opposite direction.',title:'A flower made of angles',challenge:'Count the petals at k = 1, then at k = 2. What changed? Keep A fixed for a fair comparison.',icon:'M22 11C0 -12 0 32 22 11C44 -12 44 32 22 11C5 34 39 34 22 11C5 -12 39 -12 22 11'},
+ chaosFlower:{name:'Compound flower',group:'polar',variable:true,range:190,formula:(a,k)=>`r = ${80*a}(cos(3θ) + sin(${20*k}θ))`,desc:'Two repeating radius patterns combine: a slower shape and many smaller ripples.',title:'Patterns within patterns',challenge:'Increase k. Look for the small ripples. Does the broad outer shape change as much as its details?',icon:'M0 11L6 3L11 13L16 0L22 12L28 1L33 14L39 4L44 11'},
+ polarHeart:{name:'Polar heart',group:'polar',range:230,formula:a=>`r = ${100*a}(1 − sin(θ)) · 0 ≤ θ ≤ 2π`,desc:'This cardioid uses the angle to change its radius. The equation and the plotted orientation use the same angle.',title:'One equation, one heart',challenge:'Predict the sound at the bottom point and at the centre. Then trace the curve to check your prediction.',icon:'M22 22C-10 1 15 -7 22 3C29 -7 54 1 22 22'},
+ heart:{name:'Heartbeat pattern',group:'special',formula:a=>`y = ${5*a} sin(10b)e^(−3b) for 0 < b < 1; else 0 · b = (x + 10) mod 2π`,desc:'Short bursts are separated by flat sections. This is an artistic repeating pulse, not a medical ECG.',title:'Bursts and quiet sections',challenge:'Compare a flat section with a burst. A flat graph makes a steady pitch, not silence. Can you explain why?',icon:'M0 14H10L14 3L19 22L25 0L30 14H44'},
+ filledHeart:{name:'Complex heart',group:'special',formula:a=>`y = ${2.5*a}(|u|^(2/3) + 0.9√max(0, 3.3 − u²) sin(200u)) · u = x/2.5`,desc:'A fast oscillation fills a heart-like envelope. The sound follows sampled height; fine details are clearer when you trace slowly.',title:'A shape inside fast waves',challenge:'Pause and use the trace slider to inspect the fine lines. How does the envelope differ from a simple sine wave?',icon:'M22 22C-8 0 15 -7 22 4C29 -7 52 0 22 22M9 6L16 15L18 2L24 17L29 3L34 10'}
+};
+function sample(type,t,a=1,k=1){
+ const c=CURVES[type];let x,y,theta=0,branch=0;
+ if(c.group==='polar'){
+  theta=t*(type==='spiral'?8*Math.PI:TAU);let r;
+  if(type==='spiral')r=12*theta;
+  if(type==='polarFlower')r=150*Math.sin(4*k*theta);
+  if(type==='chaosFlower')r=80*(Math.cos(3*theta)+Math.sin(20*k*theta));
+  if(type==='polarHeart')r=100*(1-Math.sin(theta));
+  x=a*r*Math.cos(theta);y=a*r*Math.sin(theta);
+ }else{
+  x=-10+20*t;
+  switch(type){
+   case 'linear':y=x;break;
+   case 'parabola':y=.1*x*x-4;break;
+   case 'sine':y=4*Math.sin(k*x);break;
+   case 'wavyLine':y=x+2*Math.sin(3*k*x);break;
+   case 'tan':{const z=.5*x;branch=Math.floor((z+Math.PI/2)/Math.PI);y=Math.abs(Math.cos(z))<1e-8?NaN:Math.tan(z);break;}
+   case 'bars':{const z=2*x;branch=Math.floor(z/Math.PI);y=Math.abs(Math.sin(z))<1e-8?NaN:1/Math.sin(z);break;}
+   case 'heart':{const b=(x+10)%TAU;y=b>0&&b<1?5*Math.sin(10*b)*Math.exp(-3*b):0;break;}
+   case 'filledHeart':{const u=x/2.5;y=2.5*(Math.pow(Math.abs(u),2/3)+.9*Math.sqrt(Math.max(0,3.3-u*u))*Math.sin(200*u));break;}
+  }y*=a;
+ }
+ return {x,y,theta,branch};
+}
+function pitchFor(y,range){return 100*Math.pow(16,clamp((y/range+1)/2,0,1));}
+class AudioEngine{
+ constructor(){this.ctx=null;this.osc=null;this.enabled=false;this.volume=.25;}
+ async enable(){
+  const AudioContext=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContext)throw Error('unsupported');
+  if(!this.ctx){this.ctx=new AudioContext();this.master=this.ctx.createGain();this.master.gain.value=this.volume*.18;this.master.connect(this.ctx.destination);}
+  await this.ctx.resume();if(this.ctx.state!=='running')throw Error('suspended');this.enabled=true;
+ }
+ start(freq){if(!this.enabled||!this.ctx||this.osc)return;this.osc=this.ctx.createOscillator();this.gate=this.ctx.createGain();this.gate.gain.value=0;this.osc.type='sine';this.osc.frequency.value=freq||400;this.osc.connect(this.gate);this.gate.connect(this.master);this.osc.start();}
+ update(freq,audible){if(!this.osc)return;const now=this.ctx.currentTime;this.osc.frequency.setTargetAtTime(freq,now,.012);this.gate.gain.setTargetAtTime(audible?1:0,now,.015);}
+ setVolume(v){this.volume=v;if(this.ctx)this.master.gain.setTargetAtTime(v*.18,this.ctx.currentTime,.025);}
+ stop(){if(!this.osc)return;const osc=this.osc,gain=this.gate,now=this.ctx.currentTime;gain.gain.cancelScheduledValues(now);gain.gain.setTargetAtTime(0,now,.012);osc.stop(now+.08);osc.onended=()=>{osc.disconnect();gain.disconnect();};this.osc=null;}
+}
+const $=id=>document.getElementById(id);
+class App{
+ constructor(){
+  this.type='sine';this.a=1;this.k=1;this.progress=0;this.playing=false;this.raf=null;this.lastTime=null;this.audio=new AudioEngine();this.points=[];this.traceIndex=0;this.scrubbing=false;
+  this.canvas=$('mainCanvas');this.ctx=this.canvas.getContext('2d');this.preview=document.createElement('canvas');this.trace=document.createElement('canvas');this.tc=this.trace.getContext('2d');
+  this.makeButtons();this.bind();this.setCurve('sine',false);this.resize();this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe($('canvasContainer'));
+ }
+ makeButtons(){for(const [key,c]of Object.entries(CURVES)){const b=document.createElement('button');b.className='curve-btn';b.dataset.type=key;b.dataset.group=c.group;b.setAttribute('aria-pressed','false');b.innerHTML=`<svg viewBox="0 0 44 24" aria-hidden="true"><path d="${c.icon}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>${c.name}</span>`;b.onclick=()=>this.setCurve(key,true);$(c.group==='cartesian'?'cartesianCurves':'artCurves').append(b);}}
+ bind(){
+  $('playBtn').onclick=()=>this.playing?this.pause():this.play();$('replayBtn').onclick=()=>this.replay();
+  $('soundBtn').onclick=()=>this.toggleSound();
+  $('volumeSlider').oninput=e=>{this.audio.setVolume(Number(e.target.value)/100);$('volumeValue').value=`${e.target.value}%`;};
+  for(const id of ['amplitudeSlider','frequencySlider'])$(id).oninput=()=>{this.a=Number($('amplitudeSlider').value);this.k=Number($('frequencySlider').value);this.updateLabels();this.rebuild();this.render();this.updateAudio();};
+  const begin=()=>{if(this.scrubbing)return;this.wasPlaying=this.playing;this.scrubbing=true;this.pause(false);};
+  const end=()=>{if(!this.scrubbing)return;this.scrubbing=false;if(this.wasPlaying)this.play();else this.status('Paused — press Play to continue.');};
+  $('seekSlider').onpointerdown=begin;$('seekSlider').oninput=e=>{if(!this.scrubbing)this.pause(false);this.progress=Number(e.target.value)/1000;this.rebuildTrace();this.render();this.status('Inspecting the curve — press Play to listen.');};
+  window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);$('seekSlider').onblur=end;
+  $('resetBtn').onclick=()=>{this.pause(false);this.a=1;this.k=1;this.progress=0;$('amplitudeSlider').value=1;$('frequencySlider').value=1;$('speedSelect').value='1';$('loopCheck').checked=false;this.updateLabels();this.rebuild();this.render();this.status('Experiment reset — press Play.');};
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){this.wasPlaying=false;this.scrubbing=false;this.pause();}});window.addEventListener('pagehide',()=>this.pause(false));
+  document.addEventListener('keydown',e=>{if(e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.target.closest('input,select,button,a,summary,textarea,[contenteditable]'))return;if(e.code==='Space'){e.preventDefault();this.playing?this.pause():this.play();}if(e.key.toLowerCase()==='r')this.replay();if(e.key.toLowerCase()==='m')this.toggleSound();});
+ }
+ status(s){$('playbackStatus').textContent=s;}
+ setCurve(type,autoplay){
+  this.pause(false);this.type=type;this.progress=0;this.a=1;this.k=1;$('amplitudeSlider').value=1;$('frequencySlider').value=1;
+  const c=CURVES[type];document.documentElement.style.setProperty('--accent',c.group==='polar'?'var(--yellow)':c.group==='special'?'var(--pink)':'var(--cyan)');
+  document.querySelectorAll('[data-type]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.type===type)));
+  $('curveName').textContent=c.name;$('coordinateMode').textContent=c.group==='polar'?'POLAR · θ → r':'CARTESIAN · x → y';$('observationTitle').textContent=c.title;$('curveDescription').textContent=c.desc;$('challengeText').textContent=c.challenge;
+  $('mainCanvas').setAttribute('aria-label',`${c.name} graph. ${c.desc} The faint line previews the full shape. Use the Trace position slider to inspect values.`);
+  $('frequencySlider').disabled=!c.variable;$('amplitudeLabel').textContent=c.group==='polar'?'Size · A':'Height · A';$('amplitudeHint').textContent=c.group==='polar'?'Change the radius of the pattern.':'Stretch the curve up and down.';
+  $('frequencyLabel').textContent=c.group==='polar'?'Pattern detail · k':'Wave count · k';$('frequencyHint').textContent=!c.variable?'This curve uses the height or size control.':c.group==='polar'?'Change the angular pattern.':'Fit more waves into the same space.';
+  $('inputLabel').textContent=c.group==='polar'?'Angle θ (rad)':'x position';this.updateLabels();this.rebuild();this.render();if(autoplay)this.play();else this.status('Ready — press Play. Sound is off.');
+ }
+ updateLabels(){$('amplitudeValue').value=this.a.toFixed(2)+'×';$('frequencyValue').value=CURVES[this.type].variable?String(this.k):'—';$('formulaText').textContent=CURVES[this.type].formula(Number(this.a.toFixed(2)),this.k).replace(/-?\d+\.\d{5,}/g,n=>String(Number(Number(n).toFixed(3))));}
+ resize(){const rect=$('canvasContainer').getBoundingClientRect();if(!rect.width)return;this.w=rect.width;this.h=rect.height;this.dpr=Math.min(window.devicePixelRatio||1,2);for(const c of [this.canvas,this.trace,this.preview]){c.width=Math.round(this.w*this.dpr);c.height=Math.round(this.h*this.dpr);}this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);this.tc.setTransform(this.dpr,0,0,this.dpr,0,0);this.rebuild();this.render();}
+ view(){const c=CURVES[this.type];const p=35,iw=Math.max(1,this.w-2*p),ih=Math.max(1,this.h-2*p);if(c.group==='polar'){const scale=Math.min(iw,ih)/(2*c.range);const half=c.range*scale;return {sx:scale,sy:scale,yr:c.range,p,left:this.w/2-half,right:this.w/2+half,top:this.h/2-half,bottom:this.h/2+half};}return {sx:iw/20,sy:ih/16,yr:8,p,left:p,right:this.w-p,top:p,bottom:this.h-p};}
+ pixel(pt){const v=this.view();return {x:this.w/2+pt.x*v.sx,y:this.h/2-pt.y*v.sy};}
+ visible(pt){if(!Number.isFinite(pt.x)||!Number.isFinite(pt.y))return false;const p=this.pixel(pt),v=this.view();return p.x>=v.left-1e-6&&p.x<=v.right+1e-6&&p.y>=v.top-1e-6&&p.y<=v.bottom+1e-6;}
+ rebuild(){if(!this.w)return;this.count=this.type==='filledHeart'?8000:4000;this.points=Array.from({length:this.count+1},(_,i)=>sample(this.type,i/this.count,this.a,this.k));const saved=this.progress;this.progress=1;this.rebuildTrace();const pc=this.preview.getContext('2d');pc.clearRect(0,0,this.preview.width,this.preview.height);pc.drawImage(this.trace,0,0);this.progress=saved;this.rebuildTrace();}
+ rebuildTrace(){if(!this.w)return;this.tc.clearRect(0,0,this.w,this.h);this.traceIndex=0;this.extendTrace();}
+ extendTrace(){
+  if(!this.points.length)return;const end=Math.floor(this.progress*this.count),ctx=this.tc,v=this.view();ctx.save();ctx.beginPath();ctx.rect(v.left,v.top,v.right-v.left,v.bottom-v.top);ctx.clip();ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();ctx.lineWidth=this.type==='filledHeart'?1:2;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
+  for(let i=Math.max(1,this.traceIndex+1);i<=end;i++){const a=this.points[i-1],b=this.points[i];if(!Number.isFinite(a.y)||!Number.isFinite(b.y)||a.branch!==b.branch)continue;const p=this.pixel(a),q=this.pixel(b);ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);}ctx.stroke();ctx.restore();this.traceIndex=end;
+ }
+ grid(){
+  const ctx=this.ctx,v=this.view(),cx=this.w/2,cy=this.h/2,p=v.p,polar=CURVES[this.type].group==='polar';ctx.clearRect(0,0,this.w,this.h);ctx.fillStyle='#080f19';ctx.fillRect(0,0,this.w,this.h);ctx.save();ctx.beginPath();ctx.rect(v.left,v.top,v.right-v.left,v.bottom-v.top);ctx.clip();ctx.strokeStyle='#1b2a3a';ctx.lineWidth=1;
+  if(polar){for(let r=CURVES[this.type].range/4;r<=CURVES[this.type].range;r+=CURVES[this.type].range/4){ctx.beginPath();ctx.arc(cx,cy,r*v.sx,0,TAU);ctx.stroke();}for(let j=0;j<4;j++){const t=j*Math.PI/4;ctx.beginPath();ctx.moveTo(cx-1000*Math.cos(t),cy-1000*Math.sin(t));ctx.lineTo(cx+1000*Math.cos(t),cy+1000*Math.sin(t));ctx.stroke();}}
+  else{ctx.beginPath();for(let x=-10;x<=10;x+=2){const px=cx+x*v.sx;ctx.moveTo(px,p);ctx.lineTo(px,this.h-p);}for(let y=-8;y<=8;y+=2){const py=cy-y*v.sy;ctx.moveTo(p,py);ctx.lineTo(this.w-p,py);}ctx.stroke();}
+  ctx.strokeStyle='#4b6177';ctx.beginPath();ctx.moveTo(v.left,cy);ctx.lineTo(v.right,cy);ctx.moveTo(cx,v.top);ctx.lineTo(cx,v.bottom);ctx.stroke();ctx.restore();
+  ctx.fillStyle='#8ba0b7';ctx.font='10px system-ui';ctx.textAlign='center';
+  if(!polar){for(let x=-10;x<=10;x+=2)if(x)ctx.fillText(String(x),cx+x*v.sx,cy+15);for(let y=-8;y<=8;y+=2)if(y){ctx.textAlign='right';ctx.fillText(String(y),cx-8,cy-y*v.sy+3);}ctx.textAlign='left';ctx.fillText('0',cx+7,cy+15);}
+  else{ctx.textAlign='left';ctx.fillText(`View: ±${CURVES[this.type].range} units`,p,18);ctx.textAlign='center';ctx.fillText(String(CURVES[this.type].range),cx,v.top-6);ctx.fillText(String(-CURVES[this.type].range),cx,v.bottom+14);}
+  ctx.textAlign='right';ctx.fillText('x',this.w-p+15,cy+4);ctx.fillText('y',cx-8,17);
+ }
+ render(){
+  if(!this.w)return;this.grid();this.ctx.save();this.ctx.globalAlpha=.16;this.ctx.drawImage(this.preview,0,0,this.w,this.h);this.ctx.restore();this.ctx.drawImage(this.trace,0,0,this.w,this.h);const pt=sample(this.type,this.progress,this.a,this.k),q=this.pixel(pt),vis=this.visible(pt),ctx=this.ctx;
+  if(vis){ctx.save();ctx.strokeStyle='#465d72';ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(q.x,this.h/2);ctx.lineTo(q.x,q.y);ctx.lineTo(this.w/2,q.y);ctx.stroke();ctx.setLineDash([]);ctx.shadowBlur=14;ctx.shadowColor='#8fffe7';ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(q.x,q.y,4,0,TAU);ctx.fill();ctx.restore();}
+  $('inputValue').value=(CURVES[this.type].group==='polar'?pt.theta:pt.x).toFixed(2);$('yValue').value=Number.isFinite(pt.y)?pt.y.toFixed(2):'undefined';$('pitchValue').value=vis?`${Math.round(pitchFor(pt.y,this.view().yr))} Hz`:'— (silent)';$('seekSlider').value=Math.round(this.progress*1000);$('progressValue').value=`${Math.round(this.progress*100)}%`;
+ }
+ updateAudio(){if(!this.w)return;const pt=sample(this.type,this.progress,this.a,this.k);this.audio.update(Number.isFinite(pt.y)?pitchFor(pt.y,this.view().yr):400,this.playing&&this.visible(pt));}
+ play(){if(this.playing)return;if(this.progress>=1){this.progress=0;this.rebuildTrace();}this.playing=true;this.lastTime=null;$('playBtn').textContent='Ⅱ Pause';const pt=sample(this.type,this.progress,this.a,this.k);this.audio.start(Number.isFinite(pt.y)?pitchFor(pt.y,this.view().yr):400);this.updateAudio();this.status(this.audio.enabled?'Playing with sound.':'Playing visually — enable Sound to listen.');this.raf=requestAnimationFrame(t=>this.tick(t));}
+ pause(announce=true){const was=this.playing;this.playing=false;cancelAnimationFrame(this.raf);this.raf=null;this.lastTime=null;this.audio.stop();$('playBtn').textContent='▶ Play';if(announce&&was)this.status('Paused — press Play to continue.');}
+ replay(){this.pause(false);this.progress=0;this.rebuildTrace();this.render();this.play();}
+ tick(t){if(!this.playing)return;if(this.lastTime!==null)this.progress=Math.min(1,this.progress+Math.min(t-this.lastTime,250)*Number($('speedSelect').value)/10000);this.lastTime=t;this.extendTrace();this.render();this.updateAudio();if(this.progress>=1){if($('loopCheck').checked){this.progress=0;this.rebuildTrace();this.lastTime=null;}else{this.pause(false);this.status('Complete — replay or choose another curve.');return;}}this.raf=requestAnimationFrame(time=>this.tick(time));}
+ async toggleSound(){
+  if(this.audioBusy)return;if(this.audio.enabled){this.audio.enabled=false;this.audio.stop();$('soundBtn').textContent='Sound off';$('soundBtn').setAttribute('aria-pressed','false');$('audioNote').textContent='Visual mode. Enable sound whenever you like.';if(this.playing)this.status('Playing visually — sound is off.');return;}
+  this.audioBusy=true;$('soundBtn').disabled=true;try{await this.audio.enable();$('soundBtn').textContent='Sound on';$('soundBtn').setAttribute('aria-pressed','true');$('audioNote').textContent='Sound ready. Pitch follows the dot’s height.';if(this.playing&&!document.hidden){const pt=sample(this.type,this.progress,this.a,this.k);this.audio.start(Number.isFinite(pt.y)?pitchFor(pt.y,this.view().yr):400);this.updateAudio();this.status('Playing with sound.');}}catch{$('audioNote').textContent='Sound is unavailable in this browser. You can still explore visually.';}finally{this.audioBusy=false;$('soundBtn').disabled=false;}
+ }
+}
+new App();
+</script>
 </body>
 </html>
