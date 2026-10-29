@@ -120,7 +120,7 @@ class App{
   this.pause(false);this.type=type;this.progress=0;this.a=1;this.k=1;$('amplitudeSlider').value=1;$('frequencySlider').value=1;
   const c=CURVES[type];document.documentElement.style.setProperty('--accent',c.group==='polar'?'var(--yellow)':c.group==='special'?'var(--pink)':'var(--cyan)');
   document.querySelectorAll('[data-type]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.type===type)));
-  $('curveName').textContent=c.name;$('coordinateMode').textContent=c.group==='polar'?'POLAR · θ → r':'CARTESIAN · x → y';$('observationTitle').textContent=c.title;$('curveDescription').textContent=c.desc;$('challengeText').textContent=c.challenge;
+  $('curveName').textContent=c.name;$('coordinateMode').textContent=c.group==='polar'?'POLAR · θ → r':type==='filledHeart'?'CARTESIAN · EQUAL AXIS SCALES':'CARTESIAN · x → y';$('observationTitle').textContent=c.title;$('curveDescription').textContent=c.desc;$('challengeText').textContent=c.challenge;
   $('mainCanvas').setAttribute('aria-label',`${c.name} graph. ${c.desc} The faint line previews the full shape. Use the Trace position slider to inspect values.`);
   $('frequencySlider').disabled=!c.variable;$('amplitudeLabel').textContent=c.group==='polar'?'Size · A':'Height · A';$('amplitudeHint').textContent=c.group==='polar'?'Change the radius of the pattern.':'Stretch the curve up and down.';
   $('frequencyLabel').textContent=c.group==='polar'?'Pattern detail · k':'Wave count · k';$('frequencyHint').textContent=!c.variable?'This curve uses the height or size control.':c.group==='polar'?'Change the angular pattern.':'Fit more waves into the same space.';
@@ -128,7 +128,7 @@ class App{
  }
  updateLabels(){$('amplitudeValue').value=this.a.toFixed(2)+'×';$('frequencyValue').value=CURVES[this.type].variable?String(this.k):'—';$('formulaText').textContent=CURVES[this.type].formula(Number(this.a.toFixed(2)),this.k).replace(/-?\d+\.\d{5,}/g,n=>String(Number(Number(n).toFixed(3))));}
  resize(){const rect=$('canvasContainer').getBoundingClientRect();if(!rect.width)return;this.w=rect.width;this.h=rect.height;this.dpr=Math.min(window.devicePixelRatio||1,2);for(const c of [this.canvas,this.trace,this.preview]){c.width=Math.round(this.w*this.dpr);c.height=Math.round(this.h*this.dpr);}this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);this.tc.setTransform(this.dpr,0,0,this.dpr,0,0);this.rebuild();this.render();}
- view(){const c=CURVES[this.type];const p=35,iw=Math.max(1,this.w-2*p),ih=Math.max(1,this.h-2*p);if(c.group==='polar'){const scale=Math.min(iw,ih)/(2*c.range);const half=c.range*scale;return {sx:scale,sy:scale,yr:c.range,p,left:this.w/2-half,right:this.w/2+half,top:this.h/2-half,bottom:this.h/2+half};}return {sx:iw/20,sy:ih/16,yr:8,p,left:p,right:this.w-p,top:p,bottom:this.h-p};}
+ view(){const c=CURVES[this.type];const p=35,iw=Math.max(1,this.w-2*p),ih=Math.max(1,this.h-2*p);if(c.group==='polar'){const scale=Math.min(iw,ih)/(2*c.range);const half=c.range*scale;return {sx:scale,sy:scale,yr:c.range,p,left:this.w/2-half,right:this.w/2+half,top:this.h/2-half,bottom:this.h/2+half};}if(this.type==='filledHeart'){const scale=Math.min(iw/20,ih/16);return {sx:scale,sy:scale,yr:8,p,left:this.w/2-10*scale,right:this.w/2+10*scale,top:this.h/2-8*scale,bottom:this.h/2+8*scale};}return {sx:iw/20,sy:ih/16,yr:8,p,left:p,right:this.w-p,top:p,bottom:this.h-p};}
  pixel(pt){const v=this.view();return {x:this.w/2+pt.x*v.sx,y:this.h/2-pt.y*v.sy};}
  visible(pt){if(!Number.isFinite(pt.x)||!Number.isFinite(pt.y))return false;const p=this.pixel(pt),v=this.view();return p.x>=v.left-1e-6&&p.x<=v.right+1e-6&&p.y>=v.top-1e-6&&p.y<=v.bottom+1e-6;}
  rebuild(){if(!this.w)return;this.count=this.type==='filledHeart'?8000:4000;this.points=Array.from({length:this.count+1},(_,i)=>sample(this.type,i/this.count,this.a,this.k));const saved=this.progress;this.progress=1;this.rebuildTrace();const pc=this.preview.getContext('2d');pc.clearRect(0,0,this.preview.width,this.preview.height);pc.drawImage(this.trace,0,0);this.progress=saved;this.rebuildTrace();}
@@ -145,7 +145,7 @@ class App{
   ctx.fillStyle='#8ba0b7';ctx.font='10px system-ui';ctx.textAlign='center';
   if(!polar){for(let x=-10;x<=10;x+=2)if(x)ctx.fillText(String(x),cx+x*v.sx,cy+15);for(let y=-8;y<=8;y+=2)if(y){ctx.textAlign='right';ctx.fillText(String(y),cx-8,cy-y*v.sy+3);}ctx.textAlign='left';ctx.fillText('0',cx+7,cy+15);}
   else{ctx.textAlign='left';ctx.fillText(`View: ±${CURVES[this.type].range} units`,p,18);ctx.textAlign='center';ctx.fillText(String(CURVES[this.type].range),cx,v.top-6);ctx.fillText(String(-CURVES[this.type].range),cx,v.bottom+14);}
-  ctx.textAlign='right';ctx.fillText('x',this.w-p+15,cy+4);ctx.fillText('y',cx-8,17);
+  ctx.textAlign='right';ctx.fillText('x',v.right+15,cy+4);ctx.fillText('y',cx-8,v.top-18);
  }
  render(){
   if(!this.w)return;this.grid();this.ctx.save();this.ctx.globalAlpha=.16;this.ctx.drawImage(this.preview,0,0,this.w,this.h);this.ctx.restore();this.ctx.drawImage(this.trace,0,0,this.w,this.h);const pt=sample(this.type,this.progress,this.a,this.k),q=this.pixel(pt),vis=this.visible(pt),ctx=this.ctx;
