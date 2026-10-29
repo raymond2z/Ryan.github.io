@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Python Programming · Level 1 — Ryan’s Lab</title><meta name="description" content="Start Python with beginner lessons on print, variables, input, arithmetic, comparisons and Turtle graphics. Worked examples, practice and a learning checklist."><meta name="theme-color" content="#fafaf8"><style>
+:root{color-scheme:light;--ink:#26332e;--muted:#66706b;--line:#dce1dc;--accent:#41634f;--paper:#fafaf8;--wash:#f0f4ef}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 system-ui,sans-serif}a{color:var(--accent);text-underline-offset:4px}a:hover{text-decoration-thickness:2px}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #41634f;outline-offset:4px}.skip{position:absolute;top:-100px;padding:12px;background:white}.skip:focus{top:8px;z-index:10}.wrap{width:min(1160px,92%);margin:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0;border-bottom:1px solid var(--line)}.brand{font-size:20px;font-weight:650;text-decoration:none}.toplinks{display:flex;gap:22px;font-size:14px}.hero{max-width:860px;padding:54px 0 36px}.eyebrow,.lesson-number{font-size:12px;font-weight:650;letter-spacing:1.4px;color:var(--accent)}h1{font-size:clamp(34px,5vw,54px);letter-spacing:-1.5px;line-height:1.13;margin:14px 0 20px;font-weight:600}h1 span{color:var(--accent)}.hero>p{font-size:18px;color:var(--muted);max-width:720px}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}.chips span{font-size:12px;background:var(--wash);border:1px solid var(--line);border-radius:4px;padding:5px 10px}.setup{border:1px solid var(--line);border-left:3px solid #77917d;padding:18px 22px;margin:0 0 38px;background:white;border-radius:4px}.setup p{margin:0}.setup p+p{margin-top:8px}.layout{display:grid;grid-template-columns:245px minmax(0,1fr);gap:52px;align-items:start}aside{position:sticky;top:24px;padding-bottom:30px}aside h2{font-size:14px;margin:0 0 12px}aside a{display:block;text-decoration:none;padding:7px 0;font-size:13px}aside a:hover{color:#162c1e;text-decoration:underline}aside a span{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:7px}aside .print{margin-top:20px}.lesson{border-top:1px solid var(--line);padding:30px 0 46px;scroll-margin-top:24px}.lesson h2{font-size:30px;letter-spacing:-.6px;line-height:1.25;margin:9px 0 12px;font-weight:600}.intro{font-size:18px;color:var(--muted);margin-top:0}h3{font-size:21px;font-weight:600;line-height:1.4;margin:28px 0 12px}h4{font-size:15px;margin:0;font-weight:650}p{margin:14px 0}.muted,.input-note{color:var(--muted);font-size:13px}button{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:4px;background:white;color:var(--accent);padding:7px 12px;cursor:pointer}button:hover{background:var(--wash)}code{font: .9em/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;background:#eaf0e9;padding:2px 5px;border-radius:3px;overflow-wrap:anywhere}pre{margin:0;padding:20px;background:#f0f3ef;overflow-x:auto;tab-size:4;font:14px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace}pre code{padding:0;background:none;overflow-wrap:normal;font:inherit}.example{border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:22px 0;background:white}.code-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}.example .input-note{padding:0 16px}.output{padding:12px 16px}.output pre{margin-top:12px;background:#fafaf8;font-size:13px}summary{cursor:pointer;color:var(--accent);font-weight:550;font-size:14px}details>p{font-size:14px}.task{border:1px solid #cfdccd;border-radius:5px;padding:20px 22px;margin:26px 0;background:#f4f7f2}.task>h4{font-size:16px}.task>p{margin-top:8px}.task>details{border-top:1px solid var(--line);padding:12px 0 0;margin-top:12px}.task .example{margin-bottom:0}.callout{border-left:3px solid #77917d;padding:12px 18px;background:var(--wash);font-size:14px}.table-wrap{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;font-size:14px;width:100%;background:white}td,th{border-bottom:1px solid var(--line);text-align:left;padding:11px 13px;vertical-align:top}thead{background:var(--wash)}.index-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:5px;background:white;overflow:hidden;margin:22px 0}.index-strip div{padding:12px;text-align:center;border-right:1px solid var(--line)}.index-strip div:last-child{border:0}.index-strip small{display:block;color:var(--muted);font-size:12px}.index-strip b{font-weight:550}.extension{border:1px solid var(--line);padding:16px 20px;border-radius:5px;margin-top:22px}.checklist{display:grid;gap:9px;margin:20px 0}.checklist label{display:flex;align-items:flex-start;gap:12px;background:white;border:1px solid var(--line);border-radius:4px;padding:12px 15px;font-size:14px}.checklist input{accent-color:var(--accent);width:17px;height:17px;flex-shrink:0;margin-top:4px}.source{border-top:1px solid var(--line);padding:30px 0;font-size:13px;color:var(--muted)}.source h2{font-size:18px;color:var(--ink)}footer{display:flex;justify-content:space-between;padding:24px 0;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}#copy-status{min-height:1.5em;font-size:12px;color:var(--muted)}
+@media(max-width:860px){.layout{grid-template-columns:1fr;gap:0}aside{position:static;display:block;border:1px solid var(--line);padding:18px 22px;margin-bottom:30px;border-radius:5px;background:white}aside .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.hero{padding-top:36px}.hero>p{font-size:17px}}
+@media(max-width:520px){.wrap{width:90%}.topbar{align-items:flex-start}.toplinks{gap:12px;font-size:12px}.lesson h2{font-size:26px}aside .topics{grid-template-columns:1fr}.code-heading{align-items:flex-start}.task{padding:16px}.example pre{padding:14px;font-size:12px}.index-strip div{padding:10px 5px}.toplinks .source-link{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{body{font-size:11pt;background:white}.wrap{width:100%}.topbar,.toplinks,aside,button,.skip,#copy-status{display:none}.layout{display:block}.hero{padding:0 0 15px}h1{font-size:28pt}.lesson{padding:20px 0}.lesson h2{font-size:21pt}details>summary{list-style:none}details> :not(summary){display:block!important}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:9pt}.task,.example{break-inside:avoid}.source a{overflow-wrap:anywhere}.checklist label{padding:5px}.source details{display:none}}
+
+figure{margin:16px 0;text-align:center}figure svg{width:100%;max-width:420px;max-height:280px;background:white;border:1px solid var(--line);border-radius:5px}figcaption{font-size:12px;color:var(--muted);text-align:left;margin-top:8px}.index-strip{grid-template-columns:repeat(3,1fr)}.next-step{margin-top:30px}.level-switch{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.level-switch a{border:1px solid var(--line);padding:6px 12px;border-radius:4px;font-size:13px;text-decoration:none}.level-switch a[aria-current]{background:var(--accent);color:white}</style></head>
+<body id="top"><a class="skip" href="#main">Skip to lessons</a><div class="wrap"><nav class="topbar" aria-label="Main navigation"><a class="brand" href="../">Ryan’s Lab</a><div class="toplinks"><a href="../#projects">All projects</a><a href="../python-level-2/">Level 2 →</a></div></nav>
+<header class="hero"><div class="eyebrow">PYTHON / START · TRY · CREATE</div><h1>Python Programming<br><span>Level 1</span></h1><p>Your first steps in Python. Write a message, calculate with input and turn simple instructions into colourful Turtle drawings.</p><div class="level-switch" aria-label="Python levels"><a href="./" aria-current="page">Level 1 · Start here</a><a href="../python-level-2/">Level 2 · Build on it →</a></div><div class="chips"><span>10 beginner sections</span><span>Worked Python 3 examples</span><span>Turtle drawing previews</span></div></header>
+<div class="setup"><p><strong>Start here:</strong> no previous Python knowledge is required. Use a Python 3 editor. Turtle examples need a graphics environment with Tk support.</p><p>Predict, copy, run, then change one thing. The examples do not execute in this webpage. Console examples include checked outputs; Turtle examples include illustrative previews. For input examples, the listed inputs show what to type, one value per line.</p></div>
+<div class="layout"><aside aria-label="Lesson contents"><h2>Learning path</h2><div class="topics"><a href="#start"><span>01</span> Meet your Python editor</a><a href="#output"><span>02</span> Print, strings & comments</a><a href="#variables"><span>03</span> Variables & useful names</a><a href="#types"><span>04</span> Numbers, text & conversion</a><a href="#input"><span>05</span> Input → process → output</a><a href="#arithmetic"><span>06</span> Arithmetic & order of operations</a><a href="#logic"><span>07</span> Comparisons & logical expressions</a><a href="#turtle-movement"><span>08</span> Turtle: position & movement</a><a href="#turtle-shapes"><span>09</span> Turtle: colour, circles & shapes</a><a href="#practice"><span>10</span> Practice & readiness</a></div><button type="button" class="print" id="print-page">Print / save as PDF</button><p id="copy-status" role="status" aria-live="polite"></p></aside><main id="main"><section class="lesson" id="start" aria-labelledby="title-start"><div class="lesson-number">LESSON 01</div><h2 id="title-start">Meet your Python editor</h2><p class="intro">Create, save and run your first program.</p>
+<p>Python follows the instructions you write. A program usually runs from top to bottom. In this course, use <strong>Python 3</strong> and an editor such as IDLE.</p>
+<div class="table-wrap"><table><thead><tr><th>Mode</th><th>What you do</th><th>When it helps</th></tr></thead><tbody><tr><td>Shell</td><td>Enter one instruction at the <code>&gt;&gt;&gt;</code> prompt.</td><td>Try a short calculation or inspect a result.</td></tr><tr><td>Editor / script</td><td>Save several instructions in a <code>.py</code> file.</td><td>Build a program you can change and run again.</td></tr></tbody></table></div>
+<h3>Your first saved program in IDLE</h3><ol><li>Open IDLE. Choose <strong>File → New File</strong>.</li><li>Type the code below in the new editor window.</li><li>Choose <strong>File → Save</strong> and name it <code>hello.py</code>.</li><li>Choose <strong>Run → Run Module</strong> (F5).</li><li>Look for the result in the Shell. Change the message, save and run again.</li></ol>
+<p class="callout">Copy only the code. Do not type the Shell prompt <code>&gt;&gt;&gt;</code> into your script. For Turtle work, choose a filename such as <code>my_drawing.py</code>; naming it <code>turtle.py</code> can hide Python’s Turtle module.</p>
+<div class="example"><div class="code-heading"><h4>Hello, Python</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(&quot;Hello, Python!&quot;)
+print(&quot;I can write a program.&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Hello, Python!
+I can write a program.</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Change the program to print your first name and one thing you want to make, on separate lines.</p><details><summary>Need a hint?</summary><p>Use two print calls. Put each message inside matching quotes.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>First program solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(&quot;My name is Ada.&quot;)
+print(&quot;I want to draw a robot.&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>My name is Ada.
+I want to draw a robot.</pre></details></div></details></div></section><section class="lesson" id="output" aria-labelledby="title-output"><div class="lesson-number">LESSON 02</div><h2 id="title-output">Print, strings & comments</h2><p class="intro">Display text and explain your code.</p>
+<p>A <strong>string</strong> is text inside quotes. Single and double quotes both work when the opening and closing quotes match. A <code>#</code> starts a comment that Python ignores for the rest of that line.</p>
+<div class="example"><div class="code-heading"><h4>Text, numbers and comments</h4><button type="button" class="copy">Copy code</button></div><pre><code># This program displays a short message.
+print(&quot;Hello&quot;)
+print(&#x27;Python is fun!&#x27;)
+print(2 + 3)       # Calculate first, then print.
+print(&quot;2 + 3&quot;)     # Print the text exactly as written.</code></pre><details class="output"><summary>Check the output</summary><pre>Hello
+Python is fun!
+5
+2 + 3</pre></details></div><h3>Choose how the output is arranged</h3><p><code>print()</code> normally separates its items with spaces and ends with a new line. Use <code>sep</code> and <code>end</code> to change this. Inside a string, <code>&#92;n</code> starts a new line and <code>&#92;t</code> inserts a tab.</p><div class="example"><div class="code-heading"><h4>New lines and separators</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(&quot;red&quot;, &quot;green&quot;, &quot;blue&quot;, sep=&quot; | &quot;)
+print(&quot;Hello&quot;, end=&quot; &quot;)
+print(&quot;Ada!&quot;)
+print(&quot;First line\nSecond line&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>red | green | blue
+Hello Ada!
+First line
+Second line</pre></details></div><p class="callout">Triple quotes create a multi-line <em>string</em>. They are not a separate comment syntax. Use <code>#</code> for ordinary comments.</p><div class="task"><h4>Try it yourself</h4><p>Print a three-step staircase using stars, one row per line: one star, two stars, then three stars.</p><details><summary>Need a hint?</summary><p>Use three print calls or one string containing new-line escapes.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Staircase solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(&quot;*&quot;)
+print(&quot;**&quot;)
+print(&quot;***&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>*
+**
+***</pre></details></div></details></div></section><section class="lesson" id="variables" aria-labelledby="title-variables"><div class="lesson-number">LESSON 03</div><h2 id="title-variables">Variables & useful names</h2><p class="intro">Give values names, then update them.</p>
+<p><code>=</code> assigns a value to a name. Python evaluates the right side first, then stores the result under the name on the left. A later assignment replaces the previous value for that name.</p>
+<div class="example"><div class="code-heading"><h4>A changing score</h4><button type="button" class="copy">Copy code</button></div><pre><code>score = 10
+print(score)
+score = score + 5
+print(score)
+print(&quot;score&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>10
+15
+score</pre></details></div><div class="table-wrap"><table><thead><tr><th>Good names</th><th>Names to avoid</th></tr></thead><tbody><tr><td><code>score</code>, <code>student_name</code>, <code>side_length</code></td><td><code>2score</code> starts with a digit.</td></tr><tr><td>Use letters, digits and underscores; begin with a letter or underscore.</td><td><code>my score</code> contains a space; <code>class</code> is a keyword.</td></tr><tr><td>Use consistent lowercase names. <code>score</code> and <code>Score</code> are different.</td><td><code>print</code>, <code>input</code>, <code>int</code> and <code>str</code> hide useful built-ins.</td></tr></tbody></table></div><p>Python also accepts many Unicode letters in names. We use English names here to keep examples easy to share.</p>
+<div class="example"><div class="code-heading"><h4>Use values in a message</h4><button type="button" class="copy">Copy code</button></div><pre><code>student_name = &quot;Ada&quot;
+age = 10
+print(student_name, &quot;is&quot;, age, &quot;years old.&quot;)</code></pre><details class="output"><summary>Check the output</summary><pre>Ada is 10 years old.</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Set a rectangle’s length to 8 and width to 5. Calculate its perimeter using variables, then print it.</p><details><summary>Need a hint?</summary><p>The perimeter is twice the sum of the length and width.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Rectangle perimeter solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>length = 8
+width = 5
+perimeter = 2 * (length + width)
+print(&quot;Perimeter:&quot;, perimeter)</code></pre><details class="output"><summary>Check the output</summary><pre>Perimeter: 26</pre></details></div></details></div></section><section class="lesson" id="types" aria-labelledby="title-types"><div class="lesson-number">LESSON 04</div><h2 id="title-types">Numbers, text & conversion</h2><p class="intro">Recognise a value’s type before you use it.</p>
+<div class="table-wrap"><table><thead><tr><th>Type</th><th>Example</th><th>Meaning</th></tr></thead><tbody><tr><td><code>int</code></td><td><code>12</code></td><td>A whole number.</td></tr><tr><td><code>float</code></td><td><code>12.5</code></td><td>A number represented with floating-point precision.</td></tr><tr><td><code>str</code></td><td><code>"12"</code></td><td>Text, even when it looks like a number.</td></tr><tr><td><code>bool</code></td><td><code>True</code>, <code>False</code></td><td>A truth value.</td></tr></tbody></table></div>
+<div class="example"><div class="code-heading"><h4>Same appearance, different types</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(type(12).__name__)
+print(type(12.5).__name__)
+print(type(&quot;12&quot;).__name__)
+print(type(True).__name__)
+print(&quot;12&quot; + &quot;3&quot;)
+print(12 + 3)</code></pre><details class="output"><summary>Check the output</summary><pre>int
+float
+str
+bool
+123
+15</pre></details></div><h3>Convert intentionally</h3><p><code>int()</code> converts an integer string to a whole number. <code>float()</code> handles decimal strings. <code>str()</code> converts a value to text. <code>int(3.9)</code> truncates toward zero; it does not round to the nearest integer.</p><div class="example"><div class="code-heading"><h4>Convert values</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(int(&quot;12&quot;) + 3)
+print(float(&quot;12.5&quot;) + 0.5)
+print(&quot;Age: &quot; + str(10))
+print(int(3.9))
+print(int(-3.9))</code></pre><details class="output"><summary>Check the output</summary><pre>15
+13.0
+Age: 10
+3
+-3</pre></details></div><p class="callout"><code>int("3.5")</code> and <code>int("hello")</code> raise ValueError. A string and an integer cannot be joined with <code>+</code> directly. Check the type and choose a suitable conversion.</p><div class="task"><h4>Try it yourself</h4><p>You have the text <code>"7"</code>. Show the difference between repeating that text three times and multiplying the number 7 by 3.</p><details><summary>Need a hint?</summary><p>String multiplication repeats text. Convert to int for arithmetic.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Text versus number solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>value = &quot;7&quot;
+print(value * 3)
+print(int(value) * 3)</code></pre><details class="output"><summary>Check the output</summary><pre>777
+21</pre></details></div></details></div></section><section class="lesson" id="input" aria-labelledby="title-input"><div class="lesson-number">LESSON 05</div><h2 id="title-input">Input → process → output</h2><p class="intro">Build a program that responds to the person using it.</p>
+<p><code>input(prompt)</code> displays a question, waits for the user to press Enter and returns a string. Convert the string before calculating with it.</p>
+<div class="index-strip"><div><small>INPUT</small><b>Ask for a side</b></div><div><small>PROCESS</small><b>side × side</b></div><div><small>OUTPUT</small><b>Show the area</b></div></div>
+<div class="example"><div class="code-heading"><h4>Square area calculator</h4><button type="button" class="copy">Copy code</button></div><pre><code>side = float(input(&quot;Side length (cm): &quot;))
+area = side * side
+print(&quot;Area:&quot;, area, &quot;square cm&quot;)</code></pre><p class="input-note">Example input, one value per line: <code>5</code></p><details class="output"><summary>Check the output</summary><pre>Side length (cm): Area: 25.0 square cm</pre></details></div><div class="example"><div class="code-heading"><h4>A repeated message</h4><button type="button" class="copy">Copy code</button></div><pre><code>count = int(input(&quot;How many times? &quot;))
+message = input(&quot;Your message: &quot;)
+print((message + &quot; &quot;) * count)</code></pre><p class="input-note">Example input, one value per line: <code>3 → Hello</code></p><details class="output"><summary>Check the output</summary><pre>How many times? Your message: Hello Hello Hello</pre></details></div><p class="callout">These examples assume sensible input: a non-negative length and a non-negative whole-number repeat count. Entering a word where a number is expected needs extra validation, which you can add as you learn decisions in Level 2.</p><div class="task"><h4>Try it yourself</h4><p>Ask for a person’s name and age. Print a greeting and the age they will reach on their next birthday.</p><details><summary>Need a hint?</summary><p>Keep the name as text; convert the age to int, then add 1.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Next birthday solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>name = input(&quot;Name: &quot;)
+age = int(input(&quot;Age: &quot;))
+print(&quot;Hello,&quot;, name)
+print(&quot;On your next birthday you will be&quot;, age + 1)</code></pre><p class="input-note">Example input, one value per line: <code>Ben → 10</code></p><details class="output"><summary>Check the output</summary><pre>Name: Age: Hello, Ben
+On your next birthday you will be 11</pre></details></div></details></div></section><section class="lesson" id="arithmetic" aria-labelledby="title-arithmetic"><div class="lesson-number">LESSON 06</div><h2 id="title-arithmetic">Arithmetic & order of operations</h2><p class="intro">Use Python to calculate and explain how an answer was produced.</p>
+<div class="table-wrap"><table><thead><tr><th>Operator</th><th>Meaning</th><th>Example</th></tr></thead><tbody><tr><td><code>+</code>, <code>-</code>, <code>*</code></td><td>Add, subtract, multiply.</td><td><code>7 * 3</code> → 21</td></tr><tr><td><code>/</code></td><td>True division.</td><td><code>7 / 2</code> → 3.5</td></tr><tr><td><code>//</code></td><td>Floor division: round the quotient down.</td><td><code>7 // 2</code> → 3</td></tr><tr><td><code>%</code></td><td>Remainder.</td><td><code>7 % 2</code> → 1</td></tr><tr><td><code>**</code></td><td>Power.</td><td><code>2 ** 3</code> → 8</td></tr></tbody></table></div>
+<div class="example"><div class="code-heading"><h4>Division and remainders</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(17 / 5)
+print(17 // 5)
+print(17 % 5)
+print(-7 // 2)
+print(5 ** 3)</code></pre><details class="output"><summary>Check the output</summary><pre>3.4
+3
+2
+-4
+125</pre></details></div><h3>Make the order clear with parentheses</h3><p>For these examples, powers are evaluated before multiplication and division, which come before addition and subtraction. Operations at the same multiplication/division or addition/subtraction level run left to right. Parentheses make your intended grouping clear.</p><div class="example"><div class="code-heading"><h4>Predict before you run</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(2 + 3 * 4)
+print((2 + 3) * 4)
+print(20 / 5 * 2)
+print(-2 ** 2)
+print((-2) ** 2)</code></pre><details class="output"><summary>Check the output</summary><pre>14
+20
+8.0
+-4
+4</pre></details></div><div class="example"><div class="code-heading"><h4>Update a value using +=</h4><button type="button" class="copy">Copy code</button></div><pre><code>points = 10
+points += 3
+print(points)
+points *= 2
+print(points)</code></pre><details class="output"><summary>Check the output</summary><pre>13
+26</pre></details></div><div class="task"><h4>Try it yourself</h4><p>Share 23 counters into complete groups of 4. Print the number of complete groups and the counters left over.</p><details><summary>Need a hint?</summary><p>Use floor division for complete groups and % for the remainder.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Grouping solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>counters = 23
+group_size = 4
+print(&quot;Complete groups:&quot;, counters // group_size)
+print(&quot;Left over:&quot;, counters % group_size)</code></pre><details class="output"><summary>Check the output</summary><pre>Complete groups: 5
+Left over: 3</pre></details></div></details></div></section><section class="lesson" id="logic" aria-labelledby="title-logic"><div class="lesson-number">LESSON 07</div><h2 id="title-logic">Comparisons & logical expressions</h2><p class="intro">Ask questions that produce True or False.</p>
+<p>Use <code>==</code> for equality, <code>!=</code> for inequality, and <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code> or <code>&gt;=</code> for numerical comparisons. A comparison produces a Boolean result. Remember: <code>=</code> assigns; <code>==</code> compares.</p>
+<div class="example"><div class="code-heading"><h4>Compare two numbers</h4><button type="button" class="copy">Copy code</button></div><pre><code>a = 21
+b = 10
+print(a == b)
+print(a != b)
+print(a &gt; b)
+print(a &lt; b)
+print(a &gt;= 21)
+print(b &lt;= 10)</code></pre><details class="output"><summary>Check the output</summary><pre>False
+True
+True
+False
+True
+True</pre></details></div><h3>Combine Boolean conditions</h3><p>With Boolean conditions, <code>and</code> requires both to be true; <code>or</code> requires at least one to be true; <code>not</code> reverses a truth value. In general Python, and/or can return their operands, so begin by combining explicit comparisons.</p><div class="example"><div class="code-heading"><h4>Combine conditions</h4><button type="button" class="copy">Copy code</button></div><pre><code>age = 10
+height = 135
+print(age &gt;= 8 and height &gt;= 120)
+print(age &lt; 8 or height &lt; 120)
+print(not (age &gt;= 8))
+number = 18
+print(number % 2 == 0)
+print(0 &lt;= number &lt;= 20)</code></pre><details class="output"><summary>Check the output</summary><pre>True
+False
+False
+True
+True</pre></details></div><div class="task"><h4>Try it yourself</h4><p>A number is inside the target range when it is at least 10 and at most 20. Print whether 10, 15 and 21 meet the rule.</p><details><summary>Need a hint?</summary><p>Both boundaries are included. Use two comparisons with and, or a chained comparison.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Boundary check solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>print(10 &lt;= 10 &lt;= 20)
+print(10 &lt;= 15 &lt;= 20)
+print(10 &lt;= 21 &lt;= 20)</code></pre><details class="output"><summary>Check the output</summary><pre>True
+True
+False</pre></details></div></details></div><p class="callout"><strong>Next-level bridge:</strong> printing True or False asks a question. Choosing a different action with <code>if / else</code> is taught in <a href="../python-level-2/#decisions">Level 2: decisions</a>. You do not need branches or loops for the core Level 1 examples here.</p></section><section class="lesson" id="turtle-movement" aria-labelledby="title-turtle-movement"><div class="lesson-number">LESSON 08</div><h2 id="title-turtle-movement">Turtle: position & movement</h2><p class="intro">Turn instructions into visible paths.</p>
+<p><code>turtle</code> is part of Python’s standard library. It needs a graphical environment with Tk support. Run these examples in a suitable desktop Python editor; they do not draw inside this webpage.</p><figure class="coordinate"><svg viewBox="0 0 420 260" role="img" aria-label="Turtle coordinates: origin at the centre, positive x to the right, positive y upward"><path d="M30 130H390 M210 240V20" stroke="#a9b8ac" stroke-width="2"/><path d="M382 124l8 6-8 6 M204 28l6-8 6 8" fill="none" stroke="#41634f" stroke-width="2"/><circle cx="210" cy="130" r="4" fill="#41634f"/><path d="M210 130L270 130" stroke="#41634f" stroke-width="4"/><path d="M268 123l13 7-13 7Z" fill="#41634f"/><g fill="#41634f" font-family="system-ui" font-size="14"><text x="320" y="118">+x / 0°</text><text x="223" y="30">+y / 90°</text><text x="35" y="118">180°</text><text x="220" y="237">270°</text><text x="170" y="156">(0, 0)</text></g></svg><figcaption>The turtle starts at (0, 0), facing right, in standard mode.</figcaption></figure>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Action</th></tr></thead><tbody><tr><td><code>forward(100)</code> / <code>backward(100)</code></td><td>Move along the current heading or in the opposite direction.</td></tr><tr><td><code>left(90)</code> / <code>right(90)</code></td><td>Turn relative to the current heading.</td></tr><tr><td><code>setheading(90)</code></td><td>Face up in standard mode, regardless of the previous heading.</td></tr><tr><td><code>goto(x, y)</code></td><td>Move to a position; keep the current heading.</td></tr><tr><td><code>penup()</code> / <code>pendown()</code></td><td>Move without drawing / draw while moving.</td></tr><tr><td><code>home()</code></td><td>Return to the origin and face right; draws if the pen is down.</td></tr></tbody></table></div>
+<div class="example"><div class="code-heading"><h4>Move, then turn</h4><button type="button" class="copy">Copy code</button></div><pre><code>import turtle
+turtle.setup(600, 400)
+turtle.pensize(3)
+turtle.forward(100)
+turtle.left(90)
+turtle.forward(80)
+turtle.hideturtle()
+turtle.done()</code></pre><details class="output"><summary>Preview the drawing</summary><figure><svg viewBox="0 0 360 260" role="img" aria-label="An L-shaped path: 100 steps right, then 80 steps up."><path d="M110 190H210V110" fill="none" stroke="#41634f" stroke-width="4"/><circle cx="110" cy="190" r="4" fill="#41634f"/><text x="95" y="218" font-size="14">Start (0, 0)</text><text x="218" y="106" font-size="14">End (100, 80)</text></svg><figcaption>An L-shaped path: 100 steps right, then 80 steps up. Illustrative preview; run the code in a Python editor with Turtle support.</figcaption></figure></details></div><div class="task"><h4>Try it yourself</h4><p>Move to (-100, -50) without drawing. Draw a horizontal line to (100, -50).</p><details><summary>Need a hint?</summary><p>Lift the pen, use goto, lower the pen, then use goto again.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Positioning solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>import turtle
+turtle.penup()
+turtle.goto(-100, -50)
+turtle.pendown()
+turtle.goto(100, -50)
+turtle.hideturtle()
+turtle.done()</code></pre><details class="output"><summary>Preview the drawing</summary><figure><svg viewBox="0 0 360 260" role="img" aria-label="One horizontal line, with no line from the origin."><path d="M80 170H280" stroke="#41634f" stroke-width="4"/><text x="62" y="200" font-size="14">(-100, -50)</text><text x="238" y="200" font-size="14">(100, -50)</text></svg><figcaption>One horizontal line, with no line from the origin. Illustrative preview; run the code in a Python editor with Turtle support.</figcaption></figure></details></div></details></div></section><section class="lesson" id="turtle-shapes" aria-labelledby="title-turtle-shapes"><div class="lesson-number">LESSON 09</div><h2 id="title-turtle-shapes">Turtle: colour, circles & shapes</h2><p class="intro">Control the pen and plan a complete drawing.</p>
+<p><code>pencolor()</code> sets the outline; <code>fillcolor()</code> sets the fill. Put the drawing between <code>begin_fill()</code> and <code>end_fill()</code>. Use <code>pensize()</code> for line width.</p><p><code>circle(radius, extent)</code> draws an arc measured in <strong>degrees</strong>. A positive radius puts the centre to the turtle’s left; <code>circle(50)</code> uses radius 50, so its diameter is 100. <code>dot(50)</code> draws a dot with <em>diameter</em> 50 at the current position.</p>
+<div class="example"><div class="code-heading"><h4>A filled circle and a separate dot</h4><button type="button" class="copy">Copy code</button></div><pre><code>import turtle
+turtle.pencolor(&quot;red&quot;)
+turtle.fillcolor(&quot;gold&quot;)
+turtle.begin_fill()
+turtle.circle(60)
+turtle.end_fill()
+turtle.penup()
+turtle.goto(160, 0)
+turtle.dot(40, &quot;blue&quot;)
+turtle.hideturtle()
+turtle.done()</code></pre><details class="output"><summary>Preview the drawing</summary><figure><svg viewBox="0 0 360 260" role="img" aria-label="A gold circle with a red outline, and a separate blue dot."><circle cx="110" cy="125" r="60" fill="gold" stroke="red" stroke-width="2"/><circle cx="270" cy="185" r="20" fill="blue"/></svg><figcaption>A gold circle with a red outline, and a separate blue dot. Illustrative preview; run the code in a Python editor with Turtle support.</figcaption></figure></details></div><div class="example"><div class="code-heading"><h4>A red square with green fill</h4><button type="button" class="copy">Copy code</button></div><pre><code>import turtle
+turtle.pensize(3)
+turtle.color(&quot;red&quot;, &quot;green&quot;)
+turtle.begin_fill()
+turtle.forward(120)
+turtle.left(90)
+turtle.forward(120)
+turtle.left(90)
+turtle.forward(120)
+turtle.left(90)
+turtle.forward(120)
+turtle.left(90)
+turtle.end_fill()
+turtle.hideturtle()
+turtle.done()</code></pre><details class="output"><summary>Preview the drawing</summary><figure><svg viewBox="0 0 360 260" role="img" aria-label="A square with four equal sides and four 90° turns."><rect x="120" y="70" width="120" height="120" fill="green" stroke="red" stroke-width="3"/></svg><figcaption>A square with four equal sides and four 90° turns. Illustrative preview; run the code in a Python editor with Turtle support.</figcaption></figure></details></div><p>Use <code>clear()</code> to remove drawings while keeping the turtle’s state. <code>reset()</code> also resets its position and pen settings. <code>speed(1)</code> is slow, <code>speed(10)</code> is fast, and <code>speed(0)</code> disables animation. Put <code>done()</code> at the end to start the graphics event loop and keep the window responsive until it is closed.</p>
+<div class="task"><h4>Try it yourself</h4><p>Draw an equilateral triangle with side length 140. Predict the turn at each corner before opening the solution.</p><details><summary>Need a hint?</summary><p>Use an exterior turn of 120°, not the interior angle of 60°. The three turns total 360°.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Triangle solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>import turtle
+turtle.pencolor(&quot;purple&quot;)
+turtle.forward(140)
+turtle.left(120)
+turtle.forward(140)
+turtle.left(120)
+turtle.forward(140)
+turtle.left(120)
+turtle.hideturtle()
+turtle.done()</code></pre><details class="output"><summary>Preview the drawing</summary><figure><svg viewBox="0 0 360 260" role="img" aria-label="An equilateral triangle, made with three 120° turns."><path d="M110 190L250 190L180 68.756Z" fill="none" stroke="purple" stroke-width="3"/></svg><figcaption>An equilateral triangle, made with three 120° turns. Illustrative preview; run the code in a Python editor with Turtle support.</figcaption></figure></details></div></details></div></section><section class="lesson" id="practice" aria-labelledby="title-practice"><div class="lesson-number">LESSON 10</div><h2 id="title-practice">Practice & readiness</h2><p class="intro">Build a small program, test it and explain your choices.</p>
+<h3>Challenge 1 · Mini calculator</h3><p>Ask for two numbers. Print their sum, difference, product and quotient. For this Level 1 version, ask the user to enter a non-zero second number. Test with whole numbers and decimals.</p><div class="task"><h4>Try it yourself</h4><p>Write the calculator, then explain where input, processing and output happen.</p><details><summary>Need a hint?</summary><p>Use float for decimal values. In Level 2, add an if statement to check for division by zero.</p></details><details><summary>Show a solution</summary><div class="example"><div class="code-heading"><h4>Mini calculator solution</h4><button type="button" class="copy">Copy code</button></div><pre><code>a = float(input(&quot;First number: &quot;))
+b = float(input(&quot;Second number (not zero): &quot;))
+print(&quot;Sum:&quot;, a + b)
+print(&quot;Difference:&quot;, a - b)
+print(&quot;Product:&quot;, a * b)
+print(&quot;Quotient:&quot;, a / b)</code></pre><p class="input-note">Example input, one value per line: <code>7.5 → 2.5</code></p><details class="output"><summary>Check the output</summary><pre>First number: Second number (not zero): Sum: 10.0
+Difference: 5.0
+Product: 18.75
+Quotient: 3.0</pre></details></div></details></div><h3>Challenge 2 · Your own drawing</h3><p>Use the Turtle examples to design a small badge. Include a shape, a coloured fill and a separate dot. Before coding, sketch the drawing and label the starting position, lengths and turns. Change one value and predict what will happen.</p>
+<h3>Debugging: read the evidence</h3><div class="table-wrap"><table><thead><tr><th>Symptom</th><th>What to check</th></tr></thead><tbody><tr><td>SyntaxError</td><td>Matching quotes and brackets; use straight quotes in code.</td></tr><tr><td>NameError</td><td>Spelling, capital letters and whether the variable was assigned first.</td></tr><tr><td>TypeError</td><td>Are you joining text to a number, or using a name that hides a built-in?</td></tr><tr><td>ValueError</td><td>Can the input string be converted to the requested number type?</td></tr><tr><td>ZeroDivisionError</td><td>The divisor must not be zero.</td></tr><tr><td>Wrong drawing</td><td>Heading, turn direction, pen state and radius versus diameter.</td></tr><tr><td>No Turtle window</td><td>The editor needs graphics/Tk support; check for a local file named turtle.py.</td></tr></tbody></table></div>
+<p>Change one thing at a time. Run the program again and compare the result with your prediction.</p>
+<h3>My learning checklist</h3><p class="muted">These checks are saved only in this browser on this device, separately from Level 2.</p><div class="checklist"><label><input type="checkbox" data-check="0"> I can create, save, run and change a Python script.</label><label><input type="checkbox" data-check="1"> I can use print, matching quotes, comments and new lines.</label><label><input type="checkbox" data-check="2"> I can assign and update variables using clear names.</label><label><input type="checkbox" data-check="3"> I can distinguish text, whole numbers, decimals and Booleans.</label><label><input type="checkbox" data-check="4"> I can convert input before performing a calculation.</label><label><input type="checkbox" data-check="5"> I can explain division, floor division, remainders and powers.</label><label><input type="checkbox" data-check="6"> I can evaluate comparisons and combine Boolean conditions.</label><label><input type="checkbox" data-check="7"> I can move a Turtle using coordinates, headings and pen control.</label><label><input type="checkbox" data-check="8"> I can draw a coloured shape and explain its turns.</label><label><input type="checkbox" data-check="9"> I can find a mistake, test a correction and explain the result.</label></div><p id="progress-text" role="status"></p><button type="button" id="reset-progress">Reset checklist</button>
+<div class="setup next-step"><p><strong>Ready for the next step?</strong> Learn collections, decisions and repetition in <a href="../python-level-2/">Python Programming · Level 2 →</a>.</p></div>
+<details class="extension"><summary>Optional creative extensions from the source</summary><p>The notebook also includes a five-pointed star, a sunflower, spirals, a clock and a leaf pattern. Some use loops, functions or extra libraries. Return to them after learning the relevant Level 2 ideas; they are not prerequisites for finishing this page.</p></details></section>
+<section class="source" id="source"><h2>About these learning notes</h2><p>English learning adaptation of <em>电子学会Python编程等级考试一级培训.ipynb</em> from the supplied <a href="https://drive.google.com/file/d/1g5kK9pWCEvAFk5wDRgJC-q_PCPjROGyt/view?usp=sharing">Google Drive archive</a>. The archive also contains a v1 Level 1 notebook and Level 2 resources.</p><p>The page follows the Level 1 themes: using an editor, sequential programs, basic syntax, variables, data conversion, input/output, operators and Turtle graphics. Conditional branches and loops are signposted as further learning. Examples have been translated and shortened. Clarifications correct comments versus triple-quoted strings, Turtle’s standard-library status, degrees versus radians, and speed(0). This is a learning adaptation, not a verified current exam specification.</p><details><summary>Source mapping for teachers</summary><p>Cell numbers are zero-based positions in the supplied Level 1 notebook without the v1 suffix.</p><ul><li>Meet your Python editor: notebook cells 0–2.</li><li>Print, strings & comments: notebook cells 3–21; 45–56; 74–85.</li><li>Variables & useful names: notebook cells 22–40.</li><li>Numbers, text & conversion: notebook cells 41–71.</li><li>Input → process → output: notebook cells 72–93.</li><li>Arithmetic & order of operations: notebook cells 94–107; 125–128.</li><li>Comparisons & logical expressions: notebook cells 108–124; 129–131.</li><li>Turtle: position & movement: notebook cells 132–152.</li><li>Turtle: colour, circles & shapes: notebook cells 149–187.</li><li>Practice & readiness: notebook cells 34–40; 74–107; 158–202.</li></ul></details></section></main></div>
+<footer><span>Ryan’s Lab · Python Level 1</span><a href="#top" id="back-top">Back to top ↑</a></footer></div><script>
+const status = document.querySelector('#copy-status');
+document.querySelectorAll('.copy').forEach(button => button.addEventListener('click', async () => {
+  const code = button.closest('.example').querySelector('pre code').textContent;
+  try {
+    if (!navigator.clipboard || !window.isSecureContext) throw new Error('Clipboard unavailable');
+    await navigator.clipboard.writeText(code);
+    status.textContent = 'Code copied. Paste it into your Python editor.';
+    button.textContent = 'Copied';
+    setTimeout(() => button.textContent = 'Copy code', 1800);
+  } catch {
+    const range = document.createRange();
+    range.selectNodeContents(button.closest('.example').querySelector('pre code'));
+    const selection = window.getSelection();
+    selection.removeAllRanges(); selection.addRange(range);
+    status.textContent = 'Code selected. Use your device’s Copy command.';
+    button.textContent = 'Code selected';
+  }
+}));
+const storageKey = 'ryan-python-level-1-checklist-v1';
+const checks = [...document.querySelectorAll('[data-check]')];
+let persistent = true;
+function updateProgress() {
+  document.querySelector('#progress-text').textContent = checks.filter(c => c.checked).length + ' of ' + checks.length + ' skills checked.' + (persistent ? '' : ' Storage is unavailable; changes last for this visit only.');
+}
+try {
+  const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  if (Array.isArray(saved)) checks.forEach(c => c.checked = saved.includes(c.dataset.check));
+} catch { persistent = false; }
+function saveProgress() {
+  try { localStorage.setItem(storageKey, JSON.stringify(checks.filter(c => c.checked).map(c => c.dataset.check))); }
+  catch { persistent = false; }
+  updateProgress();
+}
+checks.forEach(c => c.addEventListener('change', saveProgress));
+document.querySelector('#reset-progress').addEventListener('click', () => { checks.forEach(c => c.checked = false); saveProgress(); });
+updateProgress();
+document.querySelector('#print-page').addEventListener('click', () => {
+  const states = [...document.querySelectorAll('details')].map(d => [d, d.open]);
+  states.forEach(([d]) => d.open = true);
+  window.print();
+  states.forEach(([d, open]) => d.open = open);
+});
+document.querySelector('#back-top').addEventListener('click', e => { e.preventDefault(); window.scrollTo({top:0, behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'}); });
+</script></body></html>
