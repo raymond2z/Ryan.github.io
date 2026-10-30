@@ -10,7 +10,18 @@ const workspace=find('.workspace'),pitch=find('.pitch-panel'),fit=find('.fit-pan
 const tuning=find('.tuning-panel'),basic=document.createElement('div');basic.className='learning-basics';find('.panel-header').after(basic);
 const labels={mass:['Car weight','Light','Heavy'],wheels:['Wheel weight','Light','Heavy'],crr:['Rolling resistance','Smooth','Rough']};
 for(const [key,[label,low,high]] of Object.entries(labels)){const row=$('range-'+key).closest('.parameter');basic.append(row);row.querySelector('label').textContent=label;$('range-'+key).setAttribute('aria-label',label);row.querySelector('.range-limits').innerHTML='<span>'+low+'</span><span>'+high+'</span>';}
-const note=$('change-note');basic.after(note);drawer('More car settings',[find('.tabs'),$('controls-car'),$('controls-loss'),$('controls-track'),find('.search-box')],tuning);
+const note=$('change-note');basic.after(note);const carExtras=drawer('More car settings',[find('.tabs'),$('controls-car'),$('controls-loss'),find('.search-box')],tuning);
+// Reuse the original tilt inputs and handlers so saving, importing and both
+// physics models continue to use the same single track-angle setting.
+const tiltRow=$('range-tilt').closest('.parameter');
+const trackSettings=drawer('Track settings',[tiltRow],tuning);trackSettings.id='track-settings';trackSettings.open=true;tuning.insertBefore(trackSettings,carExtras);
+tiltRow.querySelector('label').textContent='Tilt the track';$('range-tilt').setAttribute('aria-label','Tilt the track');tiltRow.querySelector('.range-limits').innerHTML='<span>−10° · Lower finish</span><span>+10° · Higher finish</span>';
+$('hint-tilt').textContent='Tilt the whole track around the starting line. 0° restores the original 3MF angle. Both labs use this angle.';
+const trackActions=document.createElement('div');trackActions.className='track-actions';const trackReset=document.createElement('button');trackReset.id='track-reset';trackReset.className='button secondary';trackReset.type='button';trackReset.textContent='Reset track';const trackReadout=document.createElement('span');trackReadout.id='track-readout';trackReadout.setAttribute('role','status');trackReadout.setAttribute('aria-live','polite');trackActions.append(trackReset,trackReadout);trackSettings.append(trackActions);
+const syncTrack=p=>{trackReadout.textContent=p.tilt===0?'Original track angle · 0°':`${p.tilt>0?'+':''}${p.tilt.toFixed(1)}° from the original track`;};syncTrack({tilt:Number($('range-tilt').value)});window.addEventListener('derby-setup-change',e=>syncTrack(e.detail.params));
+trackReset.onclick=()=>{window.dispatchEvent(new Event('derby-activity-change'));$('range-tilt').value=DerbyPhysics.defaults.tilt;$('range-tilt').dispatchEvent(new Event('input',{bubbles:true}));};
+$('tab-track').remove();const trackAdvanced=$('controls-track');trackAdvanced.hidden=false;trackAdvanced.removeAttribute('role');trackAdvanced.removeAttribute('aria-labelledby');drawer('Launch & landing · Advanced',[trackAdvanced],trackSettings);
+const trackHelp=document.createElement('p');trackHelp.className='fit-help';trackHelp.textContent='Starting speed and restitution affect both labs. Landing speed retained applies only to Race Lab. Reset track changes only the angle.';trackAdvanced.append(trackHelp);
 const simulation=find('.simulation');simulation.append(find('.feedback'));const telemetry=drawer('Why did this happen?',[find('.chart-card'),find('.events-panel')],simulation);
 telemetry.append(find('.feedback'));
 fit.querySelector('.fit-intro').textContent='Check the body and wheels against the original track. These dimensions also change the Balance Lab experiment.';
@@ -30,7 +41,7 @@ pitch.insertBefore(advanced,fitDrawer);pitch.querySelector('h2').textContent='Ke
 const caution=document.createElement('p');caution.className='learning-caution';caution.textContent='A model to explore, not a real-car prediction. Balance Lab uses different physics and timing from Race Lab.';pitch.querySelector('.fit-intro').after(caution);
 const contact=$('pitch-contact').parentElement;contact.className='learning-contact';pitch.querySelector('.pitch-layout').before(contact);
 const shared=document.createElement('button');shared.className='button secondary';shared.textContent='Change weight & wheels in Race Lab';shared.onclick=()=>select('race');pitch.querySelector('.tool-actions').append(shared);
-function select(mode){window.dispatchEvent(new Event('derby-activity-change'));const race=mode==='race';workspace.hidden=!race;pitch.hidden=race;files.hidden=!race;$('choose-race').setAttribute('aria-pressed',race);$('choose-balance').setAttribute('aria-pressed',!race);guide.textContent=race?'1. Change a slider   →   2. Start the race   →   3. Try another idea':'1. Move the balance point   →   2. Play   →   3. Watch the wheels';}
+function select(mode){window.dispatchEvent(new Event('derby-activity-change'));const race=mode==='race';workspace.hidden=!race;pitch.hidden=race;files.hidden=!race;if(race)tuning.insertBefore(trackSettings,carExtras);else pitch.insertBefore(trackSettings,$('pitch-controls'));$('choose-race').setAttribute('aria-pressed',race);$('choose-balance').setAttribute('aria-pressed',!race);guide.textContent=race?'1. Change a slider   →   2. Start the race   →   3. Try another idea':'1. Move the balance point   →   2. Play   →   3. Watch the wheels';}
 $('choose-race').onclick=()=>select('race');$('choose-balance').onclick=()=>select('balance');
 // Existing deep links still reveal their destination.
 function reveal(){if(location.hash==='#pitch-heading')select('balance');if(location.hash==='#fit-heading'){select('balance');fitDrawer.open=true;}}
