@@ -8,6 +8,9 @@
 <style>
 :root{color-scheme:light;--paper:#f7f8f4;--ink:#203b35;--muted:#728079;--line:#e0e5dc;--green:#285e4b;--blue:#8cb9cd;--coral:#e9b39e;--gold:#ead18e}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Segoe UI","Microsoft JhengHei",sans-serif;font-size:14px}button,input{font:inherit}button{cursor:pointer;color:inherit}button:disabled{cursor:default;opacity:.45}button:focus-visible,input:focus-visible,canvas:focus-visible,select:focus-visible{outline:3px solid #bf8e3e;outline-offset:4px}svg{display:block}header{height:88px;max-width:1600px;margin:auto;padding:0 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:12px}.logo{width:40px;height:40px;background:var(--green);border-radius:12px;display:grid;place-items:center;color:#fff}.brand strong{font-size:19px;letter-spacing:1px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:2.4px;margin-top:4px}.head-right{display:flex;align-items:center;gap:20px}.offline{font-size:12px;color:var(--muted)}.offline:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#7b9b70;margin-right:8px}.help{background:transparent;border:1px solid var(--line);border-radius:50%;width:32px;height:32px;font-weight:700}.page{max-width:1600px;margin:auto;padding:30px 40px 24px}.intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:25px;gap:20px}.eyebrow{font-size:10px;letter-spacing:2px;color:#78836d;font-weight:700;margin:0 0 10px}h1{font-size:28px;letter-spacing:1px;margin:0 0 9px;font-weight:650}.intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.7}.mode-tabs{display:flex;border:1px solid var(--line);padding:4px;border-radius:10px;background:#eeefe9;flex-shrink:0;gap:3px}.mode-tabs button{border:0;background:none;padding:9px 19px;border-radius:7px;font-size:12px;color:var(--muted)}.mode-tabs button.active{background:white;color:var(--ink);box-shadow:0 2px 4px #233d3510;font-weight:600}.layout{display:grid;grid-template-columns:266px minmax(0,1fr);gap:22px;align-items:start}.catalogue{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 16px}.panel-heading{display:flex;justify-content:space-between;align-items:center;margin:0 3px 8px}.panel-heading h2{font-size:14px;margin:0}.count{font-size:10px;color:var(--muted);border:1px solid var(--line);padding:3px 7px;border-radius:5px}.catalogue-intro{font-size:11px;color:var(--muted);margin:0 3px 16px;line-height:1.7}.group-title{font-size:10px;color:#748069;margin:15px 4px 9px;display:flex;justify-content:space-between}.net-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.net-card{position:relative;display:flex;flex-direction:column;align-items:center;background:#fafbf8;border:1px solid #edf0e8;border-radius:9px;padding:9px 4px 7px;min-height:91px;transition:background .15s,border-color .15s}.net-card:hover{background:#f0f4ed;border-color:#bacbb9}.net-card[aria-pressed=true]{background:#eef4e9;border-color:#63896c;box-shadow:0 0 0 1px #63896c}.net-card[aria-pressed=true]:after{content:"✓";position:absolute;right:6px;top:4px;font-size:10px;color:var(--green)}.net-card svg{height:50px;width:86px;margin:0 0 5px}.net-card span{font-size:10px}.net-card em{color:#74816d;font-style:normal;margin-right:5px;font-size:9px}.catalogue-note{display:flex;gap:8px;font-size:10px;line-height:1.7;color:var(--muted);margin:17px 3px 0;padding-top:13px;border-top:1px solid var(--line)}.workspace{min-width:0}.stage{background:#f0f2eb;border:1px solid #dde3d7;border-radius:16px;overflow:hidden;position:relative}.stage-top{position:absolute;top:23px;left:26px;right:22px;z-index:2;display:flex;align-items:start;justify-content:space-between;pointer-events:none;gap:10px}.stage-top>*{pointer-events:auto}.stage-kicker{font-size:9px;letter-spacing:1.6px;color:#75836b;margin-bottom:8px}.stage-title{display:flex;gap:10px;align-items:center}.stage-title h2{font-size:20px;margin:0;font-weight:600}.badge{font-size:10px;border:1px solid #cfdbc7;color:#617958;padding:4px 8px;border-radius:5px;white-space:nowrap}.stage-subtitle{font-size:11px;color:var(--muted);margin-top:8px}.view-buttons{display:flex;gap:5px}.view-buttons button{background:#ffffffc9;border:1px solid #dce3d5;border-radius:7px;padding:8px 11px;font-size:11px;white-space:nowrap}.view-buttons button:hover{background:#fff}.view-buttons button[aria-pressed=true]{color:white;background:var(--green);border-color:var(--green)}.canvas-wrap{height:450px;position:relative}canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}.stage-caption{position:absolute;bottom:20px;left:26px;right:24px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;gap:10px}.drag-hint{font-size:10px;color:#708268;display:flex;gap:7px;align-items:center}.stage-index{font-size:10px;letter-spacing:1.6px;color:#708066}.legend{position:absolute;bottom:55px;left:26px;display:flex;gap:16px;pointer-events:none;font-size:10px;color:#617757}.legend span:before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:var(--coral)}.legend span:first-child:before{background:var(--blue)}.legend span:last-child:before{background:var(--gold)}.fold-panel{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 24px;margin-top:15px;display:flex;gap:23px;align-items:center}.play{width:43px;height:43px;flex-shrink:0;border:0;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center}.play:hover{background:#1c4939}.slider-group{flex:1;min-width:0}.slider-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.slider-top label{font-size:12px;font-weight:600}.slider-top output{font-variant-numeric:tabular-nums;font-size:18px;font-weight:600}.slider-top output small{font-size:10px;font-weight:400;color:var(--muted)}input[type=range]{appearance:none;width:100%;height:5px;border-radius:6px;background:linear-gradient(to right,var(--green) var(--progress,0%),#e5e9df var(--progress,0%));margin:8px 0 10px;cursor:pointer}input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:#fff;border:4px solid var(--green);border-radius:50%;box-shadow:0 1px 3px #0002}input[type=range]::-moz-range-thumb{width:10px;height:10px;background:white;border:4px solid var(--green);border-radius:50%}.slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}.speed{border-left:1px solid var(--line);padding-left:20px;display:flex;flex-direction:column;gap:8px;align-items:center}.speed label{font-size:9px;color:var(--muted)}select{font:inherit;background:#f7f8f4;border:1px solid var(--line);border-radius:6px;padding:5px;font-size:11px;color:var(--ink)}.learning{margin-top:16px;display:grid;grid-template-columns:1.15fr 1fr;gap:16px}.learning-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:19px 21px}.learning-card h3{font-size:12px;margin:0 0 10px}.learning-card p{font-size:11px;color:var(--muted);line-height:1.8;margin:0}.pair{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:7px 10px;border-radius:6px;background:#f3f5ef;font-size:11px}.face-dot{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;background:var(--blue);color:#263f40;font-size:11px;font-weight:650}.pair-arrow{color:#73866a;font-size:11px}.face-controls{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}.face-controls button{width:28px;height:28px;background:#f7f8f4;border:1px solid var(--line);border-radius:6px;font-size:11px}.face-controls button[aria-pressed=true]{background:var(--green);color:#fff;border-color:var(--green)}.tip-label{font-size:9px;letter-spacing:1px;color:#74866b;margin-bottom:8px}.question{font-size:13px!important;font-weight:600;color:var(--ink)!important}.quiz-buttons{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}.quiz-buttons button{min-width:31px;height:31px;background:#f7f8f4;border:1px solid var(--line);border-radius:6px}.quiz-buttons button.correct{background:#e6f0de;border-color:#6e9662}.quiz-buttons button.wrong{background:#fbede6;border-color:#c98a6b}.quiz-feedback{min-height:36px;padding-top:9px}.next-question{border:0;border-radius:6px;background:var(--green);color:#fff;padding:7px 11px;font-size:11px;margin-top:8px}.quiz-stats{font-size:10px;color:var(--muted);margin-top:10px}.footer{margin-top:20px;display:flex;justify-content:space-between;font-size:10px;color:#7b8870;line-height:1.8;gap:10px}.footer kbd{font-family:inherit;border:1px solid var(--line);border-radius:3px;padding:1px 4px;background:white}dialog{border:1px solid var(--line);border-radius:18px;padding:28px;max-width:440px;width:calc(100% - 32px);color:var(--ink);background:var(--paper);box-shadow:0 15px 80px #203b3530}dialog::backdrop{background:#1e302f66;backdrop-filter:blur(3px)}dialog h2{font-size:20px;margin:0 0 20px}dialog p{font-size:13px;line-height:1.9;color:#637363}dialog button{border:0;background:var(--green);color:white;border-radius:7px;padding:10px 20px;margin-top:10px}[hidden]{display:none!important}
+.comparison{display:grid;grid-template-columns:minmax(0,1fr) 194px;gap:14px;align-items:stretch}.plane-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 15px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0}.plane-panel h3{font-size:13px;margin:7px 0 0}.plane-label{font-size:9px;letter-spacing:1.5px;color:var(--muted)}.flat-grid{display:grid;gap:3px;width:100%;max-width:176px;align-self:center}.map-face{padding:0;aspect-ratio:1;border:1px solid #738775;border-radius:4px;font-size:13px;font-weight:600;min-width:0;position:relative}.map-face[aria-pressed=true]{border:2px solid #234d3c}.map-face.paired{border:2px dashed #234d3c}.map-face.active-fold{outline:3px solid #be8240;outline-offset:1px;z-index:1}.map-face:disabled{opacity:1}.map-info{font-size:11px;line-height:1.7;color:var(--muted)}.map-info strong{display:block;color:var(--ink);font-weight:600;margin-bottom:7px}.map-info p{margin:0}.fold-guide{margin-top:15px;border:1px solid var(--line);border-radius:13px;background:white;overflow:hidden}.fold-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px;border-bottom:1px solid #edf0e8;font-size:11px}.fold-modes{display:flex;gap:4px;background:#f1f3ec;padding:3px;border-radius:7px}.fold-modes button{border:0;border-radius:5px;padding:7px 11px;font-size:11px;background:transparent;color:var(--muted)}.fold-modes button[aria-pressed=true]{background:var(--green);color:white}.fold-guide .fold-panel{border:0;margin:0;padding:17px 20px;border-radius:0}.step-panel{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;background:#f8f9f5;border-top:1px solid #edf0e8;padding:14px 20px}.step-panel button{border:1px solid #cbd7c4;border-radius:7px;background:white;font-size:11px;padding:10px;min-height:40px;white-space:nowrap}.step-panel button:last-child{background:var(--green);border-color:var(--green);color:white}.step-message{min-width:0}.step-message strong{font-size:11px;display:block;margin-bottom:5px}.step-message p{font-size:10px;line-height:1.6;color:var(--muted);margin:0}.quick-switch{display:none}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-width:1199px){.comparison{grid-template-columns:1fr}.plane-panel{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px 22px;padding:17px 21px;align-items:center}.plane-panel .flat-grid{grid-column:2;grid-row:1 / 3;width:150px}.map-info{font-size:10px}.map-info strong{margin-bottom:4px}.plane-panel h3{font-size:12px}.plane-label{font-size:8px}}
+@media(max-width:760px){.quick-switch{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:7px;position:sticky;top:8px;z-index:4;margin-bottom:12px;padding:7px;background:#f7f8f4ed;backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:10px;box-shadow:0 3px 12px #243c3610}.quick-switch button{min-height:40px;border:1px solid var(--line);background:white;border-radius:6px;font-size:16px}.quick-switch select{width:100%;height:40px;font-size:12px;padding:6px 9px;background:white}.plane-panel{grid-template-columns:minmax(0,1fr) 132px;padding:15px 17px;gap:8px 16px}.plane-panel .flat-grid{width:132px}.fold-toolbar{padding:12px 16px}.fold-guide .fold-panel{padding:15px 16px}.step-panel{padding:12px;gap:10px}.step-panel button{padding:9px 7px}.map-face{font-size:12px}}
 @media(min-width:1400px){.canvas-wrap{height:510px}.net-card{min-height:100px}.net-card svg{height:59px}}
 @media(max-width:1050px){header{padding:0 24px}.page{padding:25px 24px}.layout{grid-template-columns:226px minmax(0,1fr);gap:16px}.catalogue{padding:17px 12px}.canvas-wrap{height:420px}.view-buttons{flex-direction:column}.stage-top{left:20px}.fold-panel{padding:18px;gap:15px}.offline{display:none}.stage-title h2{font-size:18px}}
 @media(max-width:760px){header{height:72px;padding:0 18px}.brand strong{font-size:16px}.brand small{font-size:8px}.logo{width:35px;height:35px}.page{padding:24px 16px 18px}.intro{align-items:start;gap:17px;flex-direction:column;margin-bottom:20px}h1{font-size:25px}.intro p{font-size:12px}.mode-tabs{align-self:stretch}.mode-tabs button{flex:1}.layout{display:flex;flex-direction:column-reverse;gap:18px}.workspace,.catalogue{width:100%}.catalogue{padding:18px}.net-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.net-card{min-height:75px;padding:7px 1px}.net-card svg{width:100%;height:43px}.net-card span{font-size:9px}.net-card em{display:none}.net-card[aria-pressed=true]:after{right:3px;top:2px}.canvas-wrap{height:410px}.stage-top{left:18px;right:15px;top:20px}.stage-title{gap:6px}.stage-title h2{font-size:18px}.badge{font-size:9px;padding:3px 5px}.stage-subtitle{font-size:10px}.stage-caption{left:18px;right:18px}.legend{left:18px}.fold-panel{padding:17px 16px;gap:13px}.speed{padding-left:12px}.learning{gap:12px}.learning-card{padding:17px 15px}.footer{font-size:9px}.footer span:last-child{display:none}}
@@ -22,16 +25,22 @@
 <div class="layout">
 <aside class="catalogue" aria-label="展開圖目錄"><div class="panel-heading"><h2>選一張展開圖</h2><span class="count">11 NETS</span></div><p class="catalogue-intro">不同的路徑，都能摺成同一個正方體。</p><div id="catalogue"></div><div class="catalogue-note"><span aria-hidden="true">◈</span><span>旋轉或翻轉後相同的圖形，只算一種。</span></div></aside>
 <section class="workspace" aria-label="互動研究區">
+<nav class="quick-switch" aria-label="快速切換展開圖"><button id="previousNet" aria-label="上一款展開圖">‹</button><label class="sr-only" for="quickNet">快速選擇展開圖</label><select id="quickNet"></select><button id="nextNet" aria-label="下一款展開圖">›</button></nav>
+<div class="comparison">
 <div class="stage"><div class="stage-top"><div><div class="stage-kicker">INTERACTIVE MODEL</div><div class="stage-title"><h2 id="netTitle">經典十字</h2><span class="badge" id="familyBadge">1–4–1 型</span></div><div class="stage-subtitle" id="netSubtitle">六個面，從這裡開始。</div></div><div class="view-buttons" role="group" aria-label="模型視角"><button id="flatView" aria-pressed="false">俯視</button><button id="isoView" aria-pressed="true">立體</button><button id="resetView" title="重設視角與縮放（R）">↺ 重設</button></div></div>
 <div class="canvas-wrap"><canvas id="model" tabindex="0" aria-label="可旋轉的正方體展開圖。拖曳旋轉，滾輪縮放；可用下方按鈕選面。"></canvas></div>
 <div class="legend" id="legend"><span>基準面</span><span>側面</span><span>相對面</span></div><div class="stage-caption"><span class="drag-hint"><span aria-hidden="true">⤧</span><span id="gestureHint">拖曳旋轉 · 滾輪縮放 · 點選面</span></span><span class="stage-index" id="stageIndex">01 / 11</span></div></div>
-<div class="fold-panel"><button class="play" id="playButton" aria-label="播放摺疊動畫" title="播放／暫停（空白鍵）"><svg id="playIcon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2 14 8 4 14Z"/></svg></button><div class="slider-group"><div class="slider-top"><label for="foldSlider">摺疊進度</label><output id="foldOutput" for="foldSlider">25<small> %</small></output></div><input id="foldSlider" type="range" min="0" max="100" step="1" value="25"><div class="slider-labels"><span>平面展開</span><span id="angleLabel">摺痕 22.5°</span><span>立體閉合</span></div></div><div class="speed"><label for="speedSelect">動畫速度</label><select id="speedSelect"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></div></div>
+<aside class="plane-panel" aria-label="平面與立體同步對照"><div><div class="plane-label">2D ↔ 3D</div><h3>平面對照圖</h3></div><div class="flat-grid" id="flatMap" role="group" aria-label="點選平面上的面"></div><div class="map-info"><strong id="mapSelection" aria-live="polite"></strong><p id="mapHint">點選編號，同時追蹤兩個視圖。</p></div></aside>
+</div>
+<div class="fold-guide"><div class="fold-toolbar"><span>摺疊方式</span><div class="fold-modes" role="group" aria-label="摺疊方式"><button id="sequentialMode" aria-pressed="true">逐步摺疊</button><button id="togetherMode" aria-pressed="false">同步摺疊</button></div></div>
+<div class="fold-panel"><button class="play" id="playButton" aria-label="播放摺疊動畫" title="播放／暫停（空白鍵）"><svg id="playIcon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2 14 8 4 14Z"/></svg></button><div class="slider-group"><div class="slider-top"><label for="foldSlider">摺疊進度</label><output id="foldOutput" for="foldSlider">0<small> %</small></output></div><input id="foldSlider" type="range" min="0" max="100" step="1" value="0"><div class="slider-labels"><span>平面展開</span><span id="angleLabel">第 1 道 0.0°</span><span>立體閉合</span></div></div><div class="speed"><label for="speedSelect">動畫速度</label><select id="speedSelect"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></div></div>
+<div class="step-panel" id="stepPanel"><button id="previousStep" aria-label="上一步摺疊">← 上一步</button><div class="step-message"><strong id="stepHeading" aria-live="polite"></strong><p id="stepText"></p></div><button id="nextStep" aria-label="下一步摺疊">下一步 →</button></div></div>
 <div class="learning" id="exploreCards"><article class="learning-card"><div class="tip-label">FACE CONNECTIONS</div><h3>找一找，誰和它相對？</h3><p id="faceDescription"></p><div class="face-controls" id="faceControls" role="group" aria-label="選擇觀察的面"></div><div class="pair" id="oppositePair" aria-live="polite"></div></article><article class="learning-card"><div class="tip-label">A LITTLE DISCOVERY</div><h3 id="tipTitle"></h3><p id="tipText"></p></article></div>
 <div class="learning" id="quizCards" hidden><article class="learning-card"><div class="tip-label">QUICK CHALLENGE</div><h3 class="question" id="questionText"></h3><p>先想像，再摺起驗證。點選下方數字作答。</p><div class="quiz-buttons" id="quizAnswers" role="group" aria-label="選擇相對面答案"></div><p class="quiz-feedback" id="quizFeedback" aria-live="polite"></p><button class="next-question" id="nextQuestion" hidden>下一題 →</button></article><article class="learning-card"><div class="tip-label">LEARN BY DOING</div><h3>讓腦中的正方體轉起來。</h3><p>相對的兩個面不共用邊，也不共用頂點。滑動摺疊進度，觀察它們如何移動到兩側。</p><div class="quiz-stats" id="quizStats" aria-live="polite">本次練習：首次答對 0 / 已完成 0 題</div><p style="margin-top:12px">切換展開圖，可以用新的形狀繼續挑戰。</p></article></div>
 </section></div>
 <footer class="footer"><span>6 個面 · 12 條邊 · 8 個頂點 &nbsp; / &nbsp; 小小展開，大大發現。</span><span><kbd>Space</kbd> 播放／暫停 &nbsp; <kbd>←</kbd> <kbd>→</kbd> 切換展開圖 &nbsp; <kbd>R</kbd> 重設視角</span></footer>
 </main>
-<dialog id="helpDialog" aria-labelledby="helpTitle"><h2 id="helpTitle">把平面，摺成空間。</h2><p>① 選一張展開圖；每一張都有六個面。<br>② 拉動進度，或按播放，觀察摺疊過程。<br>③ 拖曳模型旋轉，滾輪或雙指捏合縮放。<br>④ 點選模型上的面或數字按鈕，找出相對面。</p><p>「俯視」會完全展開，方便觀察平面形狀；「立體」方便檢查閉合的正方體。開啟小測驗，試試你的空間想像力。</p><p>鍵盤：空白鍵播放／暫停，左右方向鍵切換展開圖，R 重設視角。進度滑桿也支援方向鍵微調。</p><button id="closeHelp" autofocus>開始探索</button></dialog>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><h2 id="helpTitle">把平面，摺成空間。</h2><p>① 選一張展開圖；手機可用模型上方的選單快速切換。<br>② 按「下一步」，每次沿一道摺痕摺起；「上一步」可倒回觀察。播放鍵會連續完成五個步驟。<br>③ 點選平面圖、立體模型或面編號，兩個視圖會同步標示選中的面與相對面。橘框表示本步轉動的面。<br>④ 拖曳模型旋轉，滾輪或雙指捏合縮放。</p><p>「同步摺疊」會讓五道摺痕一起轉動。「俯視」會完全展開；平面對照圖會一直保持展開，方便追蹤編號。</p><p>鍵盤：空白鍵播放／暫停，左右方向鍵切換展開圖，R 重設視角。進度滑桿也支援方向鍵微調。</p><button id="closeHelp" autofocus>開始探索</button></dialog>
 <noscript><p style="padding:24px">請啟用 JavaScript，以操作展開圖模型。</p></noscript>
 <script>
 'use strict';
@@ -63,10 +72,12 @@ const NetGeometry = (() => {
     if(nodes.length!==6)throw new Error('A cube net must contain six connected cells.');
     return nodes;
   }
-  function fold(nodes,progress){
-    const angle=Math.max(0,Math.min(1,progress))*Math.PI/2,c=Math.cos(angle),s=Math.sin(angle),faces=[];
-    for(const node of nodes){
+  function hingeFraction(progress,index,sequential=false){return Math.max(0,Math.min(1,sequential?progress*5-index:progress));}
+  function fold(nodes,progress,sequential=false){
+    const faces=[];
+    for(const [index,node] of nodes.entries()){
       if(node.parent<0){faces.push({center:[0,0,0],u:[1,0,0],v:[0,0,1],n:[0,1,0]});continue;}
+      const angle=hingeFraction(progress,index-1,sequential)*Math.PI/2,c=Math.cos(angle),s=Math.sin(angle);
       const p=faces[node.parent],{dx,dy}=node;
       const u=dx?add(mul(p.u,c),mul(p.n,s*dx)):p.u,v=dy?add(mul(p.v,c),mul(p.n,s*dy)):p.v;
       const n=add(mul(p.n,c),mul(dx?p.u:p.v,-s*(dx||dy)));
@@ -84,7 +95,7 @@ const NetGeometry = (() => {
     }
     return variants.sort()[0];
   }
-  return {nets,tree,fold,opposites,canonical,add,mul,dot};
+  return {nets,tree,fold,hingeFraction,opposites,canonical,add,mul,dot};
 })();
 // GEOMETRY END
 (() => {
@@ -92,10 +103,10 @@ const $=id=>document.getElementById(id),{nets,tree,fold,opposites,add,mul}=NetGe
 const canvas=$('model'),ctx=canvas.getContext('2d');
 if(!ctx){$('netSubtitle').textContent='瀏覽器無法顯示畫布，請使用支援 Canvas 的瀏覽器。';return;}
 const palette={base:'#8cb9cd',side:'#e9b39e',lid:'#ead18e',neutral:'#d5dfcf'};
-let current=0,nodes,pairs,selected=0,progress=25,playing=false,direction=1;
+let current=0,nodes,pairs,selected=0,progress=0,playing=false,direction=1,sequential=true,playbackTarget=null;
 let yaw=-.36,pitch=.77,zoom=1,view='iso',width=0,height=0,dirty=true,drawnFaces=[];
 let quiz=false,question=null,correct=0,completed=0,lastTime=0,animationFrame=0,priorTarget=-1;
-const cards=[],reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cards=[],mapFaces=[],reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function faceColor(i){return i===0?palette.base:i===pairs[0]?palette.lid:palette.side;}
 function thumbnail(net){
   const t=tree(net.cells),o=opposites(t),minX=Math.min(...net.cells.map(p=>p[0])),minY=Math.min(...net.cells.map(p=>p[1]));
@@ -112,34 +123,82 @@ for(const family of ['1–4–1','2–3–1','2–2–2 / 3–3']){
   $('catalogue').append(group);
 }
 for(let i=0;i<6;i++){const b=document.createElement('button');b.textContent=i+1;b.setAttribute('aria-label',`觀察面 ${i+1}`);b.onclick=()=>selectFace(i);$('faceControls').append(b);}
+for(const [i,net] of nets.entries()){const o=document.createElement('option');o.value=i;o.textContent=`${String(i+1).padStart(2,'0')} / 11 · ${net.name}`;$('quickNet').append(o);}
+$('previousNet').onclick=()=>selectNet(current-1);$('nextNet').onclick=()=>selectNet(current+1);$('quickNet').onchange=e=>selectNet(+e.target.value);
+function buildFlatMap(){
+  $('flatMap').replaceChildren();mapFaces.length=0;
+  const cells=nets[current].cells,maxX=Math.max(...cells.map(p=>p[0])),maxY=Math.max(...cells.map(p=>p[1]));
+  $('flatMap').style.gridTemplateColumns=`repeat(${maxX+1},1fr)`;$('flatMap').style.gridTemplateRows=`repeat(${maxY+1},1fr)`;
+  for(const [i,node] of nodes.entries()){
+    const b=document.createElement('button');b.className='map-face';b.textContent=i+1;b.style.gridColumn=node.cell[0]+1;b.style.gridRow=node.cell[1]+1;
+    b.setAttribute('aria-label',`平面對照：面 ${i+1}`);b.onclick=()=>selectFace(i);$('flatMap').append(b);mapFaces.push(b);
+  }
+}
+function activeFold(){return sequential?Math.min(5,Math.max(1,Math.ceil((progress-1e-7)/20))):-1;}
+function updateFlatMap(){
+  const active=activeFold();
+  mapFaces.forEach((b,i)=>{
+    b.style.background=quiz?(i===question?.target?palette.base:palette.neutral):faceColor(i);
+    b.setAttribute('aria-pressed',String(!quiz&&i===selected));b.classList.toggle('paired',!quiz&&i===pairs[selected]);
+    b.classList.toggle('active-fold',i===active&&progress<100);b.disabled=quiz;
+  });
+  const label=quiz?`題目指定：面 ${(question?.target??0)+1}`:`面 ${selected+1} ↔ 面 ${pairs[selected]+1} 相對`;
+  if($('mapSelection').textContent!==label)$('mapSelection').textContent=label;
+  $('mapHint').textContent=quiz?'藍色是題目指定面。平面圖保持展開，幫助你追蹤編號。':sequential?'點選編號同步追蹤。橘框：本步轉動面；粗框：選取面；虛線：相對面。':'點選編號同步追蹤。粗框：選取面；虛線：相對面。';
+}
 function selectFace(i){selected=i;updateFaceInfo();dirty=true;requestDraw();}
 function updateFaceInfo(){
   [...$('faceControls').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===selected)));
   $('faceDescription').textContent=`正在觀察面 ${selected+1}。粗線標示這一組相對面。`;
   $('oppositePair').innerHTML=`<span class="face-dot" style="background:${faceColor(selected)}">${selected+1}</span><span class="pair-arrow">← 相對 →</span><span class="face-dot" style="background:${faceColor(pairs[selected])}">${pairs[selected]+1}</span>`;
+  updateFlatMap();
 }
 function selectNet(i){
   current=(i+nets.length)%nets.length;nodes=tree(nets[current].cells);pairs=opposites(nodes);selected=0;
+  buildFlatMap();$('quickNet').value=String(current);
   cards.forEach((b,j)=>b.setAttribute('aria-pressed',String(j===current)));
   const n=nets[current];$('netTitle').textContent=n.name;$('familyBadge').textContent=n.family+' 型';$('netSubtitle').textContent='6 個面 · 5 道摺痕 · 一個完整的正方體';
   $('stageIndex').textContent=`${String(current+1).padStart(2,'0')} / 11`;$('tipTitle').textContent=n.tip;$('tipText').textContent=n.description;
-  stop();direction=1;setProgress(25);resetView();updateFaceInfo();if(quiz)newQuestion();
+  stop();direction=1;setProgress(0);resetView();updateFaceInfo();if(quiz)newQuestion();
 }
 function requestDraw(){if(!animationFrame&&!document.hidden)animationFrame=requestAnimationFrame(tick);}
 function setProgress(value){
   progress=Math.max(0,Math.min(100,value));const rounded=Math.round(progress);
-  $('foldSlider').value=rounded;$('foldSlider').style.setProperty('--progress',progress+'%');$('foldSlider').setAttribute('aria-valuetext',`摺疊 ${rounded}%，每道摺痕 ${(progress*.9).toFixed(1)} 度`);
-  $('foldOutput').innerHTML=`${rounded}<small> %</small>`;$('angleLabel').textContent=`摺痕 ${(progress*.9).toFixed(1)}°`;dirty=true;requestDraw();
+  const active=activeFold(),angle=sequential?NetGeometry.hingeFraction(progress/100,active-1,true)*90:progress*.9;
+  $('foldSlider').value=rounded;$('foldSlider').style.setProperty('--progress',progress+'%');$('foldSlider').setAttribute('aria-valuetext',`總進度 ${rounded}%，${sequential?'第 '+active+' 道':'每道'}摺痕 ${angle.toFixed(1)} 度`);
+  $('foldOutput').innerHTML=`${rounded}<small> %</small>`;$('angleLabel').textContent=`${sequential?'第 '+active+' 道':'摺痕'} ${angle.toFixed(1)}°`;
+  updateStepInfo();updateFlatMap();dirty=true;requestDraw();
 }
+function updateStepInfo(){
+  $('stepPanel').hidden=!sequential;$('previousStep').disabled=progress<=0;$('nextStep').disabled=progress>=100;
+  if(!sequential)return;
+  const completed=Math.min(5,Math.floor((progress+1e-7)/20)),active=activeFold();
+  let heading,text;
+  if(progress>=100){heading='完成 5 / 5 步';text='六個面已閉合成正方體。倒回一步，看看最後一面從哪裡來。';}
+  else if(progress>0&&Math.abs(progress-completed*20)>1e-7){heading=`第 ${active} / 5 步 · 轉動面 ${active+1}`;text=`沿面 ${nodes[active].parent+1} 的共邊轉動；相連的面會跟著移動。`;}
+  else{heading=completed?`已完成 ${completed} / 5 步`:'準備開始 · 0 / 5 步';text=`下一步：面 ${completed+2} 沿面 ${nodes[completed+1].parent+1} 的共邊摺起 90°。`;}
+  if($('stepHeading').textContent!==heading)$('stepHeading').textContent=heading;$('stepText').textContent=text;
+}
+function setFoldingMode(value){
+  stop();sequential=value;$('sequentialMode').setAttribute('aria-pressed',String(value));$('togetherMode').setAttribute('aria-pressed',String(!value));setProgress(progress);
+}
+$('sequentialMode').onclick=()=>setFoldingMode(true);$('togetherMode').onclick=()=>setFoldingMode(false);
+function animateTo(target){
+  stop();if(view==='flat')setView('iso');
+  if(reducedMotion){setProgress(target);return;}
+  direction=target>progress?1:-1;playbackTarget=target;playing=true;playUI();requestDraw();
+}
+$('nextStep').onclick=()=>animateTo(Math.min(100,(Math.floor((progress+1e-7)/20)+1)*20));
+$('previousStep').onclick=()=>animateTo(Math.max(0,(Math.ceil((progress-1e-7)/20)-1)*20));
 function playUI(){
   $('playButton').setAttribute('aria-label',playing?'暫停摺疊動畫':'播放摺疊動畫');
   $('playIcon').innerHTML=playing?'<path d="M3 2h4v12H3ZM10 2h4v12h-4Z"/>':'<path d="M4 2 14 8 4 14Z"/>';
 }
-function stop(){playing=false;lastTime=0;playUI();}
+function stop(){playing=false;lastTime=0;playbackTarget=null;playUI();}
 function togglePlay(){
   if(playing){stop();return;}if(view==='flat')setView('iso');
   if(progress>=100)direction=-1;else if(progress<=0)direction=1;
-  playing=true;lastTime=0;playUI();requestDraw();
+  playbackTarget=direction>0?100:0;playing=true;lastTime=0;playUI();requestDraw();
 }
 $('playButton').onclick=togglePlay;$('foldSlider').oninput=e=>{stop();setProgress(+e.target.value);};
 function updateViewButtons(){$('flatView').setAttribute('aria-pressed',String(view==='flat'));$('isoView').setAttribute('aria-pressed',String(view==='iso'));}
@@ -152,7 +211,7 @@ function draw(){
   if(!width||!height||!nodes)return;
   const dpr=Math.min(devicePixelRatio||1,2);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#f0f2eb';ctx.fillRect(0,0,width,height);
   ctx.fillStyle='#d3dccb';for(let x=18;x<width;x+=22)for(let y=18;y<height;y+=22){ctx.beginPath();ctx.arc(x,y,.65,0,Math.PI*2);ctx.fill();}
-  const faces=fold(nodes,progress/100),center=mul(faces.reduce((a,f)=>add(a,f.center),[0,0,0]),1/6);
+  const faces=fold(nodes,progress/100,sequential),center=mul(faces.reduce((a,f)=>add(a,f.center),[0,0,0]),1/6);
   const projected=faces.map((f,i)=>{
     const vertex=([a,b])=>rotatePoint(add(add(add(f.center,mul(center,-1)),mul(f.u,a)),mul(f.v,b)));
     return {i,points:[[-.492,-.492],[.492,-.492],[.492,.492],[-.492,.492]].map(vertex),center:rotatePoint(add(f.center,mul(center,-1))),normal:rotatePoint(f.n)};
@@ -166,7 +225,8 @@ function draw(){
     const points=f.points.map(screen),pos=screen(f.center),highlight=!quiz&&(f.i===selected||f.i===pairs[selected]);
     polygon(points);ctx.fillStyle=quiz?(f.i===question?.target?palette.base:palette.neutral):faceColor(f.i);ctx.fill();
     const shade=Math.max(0,Math.min(.16,.055*(1-f.normal[1])+.03*(1-f.normal[0])));ctx.fillStyle=`rgba(31,60,45,${shade})`;ctx.fill();
-    ctx.strokeStyle=highlight?'#416251':'#64755a';ctx.lineWidth=highlight?2:1;ctx.lineJoin='round';if(!quiz&&f.i===pairs[selected])ctx.setLineDash([5,3]);ctx.stroke();ctx.setLineDash([]);
+    const isMoving=f.i===activeFold()&&progress<100;
+    ctx.strokeStyle=isMoving?'#be8240':highlight?'#416251':'#64755a';ctx.lineWidth=isMoving?2.5:highlight?2:1;ctx.lineJoin='round';if(!quiz&&f.i===pairs[selected]&&!isMoving)ctx.setLineDash([5,3]);ctx.stroke();ctx.setLineDash([]);
     const area=Math.abs(points.reduce((a,p,i)=>a+p[0]*points[(i+1)%4][1]-p[1]*points[(i+1)%4][0],0)/2);
     if(area>scale*scale*.17){
       const size=Math.max(12,Math.min(24,scale*.24));ctx.fillStyle='#233e36';ctx.font=`600 ${size}px "Segoe UI","Microsoft JhengHei",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(f.i+1,pos[0],pos[1]);
@@ -195,7 +255,7 @@ canvas.onpointercancel=e=>{pointers.delete(e.pointerId);drag=null;};
 canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.55,Math.min(1.65,zoom*Math.exp(-e.deltaY*.001)));dirty=true;requestDraw();},{passive:false});
 function setMode(value){
   quiz=value;stop();$('exploreMode').classList.toggle('active',!quiz);$('quizMode').classList.toggle('active',quiz);$('exploreMode').setAttribute('aria-pressed',String(!quiz));$('quizMode').setAttribute('aria-pressed',String(quiz));$('exploreCards').hidden=quiz;$('quizCards').hidden=!quiz;$('legend').hidden=quiz;
-  if(quiz)newQuestion();else{question=null;updateFaceInfo();}dirty=true;requestDraw();
+  if(quiz)newQuestion();else{question=null;updateFaceInfo();}updateFlatMap();dirty=true;requestDraw();
 }
 $('exploreMode').onclick=()=>setMode(false);$('quizMode').onclick=()=>setMode(true);
 function newQuestion(){
@@ -220,7 +280,12 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('visibilitychange',()=>{lastTime=0;if(document.hidden){cancelAnimationFrame(animationFrame);animationFrame=0;stop();}else{dirty=true;requestDraw();}});
 function tick(time){
   animationFrame=0;
-  if(playing){if(lastTime){const dt=Math.min(time-lastTime,60);setProgress(progress+direction*dt/45*+$('speedSelect').value);if(progress>=100||progress<=0)stop();}lastTime=time;}
+  if(playing){
+    if(lastTime){const dt=Math.min(time-lastTime,60),target=playbackTarget,next=progress+direction*dt/45*+$('speedSelect').value;
+      if(direction>0?next>=target:next<=target){setProgress(target);stop();}else setProgress(next);
+    }
+    if(playing)lastTime=time;
+  }
   if(dirty){draw();dirty=false;}if(playing)requestDraw();
 }
 if(navigator.maxTouchPoints>0)$('gestureHint').textContent='拖曳旋轉 · 雙指縮放 · 點選面';
