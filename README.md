@@ -6,6 +6,7 @@
 
 | 類型 | 作品 | 連結 |
 | --- | --- | --- |
+| 數學教材 | 乘法探索樂園 · Multiplication Playground | [開啟](multiplication-playground/)；以積木分組與數線跳躍探索乘法 |
 | STEM 教材 | Sim Lab Baseball Lab | [開啟](simlab-baseball-lab/) |
 | 抽籤工具 | Classroom Picker | [開啟](classroom-picker/) |
 | 小遊戲 | 點擊目標 | [開啟](clicking_game/) |
@@ -20,6 +21,7 @@
 ```text
 .
 ├── index.html                         # 作品集首頁與導覽
+├── multiplication-playground/        # 乘法積木、數線與五個一數互動教材
 ├── simlab-baseball-lab/               # 英文 Tinkercad Sim Lab 棒球教學
 ├── classroom-picker/                 # 隨機抽選與平均分組工具
 ├── clicking_game/                     # 點擊目標小遊戲
@@ -40,3 +42,4 @@
 ## 後續整理建議
 
 下一個安全的重構階段可建立 `projects/`、`experiments/`、`notes/` 與 `assets/`；搬遷時為每個舊網址保留重新導向頁，避免失效連結。
+
