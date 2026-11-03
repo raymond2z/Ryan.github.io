@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="互動探索：為甚麼傳統鐵路鋼軌之間要預留伸縮縫？調整溫度，觀察熱脹冷縮。">
+  <meta name="theme-color" content="#f5f8f7">
+  <title>點解鐵路要留縫？｜互動 STEM 小實驗</title>
+  <style>
+    :root { color-scheme:light; --ink:#173537; --muted:#5a6d70; --teal:#167c78; --orange:#ef9c4b; --paper:#fff; --line:#dce8e5; --bg:#f5f8f7; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.65 system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif; }
+    a { color:inherit; } button, input { font:inherit; }
+    button, a { -webkit-tap-highlight-color:transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid #e09a3d; outline-offset:3px; }
+    .wrap { width:min(980px,calc(100% - 36px)); margin:0 auto; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:22px 0; }
+    .brand { font-weight:800; letter-spacing:.01em; text-decoration:none; }
+    .back { color:var(--teal); text-decoration:none; font-weight:700; font-size:.92rem; }
+    .hero { padding:42px 0 30px; }
+    .eyebrow { color:var(--teal); font-weight:800; text-transform:uppercase; letter-spacing:.09em; font-size:.8rem; }
+    h1 { font-size:clamp(2.1rem,6.5vw,3.65rem); line-height:1.16; letter-spacing:-.035em; margin:10px 0 17px; }
+    .lead { max-width:710px; font-size:clamp(1.02rem,2.3vw,1.22rem); color:#526469; margin:0 0 24px; }
+    .key { display:inline-block; background:#e4f3ec; border:1px solid #cee7db; border-radius:12px; padding:12px 18px; font-weight:750; }
+    .key strong { color:#097269; }
+    h2 { line-height:1.3; font-size:clamp(1.45rem,3.6vw,2rem); margin:0 0 10px; }
+    h3 { line-height:1.35; margin:0 0 8px; font-size:1.12rem; }
+    p { margin:0 0 12px; }
+    .sub { color:var(--muted); margin-bottom:22px; }
+    section { margin-bottom:28px; }
+    .panel { background:var(--paper); border:1px solid var(--line); border-radius:22px; box-shadow:0 12px 36px rgba(17,59,56,.035); padding:clamp(20px,4vw,34px); }
+    .simulation-header { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+    .readout { padding:8px 15px; background:#e8f3f2; color:#096963; border-radius:14px; font-size:1.45rem; font-weight:850; font-variant-numeric:tabular-nums; }
+    .rail-area { --gap:35px; position:relative; isolation:isolate; background:linear-gradient(155deg,#e8edf0,#dce6e7); border:1px solid #cbdcda; border-radius:18px; padding:24px 22px; overflow:hidden; margin:16px 0 12px; }
+    .sleepers { position:absolute; inset:0; opacity:.9; background:repeating-linear-gradient(90deg,transparent 0 25px,#afbbb6 25px 43px,transparent 43px 72px); background-size:auto 100%; mask-image:linear-gradient(180deg,transparent 0 12%,#000 24% 80%,transparent 92%); }
+    .rail-line { position:relative; z-index:2; display:flex; justify-content:space-between; height:14px; margin:34px 0; }
+    .rail { display:block; width:calc(50% - var(--gap)/2); border-radius:4px; background:linear-gradient(#f6fbfc 0%,#9daeb5 25%,#566f77 48%,#9eafb2 72%,#e9f1ef 95%); border:1px solid #6d8589; box-shadow:0 3px 0 #526b70,0 5px 8px #566c7060; transition:width .35s ease; }
+    .rail-area.compressed .rail { background:linear-gradient(#ffefdf,#d17f70 50%,#f2c4aa); border-color:#a34f43; }
+    .gap-marker { display:flex; align-items:center; justify-content:center; gap:9px; position:relative; z-index:2; height:25px; font-size:.85rem; font-weight:750; color:#39595a; }
+    .gap-marker::before,.gap-marker::after { content:""; height:1px; width:min(60px,16%); background:#8aa09e; }
+    .gap-marker span { background:#ffffffdd; border-radius:100px; padding:2px 12px; }
+    .diagram-note { margin:0; color:#6b7e80; font-size:.78rem; text-align:center; }
+    .control-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-top:25px; font-weight:750; }
+    input[type=range] { display:block; width:100%; accent-color:var(--teal); margin:14px 0; cursor:pointer; }
+    .ends { display:flex; justify-content:space-between; color:#708181; font-size:.86rem; }
+    .choices { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0; }
+    .choice { border:1px solid #b8cfca; border-radius:12px; padding:10px 18px; background:#fff; color:#294547; cursor:pointer; font-weight:700; }
+    .choice[aria-pressed=true] { background:#0b716c; border-color:#0b716c; color:white; }
+    .values { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:16px 0; }
+    .value { border-radius:14px; padding:14px 17px; background:#f1f7f5; }
+    .value small { display:block; color:#607576; }
+    .value strong { display:block; font-variant-numeric:tabular-nums; font-size:1.45rem; color:#155d58; }
+    .feedback { border-left:5px solid #1d9281; background:#eaf8f3; padding:13px 16px; border-radius:0 11px 11px 0; margin:13px 0 0; }
+    .feedback.warn { background:#fff0e8; border-color:#d46b42; }
+    .assumption { font-size:.83rem; color:#718284; margin:17px 0 0; }
+    .card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+    .step { background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px; }
+    .icon { display:grid; place-items:center; width:48px; height:48px; background:#e7f2ef; border-radius:14px; font-size:1.6rem; margin-bottom:15px; }
+    .step p { color:var(--muted); margin:0; }
+    .note { border-left:5px solid #efb16b; background:#fff8ed; border-radius:0 15px 15px 0; padding:19px 24px; }
+    .note p:last-child { margin-bottom:0; }
+    .question button { display:block; width:100%; text-align:left; background:#fff; border:1px solid #c5d9d4; border-radius:12px; margin:10px 0; padding:12px 16px; cursor:pointer; }
+    .question button:hover { background:#edf6f3; }
+    .answer { min-height:34px; font-weight:750; color:#14756a; margin-top:12px; }
+    footer { color:#728183; font-size:.85rem; border-top:1px solid var(--line); margin:46px 0 0; padding:24px 0 38px; }
+    @media(max-width:650px) { .hero { padding-top:22px; } .card-grid { grid-template-columns:1fr; } .rail-area { padding:18px 12px; } .values { grid-template-columns:1fr 1fr; } .readout { font-size:1.15rem; } .topbar { padding:16px 0; } }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav class="topbar" aria-label="網站導覽"><a class="brand" href="../">Ryan's Lab · STEM</a><a class="back" href="../">← 返回作品首頁</a></nav>
+    <main>
+      <header class="hero">
+        <div class="eyebrow">生活中的科學 · 熱脹冷縮</div>
+        <h1>點解鐵路路軌<br>要留一條縫？</h1>
+        <p class="lead">夏天熱，鋼軌會<strong>伸長</strong>；冬天凍，鋼軌會<strong>縮短</strong>。以前常見的分段式鋼軌，接駁位置通常會留少少空間，畀鋼軌隨溫度改變長度。</p>
+        <div class="key">最重要嘅原因：<strong>熱脹冷縮</strong>！</div>
+      </header>
+      <section class="panel" aria-labelledby="try-title">
+        <div class="simulation-header">
+          <div><h2 id="try-title">動手試：天氣熱咗，條縫會點？</h2><p class="sub">拖動溫度，觀察兩段鋼軌之間的空隙。</p></div>
+          <div class="readout" id="temp-value" aria-live="polite">45°C</div>
+        </div>
+        <div id="rail-area" class="rail-area" role="img" aria-label="兩段鋼軌接駁處的伸縮縫示意圖">
+          <div class="sleepers" aria-hidden="true"></div>
+          <div class="rail-line" aria-hidden="true"><span class="rail"></span><span class="rail"></span></div>
+          <div class="gap-marker"><span id="gap-marker">中間的縫隙</span></div>
+          <div class="rail-line" aria-hidden="true"><span class="rail"></span><span class="rail"></span></div>
+        </div>
+        <p class="diagram-note">↑ 俯視示意圖：兩條平行鋼軌的接駁處。畫面中的縫隙被放大，並非真實比例。</p>
+        <div class="control-head"><label for="temperature">調整鋼軌溫度</label><span id="change-text">比 20°C 時伸長</span></div>
+        <input id="temperature" type="range" min="-10" max="70" value="45" step="1" aria-label="鋼軌溫度，攝氏度">
+        <div class="ends"><span>❄️ −10°C</span><span>☀️ 70°C</span></div>
+        <div class="choices" role="group" aria-label="比較有沒有預留空隙">
+          <button type="button" class="choice" data-mode="gap" aria-pressed="true">✓ 有預留縫隙</button>
+          <button type="button" class="choice" data-mode="none" aria-pressed="false">✕ 冇預留縫隙</button>
+        </div>
+        <div class="values">
+          <div class="value"><small>每段 10 米鋼軌的長度變化</small><strong id="length-value">+3.0 mm</strong></div>
+          <div class="value"><small>接駁處剩餘空隙</small><strong id="gap-value">5.0 mm</strong></div>
+        </div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite">鋼軌受熱伸長，預留的空隙變窄，仍然有空間伸縮。</div>
+        <p class="assumption">這是簡化的數學模型：每段鋼軌長 10 米，20°C 為基準；有留縫時，假設基準空隙為 8 mm。鋼的線膨脹係數取約 0.000012 /°C。實際鐵路設計會更複雜。</p>
+      </section>
+      <section aria-labelledby="why-title">
+        <h2 id="why-title">記住這三個重點</h2>
+        <div class="card-grid">
+          <article class="step"><div class="icon" aria-hidden="true">☀️</div><h3>1. 熱會令鋼軌伸長</h3><p>太陽曬熱鋼軌時，金屬通常會膨脹，所以長度增加。</p></article>
+          <article class="step"><div class="icon" aria-hidden="true">❄️</div><h3>2. 冷會令鋼軌縮短</h3><p>溫度降低，金屬通常會收縮，兩段鋼軌之間的空間可能變大。</p></article>
+          <article class="step"><div class="icon" aria-hidden="true">🛤️</div><h3>3. 留空間幫助安全</h3><p>傳統分段式鋼軌預留伸縮縫，可減少熱膨脹時互相擠壓的問題。</p></article>
+        </div>
+      </section>
+      <section class="note" aria-labelledby="modern-title">
+        <h2 id="modern-title">咦？而家好多鐵路睇唔到縫？</h2>
+        <p><strong>你觀察得啱！</strong>現代鐵路常使用「連續焊接鋼軌」（俗稱無縫路軌），唔係每段都留一條可見的縫。工程師會利用鋼軌固定系統、適當的安裝溫度及其他設計，管理熱脹冷縮帶來的應力；橋樑等特別位置亦可能設有伸縮裝置。</p>
+        <p>所以真正的重點係：<strong>鐵路必須妥善處理溫度變化</strong>，而唔係所有鋼軌都一定要留縫。</p>
+      </section>
+      <section class="panel question" aria-labelledby="quiz-title">
+        <h2 id="quiz-title">小挑戰：你識唔識？</h2>
+        <p>當鋼軌由 20°C 升到 60°C，鋼軌通常會點變？</p>
+        <button type="button" data-answer="right">A. 變長</button>
+        <button type="button" data-answer="wrong">B. 變短</button>
+        <button type="button" data-answer="wrong">C. 長度完全唔變</button>
+        <p id="answer" class="answer" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <footer>Ryan's Lab · 小學 STEM 教學示意。實際路軌的伸縮及安全設計須由鐵路工程師計算。</footer>
+  </div>
+  <script>
+    (() => {
+      const slider = document.querySelector('#temperature');
+      const scene = document.querySelector('#rail-area');
+      const tempValue = document.querySelector('#temp-value');
+      const lengthValue = document.querySelector('#length-value');
+      const gapValue = document.querySelector('#gap-value');
+      const gapMarker = document.querySelector('#gap-marker');
+      const feedback = document.querySelector('#feedback');
+      const changeText = document.querySelector('#change-text');
+      const modeButtons = document.querySelectorAll('[data-mode]');
+      let hasGap = true;
+      function update() {
+        const temp = Number(slider.value);
+        const change = (temp - 20) * 0.12;
+        const idealGap = (hasGap ? 8 : 0) - change;
+        const remainingGap = Math.max(0, idealGap);
+        const compressed = idealGap < -0.001;
+        const diagramGap = Math.round(Math.min(remainingGap, 14) * 6.3);
+        scene.style.setProperty('--gap', diagramGap + 'px');
+        scene.classList.toggle('compressed', compressed);
+        tempValue.textContent = temp + '°C';
+        lengthValue.textContent = (change > 0 ? '+' : '') + change.toFixed(1) + ' mm';
+        gapValue.textContent = remainingGap.toFixed(1) + ' mm';
+        gapMarker.textContent = compressed ? '⚠️ 熱膨脹受阻' : (remainingGap < .1 ? '鋼軌接觸' : '中間的縫隙');
+        changeText.textContent = temp > 20 ? '比 20°C 時伸長' : temp < 20 ? '比 20°C 時縮短' : '基準溫度';
+        feedback.classList.toggle('warn', compressed);
+        feedback.textContent = compressed
+          ? '⚠️ 沒有預留空間，升溫時鋼軌膨脹受到限制，可能產生很大壓力，增加變形風險。'
+          : temp > 20 ? '☀️ 鋼軌受熱伸長，接駁處的空隙變窄。'
+          : temp < 20 ? '❄️ 鋼軌遇冷縮短，接駁處的空隙變闊。'
+          : '🌤️ 現在是 20°C 的基準狀態。';
+      }
+      slider.addEventListener('input', update);
+      modeButtons.forEach(button => button.addEventListener('click', () => {
+        hasGap = button.dataset.mode === 'gap';
+        modeButtons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        update();
+      }));
+      document.querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => {
+        document.querySelector('#answer').textContent = button.dataset.answer === 'right'
+          ? '✅ 答啱！溫度升高，鋼軌通常會膨脹、變長。'
+          : '再試一次！提示：記住「熱脹冷縮」。';
+      }));
+      update();
+    })();
+  </script>
+</body>
+</html>
