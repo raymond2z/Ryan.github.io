@@ -22,6 +22,16 @@ section{margin:20px 0}.panel{background:white;border:1px solid #dbe8e5;border-ra
 .track-frame{position:relative;background:linear-gradient(160deg,#dfe9ea,#edf3f3);border:1px solid #c6d6d8;border-radius:16px;overflow:hidden}
 #track{width:100%;height:auto;display:block;aspect-ratio:1000/352}
 .plot-caption{color:#698083;font-size:.83rem;text-align:center;margin:7px 0 20px}
+.zoom-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 12px}
+.zoom-label{font-weight:800;color:#285b59;font-size:.92rem}
+.zoom-label small{display:block;font-weight:500;color:#698183;font-size:.81rem}
+.zoom-buttons{display:flex;flex-wrap:wrap;gap:7px}
+.zoom-btn{border:1px solid #bed7d1;background:#fff;color:#126961;border-radius:10px;font-weight:800;min-width:43px;padding:8px 12px;cursor:pointer}
+.zoom-btn:hover:not(:disabled){background:#e2f2ec}
+.zoom-btn:disabled{opacity:.35;cursor:not-allowed}
+.zoom-btn.accent{background:#087970;color:#fff;border-color:#087970}
+.zoom-btn.accent:hover:not(:disabled){background:#06645d}
+.zoom-note{color:#637c7c;font-size:.84rem;margin:-2px 0 10px}
 .controls{display:grid;gap:14px}.range-row{display:flex;justify-content:space-between;font-weight:750;align-items:baseline}
 input[type=range]{width:100%;accent-color:#087d73;cursor:pointer;display:block;min-height:30px}
 .range-ends{display:flex;justify-content:space-between;color:#75898a;font-size:.88rem;margin-top:-12px}
@@ -61,6 +71,18 @@ input[type=range]{width:100%;accent-color:#087d73;cursor:pointer;display:block;m
 <main>
 <section class="panel">
 <div class="playhead"><div><h2>實驗：同時加熱六段路軌</h2><p class="subtitle">睇住每段路軌伸長，留意五個接駁位點樣變化。</p></div><div id="temp-output" class="temp" aria-live="polite">20°C</div></div>
+<div class="zoom-toolbar" role="group" aria-label="路軌視角及縮放控制">
+  <div class="zoom-label"><span id="zoom-status" aria-live="polite">視角：全部 6 段 · 1.0×</span><small>放大後可以睇清楚每一個接駁位</small></div>
+  <div class="zoom-buttons">
+    <button class="zoom-btn" type="button" id="zoom-out" aria-label="縮小路軌視圖" title="縮小">−</button>
+    <button class="zoom-btn" type="button" id="zoom-in" aria-label="放大路軌視圖" title="放大">＋</button>
+    <button class="zoom-btn" type="button" id="pan-left" aria-label="向左觀看路軌" title="向左移動視角">←</button>
+    <button class="zoom-btn" type="button" id="pan-right" aria-label="向右觀看路軌" title="向右移動視角">→</button>
+    <button class="zoom-btn" type="button" id="zoom-all">全部 6 段</button>
+    <button class="zoom-btn accent" type="button" id="zoom-three">放大睇 3 段</button>
+  </div>
+</div>
+<p class="zoom-note">用 ＋／− 放大縮小；放大後按 ←／→，可以查看左右其他路軌。</p>
 <div class="track-frame">
 <svg id="track" viewBox="0 0 1000 352" role="img" aria-label="六段平行路軌的俯視動態圖。升溫會令五個接駁縫隙收窄，嚴重受壓時路軌會屈曲。" xmlns="http://www.w3.org/2000/svg">
 <rect width="1000" height="352" fill="#e3ebeb"/><text x="500" y="180" font-size="25" text-anchor="middle" fill="#647b7d">準備模擬六段路軌…</text>
@@ -112,6 +134,27 @@ var tempOut=document.getElementById('temp-output'),spaceEl=document.getElementBy
 var phaseEl=document.getElementById('phase-label'),notice=document.getElementById('message'),msgTitle=document.getElementById('message-title'),msgBody=document.getElementById('message-body');
 var gapButtons=[].slice.call(document.querySelectorAll('[data-gap]')),hasGap=true,anim=0;
 var count=6,begin=60,end=940,trackYs=[127,240];
+var zoom=1,viewCenter=500;
+var zoomStatus=document.getElementById('zoom-status'),zoomIn=document.getElementById('zoom-in'),zoomOut=document.getElementById('zoom-out');
+var panLeft=document.getElementById('pan-left'),panRight=document.getElementById('pan-right');
+function zoomView(){
+  var width=1000/zoom;
+  var half=width/2;
+  viewCenter=Math.max(half,Math.min(1000-half,viewCenter));
+  svg.setAttribute('viewBox',(viewCenter-half).toFixed(2)+' 0 '+width.toFixed(2)+' 352');
+  svg.style.aspectRatio=width+' / 352';
+  zoomStatus.textContent=zoom<=1.01?'視角：全部 6 段 · 1.0×':'視角：局部接駁位 · '+zoom.toFixed(1)+'×';
+  zoomIn.disabled=zoom>=2.19;zoomOut.disabled=zoom<=1.01;
+  panLeft.disabled=viewCenter<=half+0.5;panRight.disabled=viewCenter>=1000-half-0.5;
+}
+function setZoom(value){zoom=Math.min(2.2,Math.max(1,value));zoomView();}
+zoomIn.addEventListener('click',function(){setZoom(zoom+0.3)});
+zoomOut.addEventListener('click',function(){setZoom(zoom-0.3)});
+panLeft.addEventListener('click',function(){viewCenter-=110/zoom;zoomView()});
+panRight.addEventListener('click',function(){viewCenter+=110/zoom;zoomView()});
+document.getElementById('zoom-all').addEventListener('click',function(){viewCenter=500;setZoom(1)});
+document.getElementById('zoom-three').addEventListener('click',function(){viewCenter=500;setZoom(2.2)});
+zoomView();
 function f(n){return n.toFixed(1)}
 function segmentPath(x0,x1,y,amp,sign){
 var d='M '+f(x0)+' '+f(y);
