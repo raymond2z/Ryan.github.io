@@ -1,4 +1,4 @@
-import {Simulation,DT,clamp,MOTOR_SCALE} from './engine.js?v=3';
+import {Simulation,DT,clamp,MOTOR_SCALE} from './engine.js?v=4';
 export const GENES=[{key:'kp',label:'P',min:2,max:55,step:8},{key:'ki',label:'I',min:0,max:8,step:1.5},{key:'kd',label:'D',min:0,max:10,step:1.5}];
 export const TEST_SECONDS=12;
 export const GA_DEFAULTS={track:'curves',base:80,bias:0,population:12,mutation:0.2,seed:42};
@@ -34,8 +34,12 @@ export class Evolution {
   }
   return children;
  }
+ prepare(){
+  if(!this.prepared)this.prepared=this.generation?this.breed():this.initial;
+  return this.prepared;
+ }
  step(progress=()=>{}){
-  const candidates=this.generation?this.breed():this.initial;
+  const candidates=this.prepare();this.prepared=null;
   this.population=candidates.map((candidate,i)=>{const tested={...candidate,...evaluateGenome(candidate.genome,this.config)};progress(i+1,candidates.length);return tested;}).sort((a,b)=>b.score-a.score);
   this.generation++;const best=this.population[0],mean=this.population.reduce((s,p)=>s+p.score,0)/this.population.length;
   this.history.push({generation:this.generation,best:best.score,mean});

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {Simulation,trailOpacity,DT} from './engine.js?v=3';
-import {Evolution,GENES,evaluateGenome,GA_DEFAULTS} from './genetics.js?v=3';
+import {Simulation,trailOpacity,DT} from './engine.js?v=4';
+import {Evolution,GENES,evaluateGenome,GA_DEFAULTS} from './genetics.js?v=4';
 assert.equal(trailOpacity(0,1000),1);assert.equal(trailOpacity(750,1000),1);assert.equal(trailOpacity(875,1000),.5);assert.equal(trailOpacity(1000,1000),0);assert.equal(trailOpacity(2000,1000),0);
 let previousAlpha=1;for(let d=0;d<=1100;d++){const alpha=trailOpacity(d,1000);assert(alpha<=previousAlpha);assert(alpha>=0&&alpha<=1);previousAlpha=alpha;}
 for(const base of [35,80]){const sim=new Simulation({track:'loop',base});for(let j=0;j<Math.round(28/DT);j++)sim.tick();assert(sim.laps>=2);assert(sim.trail[0].distance>0);assert(sim.distance-sim.trail[1].distance<sim.loopLength);assert.equal(trailOpacity(sim.distance-sim.trail.at(-1).distance,sim.loopLength),1);}
@@ -20,3 +20,13 @@ const noMutation=new Evolution({mutation:0});noMutation.step();const second=noMu
 const fullMutation=new Evolution({mutation:1,population:8});fullMutation.step();const full=fullMutation.step();assert(full.population.some(p=>p.mutations.length>0));for(const p of full.population)for(const g of GENES)assert(p.genome[g.key]>=g.min&&p.genome[g.key]<=g.max);
 const bad=evaluateGenome({kp:55,ki:0,kd:0},GA_DEFAULTS);assert(first.best.score>bad.score);assert(first.best.seen>bad.seen);
 console.log(JSON.stringify({passed:true,trail:'Distance-based smooth fade and pruning, at two speeds',genetic:'12 generations; genuine fitness, ancestry, crossover, mutation bounds, elites, deterministic seeds',fitness:{initial:best[0],after12:best.at(-1),poorController:bad.score}},null,2));
+// Inspecting a prepared generation must neither consume more randomness nor change its test.
+for(const mutation of [0,.2,1]){
+ const guided=new Evolution({mutation,population:8}),automatic=new Evolution({mutation,population:8});
+ for(let generation=1;generation<=3;generation++){
+  const preview=structuredClone(guided.prepare());assert.deepEqual(guided.prepare(),preview);assert.equal(guided.generation,generation-1);
+  const tested=guided.step(),direct=automatic.step();assert.deepEqual(tested,direct);
+  for(const child of preview){const actual=tested.population.find(p=>p.id===child.id);assert.deepEqual(actual.genome,child.genome);assert.deepEqual(actual.mutations,child.mutations);}
+ }
+}
+console.log('Guided previews and automatic evolution produce identical tested populations at 0%, 20%, and 100% mutation.');
