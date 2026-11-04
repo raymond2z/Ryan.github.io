@@ -52,7 +52,7 @@ export function initEvolution({onApply}){
  function failed(message){training=false;clearTimeout(timer);busy=false;if(worker)worker.terminate();worker=null;data=null;selected=null;planned=null;demonstratedId=null;taughtResult=null;guidePhase='test';replaying=false;replayTime=0;render();$('gaProgress').textContent='Evolution stopped: '+message+' Start a new test to retry.';}
  $('gaStart').addEventListener('click',()=>{
   if(training){pause();$('gaProgress').textContent=busy?'Pausing after this generation finishes.':'Evolution paused. Inspect or replay a robot.';return;}
-  if(busy)return;training=true;replaying=false;const batch=Number($('gaLimit').value);stopAt=data&&data.generation>=batch?data.generation+batch:batch;controls();if(!busy)next();
+  if(busy)return;training=true;replaying=false;const batch=Number($('gaLimit').value);stopAt=(data?.generation||0)+batch;controls();if(!busy)next();
  });
  $('gaStep').addEventListener('click',()=>{
   if(busy||training)return;pause();
