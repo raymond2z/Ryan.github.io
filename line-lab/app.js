@@ -1,4 +1,6 @@
-import {Simulation,DT,weights,nearest,clamp,trackNames,defaults,experiments,MODEL_VERSION,MOTOR_MAX} from './engine.js?v=2';
+import {Simulation,DT,weights,nearest,clamp,trackNames,defaults,experiments,MODEL_VERSION,MOTOR_MAX} from './engine.js?v=3'
+import {drawFadingTrail} from './trail.js?v=3';
+import {initEvolution} from './evolution.js?v=3';
 const $=id=>document.getElementById(id);
 let sim=new Simulation(),running=false,zoom=1,playback=1,accumulator=0,lastFrame=0,mixed=false,pushes=0,currentLesson='rules',duration=0,toastTimer;
 let results=[];try{const x=JSON.parse(localStorage.getItem('lineLabTests')||'[]');if(Array.isArray(x))results=x.filter(r=>r&&typeof r.mode==='string'&&typeof r.track==='string').slice(-12);}catch{}
@@ -13,7 +15,7 @@ function toast(message){$('toast').textContent=message;$('toast').classList.add(
 function setRunning(value){running=value&&!sim.finished;$('play').innerHTML=running?'<span aria-hidden="true">Ⅱ</span> Pause robot':'<span aria-hidden="true">▶</span> '+(sim.time?'Resume robot':'Start robot');$('step').disabled=running;accumulator=0;update();}
 function resetRun(message){running=false;sim.reset();mixed=false;pushes=0;accumulator=0;setRunning(false);if(message)toast(message);}
 function syncControls(){
- const cfg=sim.config;for(const k of ['base','turn','deadband','kp','ki','kd','bias']){$(k).value=cfg[k];$(k+'Out').textContent=k==='base'||k==='bias'?cfg[k]+'%':k==='deadband'?cfg[k].toFixed(2):['kp','ki','kd'].includes(k)?cfg[k].toFixed(1):cfg[k];}
+ const cfg=sim.config;for(const k of ['base','turn','deadband','kp','ki','kd','bias']){$(k).value=cfg[k];$(k+'Out').textContent=k==='base'||k==='bias'?cfg[k]+'%':k==='deadband'?cfg[k].toFixed(2):['kp','ki','kd'].includes(k)?cfg[k].toFixed(2):cfg[k];}
  $('track').value=cfg.track;const [title,text]=descriptions[cfg.mode];$('modeTitle').textContent=title;$('modeText').textContent=text;
  document.querySelectorAll('[data-mode]').forEach(b=>{const on=b.dataset.mode===cfg.mode;b.classList.toggle('selected',on);b.setAttribute('aria-pressed',String(on));});
  $('ruleControls').hidden=cfg.mode!=='rules';$('pidControls').hidden=cfg.mode==='rules';$('iRow').hidden=cfg.mode!=='pid';$('dRow').hidden=cfg.mode==='p';$('terms').hidden=cfg.mode==='rules';
@@ -63,12 +65,13 @@ function update(){
 function setupCanvas(el,c){const dpr=Math.min(window.devicePixelRatio||1,2),r=el.getBoundingClientRect();if(el.width!==Math.round(r.width*dpr)||el.height!==Math.round(r.height*dpr)){el.width=Math.round(r.width*dpr);el.height=Math.round(r.height*dpr);}c.setTransform(dpr,0,0,dpr,0,0);return {w:r.width,h:r.height};}
 function rounded(c,x,y,w,h,r,fill,stroke){c.beginPath();c.roundRect(x,y,w,h,r);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.stroke();}}
 function draw(){
+ if($('drivePanel').hidden)return;
  const {w,h}=setupCanvas(canvas,ctx);ctx.clearRect(0,0,w,h);ctx.fillStyle='#fcfcfa';ctx.fillRect(0,0,w,h);
  const scale=Math.min(w/960,h/580)*zoom;const cx=zoom===1?480:sim.car.x,cy=zoom===1?290:sim.car.y;
  ctx.save();ctx.translate(w/2,h/2);ctx.scale(scale,scale);ctx.translate(-cx,-cy);
  ctx.fillStyle='#dfe4e4';for(let x=0;x<960;x+=20)for(let y=0;y<580;y+=20){ctx.beginPath();ctx.arc(x,y,.65,0,Math.PI*2);ctx.fill();}
  ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();sim.path.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.strokeStyle='#e8ecea';ctx.lineWidth=42;ctx.stroke();ctx.strokeStyle='#fefefc';ctx.lineWidth=35;ctx.stroke();ctx.strokeStyle='#29333d';ctx.lineWidth=16;ctx.stroke();
- if(sim.trail.length>1){ctx.beginPath();sim.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle='#dd9d64a8';ctx.lineWidth=2.5;ctx.stroke();}
+ drawFadingTrail(ctx,sim);
  const a=sim.path[0],b=sim.path[1],theta=Math.atan2(b.y-a.y,b.x-a.x);ctx.save();ctx.translate(a.x,a.y);ctx.rotate(theta);for(let i=0;i<2;i++)for(let j=0;j<4;j++){ctx.fillStyle=(i+j)%2?'#f8f9f5':'#9ca5a9';ctx.fillRect(i*4-4,j*4-8,4,4);}ctx.restore();
  if(zoom===1){ctx.textAlign='center';ctx.fillStyle='#b5bfbd';ctx.font='500 12px "Segoe UI",sans-serif';ctx.fillText('THE TEST TRACK',480,285);ctx.font='10px "Segoe UI",sans-serif';ctx.fillStyle='#b8c2bf';ctx.fillText(trackNames[sim.config.track]+'  /  '+(sim.config.mode==='rules'?'IF / ELSE':sim.config.mode.toUpperCase())+' CONTROL',480,305);}
  const c=sim.car;ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.angle);
@@ -82,6 +85,7 @@ function draw(){
  ctx.restore();ctx.restore();
 }
 function drawChart(){
+ if($('drivePanel').hidden)return;
  const {w,h}=setupCanvas(chart,gx);gx.clearRect(0,0,w,h);const pad={l:29,r:9,t:17,b:25},iw=w-pad.l-pad.r,ih=h-pad.t-pad.b;
  gx.font='8px "Segoe UI",sans-serif';gx.textAlign='right';gx.textBaseline='middle';
  for(const v of [-2,-1,0,1,2]){const y=pad.t+(2-v)/4*ih;gx.beginPath();gx.moveTo(pad.l,y);gx.lineTo(w-pad.r,y);gx.strokeStyle=v===0?'#cad6e6':'#edf0f5';gx.lineWidth=1;gx.setLineDash(v===0?[3,3]:[]);gx.stroke();gx.fillStyle='#a7b2bf';gx.fillText(v>0?'+'+v:String(v),pad.l-8,y);}gx.setLineDash([]);
@@ -93,6 +97,14 @@ function drawChart(){
 function frame(timestamp){const elapsed=lastFrame?Math.min((timestamp-lastFrame)/1000,.25):0;lastFrame=timestamp;if(running){accumulator+=elapsed*playback;let steps=0;while(accumulator>=DT&&steps<40){sim.tick();accumulator-=DT;steps++;if(duration>0&&sim.time>=duration-0.001){setRunning(false);toast(duration+' second test complete. Save this run to compare.');break;}if(sim.finished){setRunning(false);toast('The robot could not recover. Reset and change one setting.');break;}}if(steps)update();}requestAnimationFrame(frame);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&running){setRunning(false);toast('Paused while you were away. Resume when you are ready.');}});
 window.addEventListener('resize',()=>{draw();drawChart();});
-syncControls();renderResults();setZoom(0);update();requestAnimationFrame(frame);
+const evolutionUI=initEvolution({onApply:(genome,config)=>{sim.config={...defaults,track:config.track,base:config.base,bias:config.bias,...genome,mode:'pid'};resetRun();syncControls();switchPane('drive');toast('Evolved genes applied. Try a new track to test them.');}});
+function switchPane(pane,writeHash=true){
+ setRunning(false);document.querySelector('.skip').setAttribute('href',pane==='ga'?'#gaPanel':'#workspace');$('drivePanel').hidden=pane!=='drive';$('gaPanel').hidden=pane!=='ga';
+ document.querySelectorAll('[data-pane]').forEach(b=>{const active=b.dataset.pane===pane;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;});
+ evolutionUI.setActive(pane==='ga');if(writeHash)history.replaceState(null,'',pane==='ga'?'#genetic-algorithm':'#drive');if(pane==='drive')update();
+}
+const labTabs=[...document.querySelectorAll('[data-pane]')];labTabs.forEach((b,index)=>{b.addEventListener('click',()=>switchPane(b.dataset.pane));b.addEventListener('keydown',event=>{let target;if(event.key==='ArrowRight'||event.key==='ArrowLeft')target=labTabs[(index+1)%2];if(event.key==='Home')target=labTabs[0];if(event.key==='End')target=labTabs[1];if(target){event.preventDefault();switchPane(target.dataset.pane);target.focus();}});});
+window.addEventListener('hashchange',()=>switchPane(location.hash==='#genetic-algorithm'?'ga':'drive',false));
+syncControls();renderResults();setZoom(0);update();switchPane(location.hash==='#genetic-algorithm'?'ga':'drive',false);requestAnimationFrame(frame);
 // Read-only inspection is useful for classroom demonstrations and QA.
 window.lineLab={get state(){return {running,mode:sim.config.mode,track:sim.config.track,time:sim.time,error:sim.error,seen:sim.seenPercent,laps:sim.laps,finished:sim.finished,config:{...sim.config},results:results.length,zoom,mixed};}};

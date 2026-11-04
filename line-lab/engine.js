@@ -42,10 +42,15 @@ export function sensorError(values) {
  const sum=values.reduce((a,b)=>a+b,0);
  return Math.max(...values)<0.12||sum<0.2 ? null : values.reduce((a,b,i)=>a+b*weights[i],0)/sum;
 }
+export function pathLength(path){return path.reduce((sum,p,i)=>sum+Math.hypot(p.x-path[(i+1)%path.length].x,p.y-path[(i+1)%path.length].y),0);}
+export function trailOpacity(age,loopLength){
+ const t=clamp((age/Math.max(1,loopLength)-0.75)/0.25,0,1);
+ return 1-t*t*(3-2*t);
+}
 export class Simulation {
  constructor(config={}) {this.config={...defaults,...config};this.reset();}
  reset() {
-  this.path=makeTrack(this.config.track);
+  this.path=makeTrack(this.config.track);this.loopLength=pathLength(this.path);this.distance=0;
   const a=this.path[0],b=this.path[1];
   this.car={x:a.x,y:a.y,angle:Math.atan2(b.y-a.y,b.x-a.x),vl:0,vr:0};
   this.time=0;this.integral=0;this.previous=null;this.derivative=0;this.lastSide=1;
@@ -100,7 +105,7 @@ export class Simulation {
    c.vl+=(this.left*scale-c.vl)*dt/0.1;
    c.vr+=(this.right*scale*(1-this.config.bias/100)-c.vr)*dt/0.1;
    const v=(c.vl+c.vr)/2;c.angle+=(c.vl-c.vr)/30*dt;
-   c.x+=v*Math.cos(c.angle)*dt;c.y+=v*Math.sin(c.angle)*dt;
+   c.x+=v*Math.cos(c.angle)*dt;c.y+=v*Math.sin(c.angle)*dt;this.distance+=Math.abs(v)*dt;
   }
   this.time+=DT;
   const n=nearest(this.path,c.x,c.y);let di=n.index-this.lastIndex;
@@ -108,7 +113,8 @@ export class Simulation {
   if(n.d<45&&seenBefore)this.travel+=di;
   this.lastIndex=n.index;this.laps=Math.max(0,Math.floor(this.travel/this.path.length));
   this.history.push({t:this.time,e:this.error,p:this.p,i:this.i,d:this.d});if(this.history.length>Math.round(12/DT))this.history.shift();
-  this.trail.push({x:c.x,y:c.y});if(this.trail.length>1600)this.trail.shift();
+  this.trail.push({x:c.x,y:c.y,distance:this.distance});
+  while(this.trail.length>1&&(this.distance-this.trail[1].distance>=this.loopLength||this.trail.length>2000))this.trail.shift();
   if(this.lostFor>=5||c.x<15||c.x>945||c.y<15||c.y>565)this.finished=true;
  }
  get meanError(){return this.seen?this.errorSum/this.seen:0;}
