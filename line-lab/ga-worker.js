@@ -1,4 +1,4 @@
-import {Evolution} from './genetics.js?v=4';
+import {Evolution} from './genetics.js?v=5';
 let evolution;
 self.onmessage=event=>{
  try{

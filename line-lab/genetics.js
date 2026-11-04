@@ -1,4 +1,4 @@
-import {Simulation,DT,clamp,MOTOR_SCALE} from './engine.js?v=4';
+import {Simulation,DT,clamp,MOTOR_SCALE} from './engine.js?v=5';
 export const GENES=[{key:'kp',label:'P',min:2,max:55,step:8},{key:'ki',label:'I',min:0,max:8,step:1.5},{key:'kd',label:'D',min:0,max:10,step:1.5}];
 export const TEST_SECONDS=12;
 export const GA_DEFAULTS={track:'curves',base:80,bias:0,population:12,mutation:0.2,seed:42};

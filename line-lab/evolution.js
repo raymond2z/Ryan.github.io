@@ -1,6 +1,7 @@
-import {makeTrack,clamp} from './engine.js?v=4';
-import {drawFadingTrail} from './trail.js?v=4';
-import {GA_DEFAULTS,GENES} from './genetics.js?v=4';
+import {initComparison} from './comparison.js?v=5';
+import {makeTrack,clamp} from './engine.js?v=5';
+import {drawFadingTrail} from './trail.js?v=5';
+import {GA_DEFAULTS,GENES} from './genetics.js?v=5';
 const $=id=>document.getElementById(id);
 export function initEvolution({onApply}){
  let worker=null,data=null,selected=null,busy=false,training=false,active=false,timer=null,stopAt=20,replaying=false,replayTime=0,lastFrame=0;
@@ -8,8 +9,10 @@ export function initEvolution({onApply}){
  let config={...GA_DEFAULTS},path=makeTrack(config.track);
  const canvas=$('gaArena'),ctx=canvas.getContext('2d'),chart=$('gaChart'),gx=chart.getContext('2d');
  const settings=['gaTrack','gaPopulation','gaSpeed','gaWeakness','gaMutation','gaSeed','gaLimit'];
+ const comparison=initComparison({onPause(){replaying=false;pause();draw();}});
  function readConfig(){return {track:$('gaTrack').value,population:Number($('gaPopulation').value),base:Number($('gaSpeed').value),bias:Number($('gaWeakness').value),mutation:Number($('gaMutation').value)/100,seed:Math.round(clamp(Number($('gaSeed').value)||42,1,99999))};}
  function controls(){
+  comparison.setAvailable(!busy&&!training);
   $('gaStart').textContent=training?'Ⅱ Pause auto-run':'▶ Run automatically';
   $('gaStep').disabled=busy||training;
   $('gaStart').disabled=busy&&!training;
@@ -24,13 +27,14 @@ export function initEvolution({onApply}){
  function pause(){training=false;clearTimeout(timer);controls();}
  function reset(){
   pause();if(worker)worker.terminate();worker=null;busy=false;data=null;selected=null;replaying=false;replayTime=0;guidePhase='test';planned=null;demonstratedId=null;taughtResult=null;config=readConfig();path=makeTrack(config.track);
+  comparison.reset();
   $('gaSeed').value=config.seed;$('gaSpeedOut').textContent=config.base+'%';$('gaWeaknessOut').textContent=config.bias+'%';$('gaMutationOut').textContent=Math.round(config.mutation*100)+'%';
   $('gaProgress').textContent=`Ready: ${config.population} different starting gene sets.`;render();
  }
  function next(operation='step'){
   if(busy)return;replaying=false;busy=true;controls();$('gaProgress').textContent=operation==='prepare'?'Selecting parents for the next generation…':'Testing each robot for 12 simulated seconds…';
   if(!worker){
-   try{worker=new Worker(new URL('./ga-worker.js?v=4',import.meta.url),{type:'module'});}catch(error){failed(error.message);return;}
+   try{worker=new Worker(new URL('./ga-worker.js?v=5',import.meta.url),{type:'module'});}catch(error){failed(error.message);return;}
    const ownWorker=worker;
    worker.onmessage=event=>{
     if(ownWorker!==worker)return;const message=event.data;
@@ -39,7 +43,7 @@ export function initEvolution({onApply}){
     if(message.type==='prepared'){busy=false;planned=message.candidates;guidePhase='select';$('gaProgress').textContent='Parents selected. Use the step buttons above to follow one child.';controls();return;}
     if(message.type!=='generation')return;
     const learned=message.result.population.find(p=>p.id===demonstratedId);taughtResult=learned?{child:learned,parents:learned.parents.map(id=>data.population.find(p=>p.id===id))}:null;demonstratedId=null;
-    busy=false;data=message.result;planned=null;guidePhase='tested';selected=data.best;replayTime=selected.route.at(-1).t;render();
+    busy=false;data=message.result;comparison.update(data);planned=null;guidePhase='tested';selected=data.best;replayTime=selected.route.at(-1).t;render();
     $('gaProgress').textContent=`Generation ${data.generation} tested. Best ${data.best.score.toFixed(2)} / 100. Average ${data.mean.toFixed(2)}.`;
     if(training&&data.generation<stopAt)timer=setTimeout(next,600);
     else if(training){pause();$('gaProgress').textContent=`${data.generation} generations complete. Replay a robot, or try its genes in the driving tab.`;}
@@ -49,7 +53,7 @@ export function initEvolution({onApply}){
   }
   worker.postMessage({type:operation});
  }
- function failed(message){training=false;clearTimeout(timer);busy=false;if(worker)worker.terminate();worker=null;data=null;selected=null;planned=null;demonstratedId=null;taughtResult=null;guidePhase='test';replaying=false;replayTime=0;render();$('gaProgress').textContent='Evolution stopped: '+message+' Start a new test to retry.';}
+ function failed(message){training=false;clearTimeout(timer);busy=false;if(worker)worker.terminate();worker=null;data=null;selected=null;planned=null;demonstratedId=null;taughtResult=null;guidePhase='test';replaying=false;replayTime=0;comparison.reset();render();$('gaProgress').textContent='Evolution stopped: '+message+' Start a new test to retry.';}
  $('gaStart').addEventListener('click',()=>{
   if(training){pause();$('gaProgress').textContent=busy?'Pausing after this generation finishes.':'Evolution paused. Inspect or replay a robot.';return;}
   if(busy)return;training=true;replaying=false;const batch=Number($('gaLimit').value);stopAt=(data?.generation||0)+batch;controls();if(!busy)next();
@@ -65,7 +69,7 @@ export function initEvolution({onApply}){
  settings.filter(id=>id!=='gaLimit').forEach(id=>$(id).addEventListener('change',reset));
  for(const [input,output] of [['gaSpeed','gaSpeedOut'],['gaWeakness','gaWeaknessOut'],['gaMutation','gaMutationOut']])$(input).addEventListener('input',()=>$(output).textContent=$(input).value+'%');
  $('gaReplay').addEventListener('click',()=>{
-  if(!selected)return;pause();replaying=!replaying;if(replaying&&replayTime>=selected.route.at(-1).t-.001)replayTime=0;controls();draw();
+  if(!selected)return;comparison.pauseReplay();pause();replaying=!replaying;if(replaying&&replayTime>=selected.route.at(-1).t-.001)replayTime=0;controls();draw();
  });
  $('gaApply').addEventListener('click',()=>{if(!selected)return;pause();replaying=false;onApply({...selected.genome},{...data.config});});
  function renderGuide(){
@@ -91,6 +95,7 @@ export function initEvolution({onApply}){
    if(previous){const gain=data.best.score-previous.best,average=data.mean-previous.mean;card(gain<.005?'Best score held steady':'A better best robot',`Best ${signed(gain)} points; average ${signed(average)} points versus generation ${generation-1}. ${gain<.005?'Two elite copies protect the best result. New children can still be worse.':'The new candidate scored better on this track.'}`);}
    else card('Your starting point',`Average: ${data.mean.toFixed(2)}. This is the baseline for later generations. A strong random start is possible.`);
    if(taughtResult){const {child,parents}=taughtResult,el=card('Our child '+child.id,`${child.score.toFixed(2)} points. Parent A: ${parents[0].score.toFixed(2)}; parent B: ${parents[1].score.toFixed(2)}. ${child.score>Math.max(...parents.map(p=>p.score))?'This child beats both parents.':'This child does not beat both parents. Mixing and mutation do not guarantee improvement.'}`);const button=document.createElement('button');button.textContent='▶ Replay this child';button.addEventListener('click',()=>{pause();selected=child;replayTime=0;replaying=true;render();$('gaArena').scrollIntoView({behavior:'auto',block:'center'});});el.append(button);}
+   if(generation>=2){const button=document.createElement('button');button.className='outline compare-shortcut';button.textContent='Compare first vs best ↓';button.disabled=busy||training;button.addEventListener('click',()=>comparison.showTraining());visual.append(button);}
    $('gaChange').textContent=previous?`Since generation 1: best ${signed(data.best.score-first.best)} points · average ${signed(data.mean-first.mean)} points.`:'Next: keep the best two, and choose parents for the other robots.';
   }else if(planned){
    const children=planned.filter(p=>p.origin==='child'),example=children.find(p=>p.mutations.length&&new Set(Object.values(p.sources)).size>1)||children.find(p=>p.mutations.length)||children[0];
@@ -172,5 +177,5 @@ export function initEvolution({onApply}){
  function frame(now){const dt=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;if(active&&replaying&&selected){replayTime=Math.min(replayTime+dt*2,selected.route.at(-1).t);draw();if(replayTime>=selected.route.at(-1).t){replaying=false;controls();}}requestAnimationFrame(frame);}
  window.addEventListener('resize',()=>{draw();drawChart();});document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();replaying=false;controls();}});
  reset();requestAnimationFrame(frame);
- return {setActive(value){active=value;if(!active){pause();replaying=false;}else{draw();drawChart();}controls();},get result(){return data;}};
+ return {setActive(value){active=value;comparison.setActive(value);if(!active){pause();replaying=false;}else{draw();drawChart();}controls();},get result(){return data;}};
 }

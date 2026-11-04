@@ -1,6 +1,6 @@
-import {Simulation,DT,weights,nearest,clamp,trackNames,defaults,experiments,MODEL_VERSION,MOTOR_MAX} from './engine.js?v=4'
-import {drawFadingTrail} from './trail.js?v=4';
-import {initEvolution} from './evolution.js?v=4';
+import {Simulation,DT,weights,nearest,clamp,trackNames,defaults,experiments,MODEL_VERSION,MOTOR_MAX} from './engine.js?v=5'
+import {drawFadingTrail} from './trail.js?v=5';
+import {initEvolution} from './evolution.js?v=5';
 const $=id=>document.getElementById(id);
 let sim=new Simulation(),running=false,zoom=1,playback=1,accumulator=0,lastFrame=0,mixed=false,pushes=0,currentLesson='rules',duration=0,toastTimer;
 let results=[];try{const x=JSON.parse(localStorage.getItem('lineLabTests')||'[]');if(Array.isArray(x))results=x.filter(r=>r&&typeof r.mode==='string'&&typeof r.track==='string').slice(-12);}catch{}
