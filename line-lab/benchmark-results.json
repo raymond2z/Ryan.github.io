@@ -1,0 +1,47 @@
+[
+  {
+    "seed": 1,
+    "evaluations": 240,
+    "firstLap": 6.78,
+    "evolvedLap": 5.68,
+    "randomBestLap": 5.96,
+    "firstFinishers": 12,
+    "lastFinishers": 12
+  },
+  {
+    "seed": 7,
+    "evaluations": 240,
+    "firstLap": 6.38,
+    "evolvedLap": 5.78,
+    "randomBestLap": 5.88,
+    "firstFinishers": 12,
+    "lastFinishers": 12
+  },
+  {
+    "seed": 42,
+    "evaluations": 240,
+    "firstLap": 5.88,
+    "evolvedLap": 5.62,
+    "randomBestLap": 5.88,
+    "firstFinishers": 10,
+    "lastFinishers": 12
+  },
+  {
+    "seed": 99,
+    "evaluations": 240,
+    "firstLap": 6.4,
+    "evolvedLap": 5.64,
+    "randomBestLap": 5.88,
+    "firstFinishers": 11,
+    "lastFinishers": 12
+  },
+  {
+    "seed": 2026,
+    "evaluations": 240,
+    "firstLap": 6.02,
+    "evolvedLap": 5.64,
+    "randomBestLap": 5.8,
+    "firstFinishers": 12,
+    "lastFinishers": 12
+  }
+]

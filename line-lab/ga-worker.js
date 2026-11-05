@@ -1,4 +1,4 @@
-import {Evolution} from './genetics.js?v=5';
+import {Evolution} from './genetics.js?v=6';
 let evolution;
 self.onmessage=event=>{
  try{
@@ -7,3 +7,4 @@ self.onmessage=event=>{
   else if(event.data.type==='step'&&evolution){const result=evolution.step((done,total)=>self.postMessage({type:'progress',done,total}));self.postMessage({type:'generation',result});}
  }catch(error){self.postMessage({type:'error',message:error.message});}
 };
+

@@ -1,5 +1,5 @@
-import {evaluateGenome,TEST_SECONDS} from './genetics.js?v=5';
-import {clamp} from './engine.js?v=5';
+import {evaluateGenome,TEST_SECONDS} from './genetics.js?v=6';
+import {clamp} from './engine.js?v=6';
 export const TRACK_NAMES={loop:'Practice loop',curves:'S-curves',tight:'Tight turns'};
 // Evaluate copies, never the evolution population. Only the track may change.
 export function testLockedPair(snapshot,track){
@@ -13,3 +13,4 @@ export function replayPose(route,time){
  const a=route[i],b=route[Math.min(i+1,route.length-1)],f=b.t>a.t?clamp((time-a.t)/(b.t-a.t),0,1):0;
  return {i,x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,angle:a.angle+(b.angle-a.angle)*f,distance:a.distance+(b.distance-a.distance)*f};
 }
+

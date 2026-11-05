@@ -1,12 +1,12 @@
 export const DT = 0.02;
-export const MODEL_VERSION = 2;
+export const MODEL_VERSION = 3;
 export const MOTOR_MAX = 100;
 export const MOTOR_MIN = -50;
 export const MOTOR_SCALE = 4.5;
 export const weights = [-2, -1, 0, 1, 2];
 export const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 export const trackNames = {loop:'Practice loop',curves:'S-curves',tight:'Tight turns'};
-export const defaults = {mode:'pid',track:'curves',base:70,kp:18,ki:1.5,kd:6,turn:26,deadband:0.35,bias:0};
+export const defaults = {mode:'pid',track:'curves',base:70,kp:18,ki:1.5,kd:6,turn:26,deadband:0.35,bias:0,slowdown:0};
 export const experiments = {
  rules:{mode:'rules',track:'loop',base:35,turn:15,deadband:.35,bias:0},
  damping:{mode:'p',track:'curves',base:75,kp:18,kd:6,ki:0,bias:0},
@@ -56,7 +56,7 @@ export class Simulation {
   this.time=0;this.integral=0;this.previous=null;this.derivative=0;this.lastSide=1;
   this.error=0;this.sensors=[];this.visible=true;this.lostFor=0;this.lostEvents=0;
   this.laps=0;this.travel=0;this.lastIndex=0;this.total=0;this.seen=0;this.errorSum=0;
-  this.left=0;this.right=0;this.correction=0;this.raw=0;this.p=0;this.i=0;this.d=0;
+  this.targetSpeed=0;this.left=0;this.right=0;this.correction=0;this.raw=0;this.p=0;this.i=0;this.d=0;
   this.history=[];this.trail=[];this.reason='Ready to read the line';this.finished=false;
   this.read();
  }
@@ -69,7 +69,7 @@ export class Simulation {
  control() {
   const cfg=this.config,e=this.error;
   if(e===null) {
-   this.lostFor+=DT;this.previous=null;this.derivative=0;this.p=0;this.i=0;this.d=0;this.raw=0;
+   this.targetSpeed=0;this.lostFor+=DT;this.previous=null;this.derivative=0;this.p=0;this.i=0;this.d=0;this.raw=0;
    this.left=this.lastSide*22;this.right=-this.lastSide*22;this.correction=this.lastSide*22;
    this.reason='No line seen → search toward the last seen side';return;
   }
@@ -92,7 +92,9 @@ export class Simulation {
   }
   this.correction=clamp(this.raw,-MOTOR_MAX,MOTOR_MAX);
   // Clamp each motor independently: high forward speed must not erase steering.
-  this.left=clamp(cfg.base+this.correction,MOTOR_MIN,MOTOR_MAX);this.right=clamp(cfg.base-this.correction,MOTOR_MIN,MOTOR_MAX);
+  // Speed policy uses only the five sensor readings, never map curvature.
+  this.targetSpeed=cfg.base*(1-clamp(cfg.slowdown||0,0,.85)*Math.min(1,Math.abs(e)/2));
+  this.left=clamp(this.targetSpeed+this.correction,MOTOR_MIN,MOTOR_MAX);this.right=clamp(this.targetSpeed-this.correction,MOTOR_MIN,MOTOR_MAX);
  }
  tick() {
   if(this.finished)return;
@@ -121,3 +123,4 @@ export class Simulation {
  get seenPercent(){return this.total?this.seen/this.total*100:100;}
  nudge(side=1){this.car.x-=Math.sin(this.car.angle)*14*side;this.car.y+=Math.cos(this.car.angle)*14*side;this.resetMemory();this.read();this.finished=false;this.lostFor=0;}
 }
+

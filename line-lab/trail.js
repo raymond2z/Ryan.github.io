@@ -1,4 +1,4 @@
-import {trailOpacity} from './engine.js?v=5';
+import {trailOpacity} from './engine.js?v=6';
 export function drawFadingTrail(ctx,sim,color='221,157,100'){
  if(sim.trail.length<2)return;
  ctx.save();ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';
@@ -14,3 +14,4 @@ export function drawFadingTrail(ctx,sim,color='221,157,100'){
  }
  ctx.restore();
 }
+

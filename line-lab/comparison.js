@@ -1,6 +1,6 @@
-import {makeTrack} from './engine.js?v=5';
-import {drawFadingTrail} from './trail.js?v=5';
-import {TRACK_NAMES,replayPose} from './comparison-core.js?v=5';
+import {makeTrack} from './engine.js?v=6';
+import {drawFadingTrail} from './trail.js?v=6';
+import {TRACK_NAMES,replayPose} from './comparison-core.js?v=6';
 const $=id=>document.getElementById(id);
 const signed=v=>(v>=0?'+':'')+v.toFixed(2);
 export function initComparison({onPause}){
@@ -25,7 +25,7 @@ export function initComparison({onPause}){
  }
  function challenge(){
   if(!ready()||!available||worker)return;onPause();cancel();result=null;time=0;
-  try{worker=new Worker(new URL('./comparison-worker.js?v=5',import.meta.url),{type:'module'});}catch(error){failed(error.message);return;}
+  try{worker=new Worker(new URL('./comparison-worker.js?v=6',import.meta.url),{type:'module'});}catch(error){failed(error.message);return;}
   const ownWorker=worker;worker.onmessage=event=>{if(worker!==ownWorker)return;if(event.data.type==='error'){failed(event.data.message);return;}result=event.data.result;worker.terminate();worker=null;time=0;playing=active;render();};
   worker.onerror=()=>failed('The test could not load. Try the challenge again.');
   worker.postMessage({snapshot:snapshot(),track:$('compareTrack').value});render();
@@ -34,17 +34,17 @@ export function initComparison({onPause}){
  function render(){
   controls();$('compareResults').hidden=!result;$('comparePlayback').hidden=!result;
   const pending=Boolean(worker),has=Boolean(ready());
-  $('compareStatus').textContent=pending?'Testing both locked gene sets for 12 simulated seconds…':result?`${TRACK_NAMES[result.track]} · same start, ${result.base}% speed, ${result.bias}% motor weakness · fixed PID genes · 12-second test`:has?'Choose a training-track replay, or test the same locked genes on a different track.':'Test generation 1, then create and test at least one more generation above.';
-  $('comparePrompt').textContent=result&&result.track!==result.trainingTrack?'Think: does the improvement transfer to this track? A new track may be easier or harder; compare both robots within the same test.':'Predict: will the later robot travel farther, stay closer to the line, or make almost the same moves?';
+  $('compareStatus').textContent=pending?'Testing both locked gene sets for 12 simulated seconds…':result?`${TRACK_NAMES[result.track]} · same start, same 100% motor ceiling, ${result.bias}% motor weakness · five locked genes · one lap, 12 s limit`:has?'Choose a training-track replay, or test the same locked genes on a different track.':'Test generation 1, then create and test at least one more generation above.';
+  $('comparePrompt').textContent=result&&result.track!==result.trainingTrack?'Think: does the improvement transfer to this track? A new track may be easier or harder; compare both robots within the same test.':'Predict: which robot finishes first? Does its speed strategy also work on another track?';
   const body=$('compareRows');body.replaceChildren();
   if(result){
    result.robots.forEach((robot,i)=>{
     const tr=document.createElement('tr');
-    const vals=[`${i?'B · Later best':'A · First best'} (${robot.id})`,`P ${robot.genome.kp.toFixed(2)} · I ${robot.genome.ki.toFixed(2)} · D ${robot.genome.kd.toFixed(2)}`,robot.trainingScore.toFixed(2),robot.score.toFixed(2),robot.seen.toFixed(1)+'%',robot.progressLaps.toFixed(2),robot.stopped?'Stopped at '+robot.route.at(-1).t.toFixed(1)+' s':'Finished 12 s'];
+    const vals=[`${i?'B · Later best':'A · First best'} (${robot.id})`,`P ${robot.genome.kp.toFixed(2)} · I ${robot.genome.ki.toFixed(2)} · D ${robot.genome.kd.toFixed(2)} · Speed ${robot.genome.base.toFixed(2)}% · Slow ${robot.genome.slowdown.toFixed(2)}`,robot.trainingScore.toFixed(2),robot.score.toFixed(2),robot.seen.toFixed(1)+'%',Math.round(robot.progressLaps*100)+'%',robot.completed?'Lap: '+robot.lapTime.toFixed(2)+' s':robot.reason+' at '+robot.route.at(-1).t.toFixed(2)+' s'];
     vals.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td);});body.append(tr);
    });
    const [a,b]=result.robots,change=b.score-a.score,same=Object.keys(a.genome).every(k=>a.genome[k]===b.genome[k]);
-   $('compareOutcome').textContent=`Later best − first best: ${signed(change)} fitness points on ${TRACK_NAMES[result.track]}. ${same?'Both have identical genes, so their paths overlap exactly.':Math.abs(change)<.005?'Their scores are almost equal. Look at their paths and line-seen results.':change>0?'The later robot scores higher on this track.':'The later robot scores lower on this track. Training gains did not transfer here.'}`;
+   $('compareOutcome').textContent=`${a.completed&&b.completed?'Lap time: '+a.lapTime.toFixed(2)+' → '+b.lapTime.toFixed(2)+' s. '+(100*(a.lapTime-b.lapTime)/a.lapTime).toFixed(1)+'% faster. ':''}Later best − first best: ${signed(change)} race points on ${TRACK_NAMES[result.track]}. ${same?'Both have identical genes, so their paths overlap exactly.':Math.abs(change)<.005?'Their scores are almost equal. Look at their paths and line-seen results.':change>0?'The later robot ranks higher on this track.':'The later robot scores lower on this track. Training gains did not transfer here.'}`;
    $('compareTrainingLabel').textContent='TRAINING · '+TRACK_NAMES[result.trainingTrack];$('compareTestLabel').textContent='THIS TEST · '+TRACK_NAMES[result.track];
    $('compareFrozen').textContent=`A = best of generation 1 · B = best of generation ${result.generation}. Genes are frozen for this comparison. No collisions; each follows its own recorded test.`;
   }else{$('compareFrozen').textContent='A is the best robot from generation 1, not a deliberately weak robot. B is the best from the latest tested generation.';}
@@ -84,3 +84,4 @@ export function initComparison({onPause}){
   showTraining(){startTraining();$('gaComparison').scrollIntoView({behavior:'auto',block:'start'});}
  };
 }
+
