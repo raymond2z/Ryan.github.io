@@ -69,5 +69,9 @@ $('import-file').onchange=async e=>{const file=e.target.files[0];if(!file)return
 $('share').onclick=async()=>{try{const doc=L.documentFor(params,$('setup-name').value,searchOptions,[],FUI.get());const url=new URL(location.protocol==='file:'?'https://raymond2z.github.io/Ryan.github.io/derby-lab/':location.href);url.hash='setup='+encodeURIComponent(JSON.stringify(doc));$('share-box').hidden=false;$('share-url').value=url.href;try{await navigator.clipboard.writeText(url.href);fileStatus('Setup link copied. It includes the current parameters and search limits, not saved history.');}catch{$('share-url').focus();$('share-url').select();fileStatus('Copy the selected setup link. It includes parameters and search limits, not saved history.');}}catch(error){fileStatus(error.message,true);}};
 window.addEventListener('derby-fit-change',()=>{if(!run)return;run.geometry=FUI.get();window.dispatchEvent(new CustomEvent('derby-setup-change',{detail:{params:{...params},geometry:FUI.get()}}));$('share-box').hidden=true;draw();persist();});
 new ResizeObserver(()=>drawChart(P.sampleAt(run,time))).observe($('chart'));window.addEventListener('derby-activity-change',stop);document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+window.DerbyExperiment = {
+ capture(){return {params:{...params},geometry:FUI.get(),dynamics:window.DerbyDynamicsUI.get(),options:{...searchOptions}};},
+ restore(s){stop(); params=L.validParams(s.params);FUI.set(F.validate(s.geometry));window.DerbyDynamicsUI.set(s.dynamics);searchOptions=L.settings(s.options);syncSearch();time=0;update();persist();}
+};
 update();renderTable();if(startupMessage)fileStatus(startupMessage,startupMessage.startsWith('Shared link rejected'));
 })();
