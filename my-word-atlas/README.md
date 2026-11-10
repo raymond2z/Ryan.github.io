@@ -1,52 +1,48 @@
-# My Word Atlas V1 · 個人化單字學習原型
+# My Word Atlas V1.2 · 個人化單字圖鑑
 
-這是一個獨立的、可直接放到 GitHub Pages 的 **V1 原型**，使用 Word Atlas 的資料結構理念，但 **不是原專案的 React Fork**，也尚未移植其星圖、插畫及原聲音素材。
+**線上版**：https://raymond2z.github.io/Ryan.github.io/my-word-atlas/
 
-## 開始使用
+這是根據 [Word Atlas](https://github.com/designfuchen/word-atlas) 資料結構與學習理念建立的獨立原型；**尚非 Word Atlas React 原始碼的正式 Fork**。原有單字學習進度沿用 `localStorage` 的 `my-word-atlas-v1:state`，更新不會主動清除既有紀錄。
 
-- 線上版：`https://raymond2z.github.io/Ryan.github.io/my-word-atlas/`
-- 單檔版：直接開啟 `single-file-v1.html`；所有基本功能可在單檔中執行，語音使用瀏覽器 TTS。
-- 模組開發版：在本目錄執行 `python -m http.server 8000`，然後開啟 `http://localhost:8000/`。
-- 測試：`node --test tests/core.test.mjs`（Node.js 20+）。
+## V1.2 新功能
 
-## 已實作
+- **Vocabulary Constellation**：輕量 SVG 單字星圖，按主題分佈、可搜尋、篩選未學／到期／學習中／較穩定字；每個星點可用滑鼠或鍵盤開啟詞卡。此功能不是原版 Word Atlas WebGL 星圖。
+- **Word Atlas 參考媒體**：30 個內建 IELTS 詞卡可按原詞 ID 嘗試載入 Word Atlas 縮圖與英式／美式音檔。外部資源不可用時顯示圖片回退介面，發音自動回退到瀏覽器 TTS。不能保證每個字都含有相符的圖片或音檔。
+- **自訂媒體**：單字編輯器增加圖片網址、UK／US 音檔網址、是否允許使用 Word Atlas 參考媒體。只接受 HTTPS 完整 URL。
+- **個人偏好**：首頁可關閉外部素材載入、選擇 UK／US。當外部素材關閉時，保留瀏覽器朗讀功能。
+- **修正**：朗讀函數不會再錯把整個詞卡物件當文字朗讀。
+- **向後兼容**：已有 IELTS Starter 30 和學習紀錄會保留，舊詞卡補上可選的參考媒體標記；其他自建詞庫不自動接上外部素材。
 
-- 內建 30 個經整理的 IELTS Academic 初版示範詞卡。
-- 自行新增詞庫、編輯／刪除單字、搜尋、切換詞庫。
-- 匯入 JSON（支援 Word Atlas 的詞條格式）或 CSV，匯出 CSV，另有完整學習紀錄 JSON 備份／還原。
-- 每天最多 5 個新字；到期複習優先；未到期字不會因為較弱而重複佔用選字額度。
-- 新字三階段：**看字理解 → 首字母有提示回想 → 無提示拼字**。
-- 獨立拼字三級提示：首字母、首尾字母、打亂字母。強提示會按 Again 記錄，避免高估記憶。
-- 第一次有效回想才影響排程；錯誤後要求輸入一次正確拼法，重打不再二次推進記憶間隔。
-- 提供簡單學習統計；各詞庫獨立保存進度。
+## 既有功能保持不變
 
-## FSRS 排程
+- 30 個 IELTS Academic 示範字；自訂多詞庫；新增／編輯／刪除單字；CSV／JSON 匯入及 CSV 匯出。
+- 三階段：接觸 → 有提示回想 → 無提示回想；到期才正常複習，避免未到期舊字佔用新字配額。
+- 三級拼字提示、答錯後重打。只在一次有效的獨立回想時推進排程。
+- 備份／還原、基本學習統計及每詞庫獨立進度。
+- FSRS 使用 `ts-fsrs@5.4.2` 的外部 ES Module；若 CDN 無法載入，保留 fallback。**尚未完成本地完全離線打包的 FSRS**。
 
-採用 Word Atlas 同主要版本的 `ts-fsrs@5.4.2`（由 esm.sh 的 ES Module CDN 取得），並設定 FSRS-6、目標記憶率 90%。**需能連上 CDN 才能使用真正的 FSRS**；若無法連接，會使用保守的本機基本排程（V1 的退化模式），並在介面上明確標示。歷史回想紀錄保留，連線後可重放用於 FSRS 計算。這不等同於完整的離線 FSRS 打包版。
+## 使用方式
 
-## 注意事項
+- **直接開啟** `My_Word_Atlas_V1_2.html`（單檔版；無需伺服器）。
+- **模組開發**：本目錄執行 `python -m http.server 8000` 後造訪 http://localhost:8000/ ，讀取 `index.html`。這個版本以 ES Modules 分離核心、媒體、星圖和 UI 邏輯。
+- **測試**：Node.js 20+，執行 `node --test tests/*.test.mjs`，目前 13 項測試通過。
 
-- 學習資料儲存在目前瀏覽器的 `localStorage`。清除瀏覽資料、使用無痕模式、不同裝置切換都可能遺失或不共享進度。請定期匯出備份。
-- V1 沒有登入、跨設備同步、教師帳號或學生數據伺服器；這些需要後續設計。
-- V1 每次匯入最多 500 字，檔案不得超過 5MB；完整 Word Atlas 7,298 字應於下一階段改用 IndexedDB 和按需載入，不宜一次塞進 localStorage。
-- V1 不會讀取或覆蓋「極光單字冒險島 V4.7」的記錄，避免資料意外混用。未來可提供明確的匯入／轉換工具。
-- 例句和單字資料供學習原型測試；正式用於教學前建議由教師審核。
-- 這份實作和原作者的 React 專案不同。若之後建立正式 Fork，請遵守 MIT 程式碼授權，及引用 Word Atlas 詞庫／媒體時的 CC BY 4.0 署名條款。
+## 資料安全
 
-## CSV 格式
+- 資料只存於瀏覽器 localStorage。不同瀏覽器／設備不會自動同步。建議升級前先使用「學習紀錄 → 匯出完整備份」下載 JSON。
+- V1.2 不會覆蓋極光單字冒險島 V4.7 的原有資料。自訂詞庫同時使用 `word + meaning + id`，請勿任意改動已有字詞的唯一 ID。
+- 開啟外部媒體時，瀏覽器會向 Word Atlas 或自訂 HTTPS 媒體來源發起連線；可在首頁關閉。
+- Word Atlas 媒體只作參考情境，可能代表不同詞義；正式教材請人工確認內容與授權。
 
-```csv
-word,zh,pos,definition,example,exampleZh,collocations,cefr,topic
-resilient,有韌性的,adj.,able to recover after difficulty,The town recovered after the storm.,風暴後小鎮復原了,resilient community,B2,society
-```
+## 授權／致謝
 
-## 下一步
+- 開源專案：[Word Atlas](https://github.com/designfuchen/word-atlas)，原專案程式碼 MIT。
+- 使用之 Word Atlas 參考圖像與錄音：**Word Atlas contributors — CC BY 4.0**；授權條款 https://creativecommons.org/licenses/by/4.0/ 。此版重新整合於自製學習介面；並非官方 Word Atlas 網站或受其背書。
+- 自訂圖片／音檔的使用授權由上傳或設定者自行確認。
 
-1. 將這個原型的詞庫編輯器、每日學習和回想證據邏輯移植至正式 Word Atlas 的 React/TypeScript 架構。
-2. 完成本地打包的 `ts-fsrs`，改用 IndexedDB，強化離線學習可靠性。
-3. 加入圖片、例句、搭配詞的內容審核狀態及正式 UI。
-4. 進行實機互動測試、資料還原與跨日回歸測試。
+## 後續工作
 
-## 致謝與授權
-
-參考 [Word Atlas](https://github.com/designfuchen/word-atlas)（原專案程式碼：MIT；詞庫、插畫、錄音：CC BY 4.0）。此 V1 沒有直接打包其圖片或錄音。若後續使用其內容，請署名 **Word Atlas contributors — CC BY 4.0**，附授權連結並說明修改。
+1. 將目前已測試的詞庫編輯器、學習流程和星圖 UI 分階段搬至 Word Atlas React + TypeScript 正式分支（尚未建立 Fork）。
+2. 本地打包 ts-fsrs；擴充 IndexedDB，大詞庫按需載入。
+3. 教材審核狀態與內容出處；更高品質的例句與搭配詞學習。
+4. 實機回歸、跨日排程、資料損壞恢復及跨設備同步方案。
