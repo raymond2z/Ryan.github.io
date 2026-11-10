@@ -212,8 +212,8 @@ function getMemoryQuality(record){
   return Number(stability)>=21?'mature':'learning';
 }
 
-
 const esc = escapeHTML;
+
 const $ = (id)=>document.getElementById(id);
 const tabs = ['home','library','insights'];
 let state=loadState(), activeTab='home';
@@ -372,7 +372,7 @@ function validateBackup(parsed){
   const candidate=parsed.state;
   if(candidate.schema!==1 || typeof candidate.decks!=='object'||typeof candidate.progress!=='object')throw Error('備份版本不相容');
   const rebuilt={...defaultState(),...candidate,settings:{...defaultState().settings,...candidate.settings},decks:{},progress:candidate.progress};
-  for(const [id,deck] of Object.entries(candidate.decks)){rebuilt.decks[id]=normalizeDeck({...deck,id},id)}
+  for(const [id,deck] of Object.entries(candidate.decks)){rebuilt.decks[id]=Array.isArray(deck.words)&&deck.words.length ? normalizeDeck({...deck,id},id) : {...deck,id,words:[]}}
   if(!rebuilt.decks[rebuilt.selectedDeck])rebuilt.selectedDeck=Object.keys(rebuilt.decks)[0]||'';
   return rebuilt;
 }
@@ -393,8 +393,9 @@ async function onFile(e){
       if(!deck.title||deck.title==='我的詞庫')deck.title=file.name.replace(/\.json$/i,'');
     }
     const base=slug(deck.id);let id=base,i=2;while(state.decks[id])id=base+'-'+i++;
+    const previousDeck=state.selectedDeck;
     deck.id=id;state.decks[id]=deck;state.selectedDeck=id;
-    if(!saveState()){delete state.decks[id];return}
+    if(!saveState()){delete state.decks[id];state.selectedDeck=previousDeck;return}
     setTab('library');toast(`已匯入「${deck.title}」，共 ${deck.words.length} 個單字。`);
   }catch(err){toast('匯入失敗：'+err.message);console.error(err)}
 }
