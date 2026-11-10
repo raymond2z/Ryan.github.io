@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f4f0e6">
+  <meta name="description" content="My Word Atlas — local-first personal vocabulary studio">
+  <title>My Word Atlas · 個人詞彙圖鑑</title>
+  <style>
+    :root{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#202b36;background:#f4f0e6;font-synthesis:none}
+    *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:inherit}button:disabled{opacity:.45;cursor:not-allowed}
+    .wrap{width:min(1180px,calc(100% - 32px));margin:auto}.top{border-bottom:1px solid #e0ddd4;background:#f8f5eeec;position:sticky;top:0;z-index:30;backdrop-filter:blur(10px)}
+    .top-in{display:flex;align-items:center;gap:18px;padding:14px 0}.logo{font-family:Georgia,serif;font-size:23px;font-weight:bold;white-space:nowrap;letter-spacing:-.06em}.logo span{color:#bd795c}
+    nav{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap}.tab{border:none;border-radius:12px;padding:10px 14px;background:transparent;color:#697381;font-size:14px;font-weight:650}.tab[aria-selected=true]{background:#273b4e;color:#fff}
+    .lead{padding:45px 0 28px;display:grid;grid-template-columns:1.45fr .55fr;gap:24px;align-items:center}.eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#a76c58}.lead h1{font-family:Georgia,serif;font-size:clamp(33px,5vw,62px);line-height:1.08;letter-spacing:-.045em;margin:10px 0 13px}.lead h1 em{font-weight:normal;color:#ad7764}.sub{color:#61707b;line-height:1.7;margin:0}.orbit{min-height:180px;border-radius:28px;background:radial-gradient(circle at 57% 45%,#f9d8c3 0 8%,transparent 8.4%),radial-gradient(circle at 50% 50%,transparent 0 30%,#bbced9 30.5% 31%,transparent 31.5%),radial-gradient(circle at 50% 50%,transparent 0 46%,#d7dfd7 46.5% 47%,transparent 47.5%),linear-gradient(135deg,#dbe5e8,#ece7d6);position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px #d7ddd7}.orbit:after{content:'A  ·  B  ·  C';position:absolute;bottom:16px;right:20px;letter-spacing:12px;color:#829ba4;font-family:Georgia,serif}
+    .panel{background:#fffdfa;border:1px solid #e1ded4;border-radius:22px;box-shadow:0 7px 22px #47505f09}.pad{padding:23px}.grid{display:grid;gap:16px}.stats{grid-template-columns:repeat(4,1fr);margin-bottom:21px}.stat{padding:22px}.stat b{display:block;font-size:33px;font-family:Georgia,serif;margin:8px 0 4px}.stat span{font-size:12px;font-weight:700;color:#6b7780}.stat small{font-size:12px;color:#9a9e9d}.main-grid{grid-template-columns:1.35fr .65fr;margin-bottom:30px}.section-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}.section-title h2{font-family:Georgia,serif;letter-spacing:-.02em;margin:0;font-size:25px}.section-title p{margin:5px 0 0;color:#79848b;font-size:13px}
+    .button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;padding:11px 16px;font-weight:750;font-size:14px;border:1px solid #d2d9dc;color:#304256;background:#f8f9f7}.button:hover:not(:disabled){filter:brightness(.96)}.primary{background:#294456;border-color:#294456;color:white}.secondary{background:#e7edea;border-color:#d7e5df;color:#2e6456}.danger{color:#9a4a42;border-color:#eed4cf;background:#fff7f5}.small{padding:7px 10px;font-size:12px;border-radius:9px}
+    .actions{display:flex;flex-wrap:wrap;gap:10px}.hint{background:#f7f0e6;border:1px solid #efe3d1;border-radius:13px;padding:12px 14px;font-size:13px;color:#7e6954;line-height:1.7}.meta{font-size:12px;color:#8a9196}.deck-list{display:grid;gap:10px}.deck{border:1px solid #e3e6e2;border-radius:15px;padding:14px 16px;background:#fafbf9;display:flex;align-items:center;gap:12px}.deck.selected{background:#eef3f0;border-color:#97baab}.deck .detail{flex:1}.deck strong{display:block;font-size:14px}.deck small{display:block;color:#8c9496;margin-top:3px}.deck-btn{border:0;background:#e7efe9;color:#3b5c50;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:750}
+    .library-layout{display:grid;grid-template-columns:320px 1fr;gap:18px}.list-row{display:flex;align-items:center;gap:13px;border-bottom:1px solid #efeee9;padding:13px 2px}.list-row:last-child{border-bottom:0}.list-row .word-content{flex:1;min-width:0}.list-row b{font-family:Georgia,serif;font-size:18px}.list-row .zh{display:block;font-size:12px;color:#78818a;margin-top:4px}.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.chip{font-size:11px;color:#667b77;background:#edf3f0;border-radius:30px;padding:4px 8px}.muted{color:#77848e}.empty{text-align:center;padding:40px 14px;color:#7d8993}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.field label{font-size:12px;color:#697982;font-weight:800}.field input,.field textarea,.field select{border:1px solid #d8dfdf;border-radius:10px;background:white;padding:12px;min-width:0;outline-color:#709f91}.field textarea{min-height:76px;resize:vertical}.field input:focus,.field textarea:focus{border-color:#759c91}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.search{width:100%;border:1px solid #e1e5e4;background:#fff;border-radius:11px;padding:12px;margin-bottom:14px}
+    .study{max-width:800px;margin:20px auto 60px}.progress-line{height:7px;border-radius:30px;background:#e5ebe8;overflow:hidden;margin:16px 0}.progress-line div{height:100%;background:linear-gradient(90deg,#609485,#c39174);transition:width .2s}.stage{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#a26c58;font-weight:800}.big-word{font-family:Georgia,serif;font-size:clamp(30px,5vw,56px);margin:15px 0 6px;word-break:break-word;letter-spacing:-.04em}.meaning{font-size:22px;font-weight:750;margin:16px 0}.example{border-left:3px solid #bdd5c6;background:#f3f7f4;padding:13px 16px;color:#456056;border-radius:0 12px 12px 0;line-height:1.7}.prompt{font-size:14px;color:#697982}.input-word{font-size:24px!important;letter-spacing:.04em;text-align:center;width:100%;padding:16px!important}.feedback{border-radius:13px;padding:13px;margin-top:15px;line-height:1.7}.feedback.ok{background:#eaf4ed;color:#2b6544}.feedback.bad{background:#fff0ed;color:#9b4a3f}.feedback.info{background:#f5f1e8;color:#705b49}.hint-word{font-family:ui-monospace,monospace;font-size:19px;letter-spacing:4px;text-align:center;color:#856756;margin:16px 0;word-break:break-all}
+    .insight-bar{height:10px;border-radius:9px;background:#eef0ec;margin:10px 0;overflow:hidden}.insight-bar span{height:100%;background:#789c92;display:block}.row-split{display:flex;align-items:center;justify-content:space-between;gap:10px}.footer{padding:26px 0 40px;border-top:1px solid #e2e0d8;color:#8b9194;font-size:12px;line-height:1.7}.notice{border:1px solid #e1dac3;background:#faf7ed;color:#846a3d;border-radius:12px;padding:12px;margin:12px 0;font-size:12px}.hidden{display:none!important}
+    #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#294456;color:white;border-radius:13px;padding:12px 17px;z-index:100;max-width:92vw;box-shadow:0 12px 30px #233c5055;display:none}#toast.show{display:block}dialog{border:1px solid #ddd;border-radius:18px;max-width:580px;width:calc(100% - 30px);padding:0;max-height:90vh;overflow:auto;box-shadow:0 25px 80px #283f5350}dialog::backdrop{background:#1c2b38aa}.dialog-pad{padding:24px}
+    @media(max-width:800px){.lead,.main-grid,.library-layout{grid-template-columns:1fr}.orbit{min-height:115px}.stats{grid-template-columns:repeat(2,1fr)}.top-in{align-items:flex-start;flex-wrap:wrap}nav{margin-left:0;width:100%;justify-content:space-between}.tab{padding:9px 11px;font-size:12px}.pad{padding:16px}.two{grid-template-columns:1fr}.stat{padding:16px}.lead{padding:25px 0 15px}.lead h1{font-size:40px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<header class="top"><div class="wrap top-in"><div class="logo">MY WORD <span>ATLAS.</span></div><nav aria-label="主導覽">
+<button class="tab" data-tab="home" aria-selected="true">今日學習</button>
+<button class="tab" data-tab="library" aria-selected="false">我的詞庫</button>
+<button class="tab" data-tab="insights" aria-selected="false">學習紀錄</button>
+</nav></div></header>
+<main class="wrap">
+<section class="lead"><div><div class="eyebrow">PERSONAL VOCABULARY STUDIO · V1</div><h1>See the word.<br><em>Make it yours.</em></h1><p class="sub">建立自己的單字內容，循序進入主動回想，再於適當時間重新遇見它。</p></div><div class="orbit" role="img" aria-label="象徵單字記憶軌道的幾何插圖"></div></section>
+<section id="homeTab">
+<div class="grid stats" id="stats"></div>
+<div class="grid main-grid"><section class="panel pad"><div class="section-title"><div><h2>今天的學習旅程</h2><p>到期複習優先，新字採三階段練習</p></div></div><div id="todaySummary"></div><div class="actions" style="margin-top:22px"><button class="button primary" id="startToday">開始今日學習</button><button class="button" id="switchToLibrary">管理我的單字</button></div><div class="notice" id="schedulerStatus">正在檢查 FSRS 排程模組…</div></section><section class="panel pad"><div class="section-title"><div><h2>我的學習空間</h2><p>切換詞庫，各自保存進度</p></div></div><div id="homeDecks" class="deck-list"></div></section></div>
+</section>
+<section id="libraryTab" class="hidden"><div class="section-title"><div><h2>Content Studio</h2><p>每一張詞卡都能編輯、檢查與再利用</p></div><div class="actions"><button class="button small" id="newDeck">＋ 新增詞庫</button><button class="button small" id="importBtn">匯入 JSON／CSV</button><button class="button small" id="exportCSV">匯出 CSV</button></div></div><div class="library-layout"><section class="panel pad"><h3 style="margin-top:0">詞庫</h3><div id="libraryDecks" class="deck-list"></div><div class="hint" style="margin-top:14px">支持 Word Atlas JSON 詞條格式，及含 <code>word,zh,pos,example</code> 等欄位的 CSV。</div></section><section class="panel pad"><div class="section-title"><div><h2 id="libraryHeading">單字列表</h2><p id="libraryDescription">選擇左側詞庫</p></div><button class="button small primary" id="addWord">＋ 新增單字</button></div><input class="search" id="searchWords" placeholder="搜尋英文或中文意思…" aria-label="搜尋單字"><div id="wordList"></div></section></div></section>
+<section id="insightsTab" class="hidden"><div class="section-title"><div><h2>Learning Insights</h2><p>用近期練習證據看見自己的進步</p></div><button class="button" id="backupBtn">匯出完整備份 JSON</button></div><div class="grid main-grid"><div class="panel pad" id="insightSummary"></div><div class="panel pad"><h3>資料與隱私</h3><p class="sub" style="font-size:13px">資料保存在這個瀏覽器的 localStorage，不會傳到我們的伺服器。換設備或清除瀏覽資料前請匯出備份。</p><div class="actions" style="margin-top:16px"><button class="button" id="restoreBtn">還原進度備份</button></div></div></div></section>
+<section id="studyTab" class="hidden study"><div class="row-split"><button class="button small" id="exitStudy">← 暫停並返回</button><span id="studyCounter" class="meta"></span></div><div class="progress-line"><div id="studyBar" style="width:0%"></div></div><div class="panel pad" id="studyCard"></div></section>
+</main>
+<footer class="wrap footer">My Word Atlas V1 · 獨立原型，資料格式參考 <a href="https://github.com/designfuchen/word-atlas" target="_blank" rel="noreferrer">Word Atlas</a> 的開放資料設計。原專案程式碼 MIT，素材 CC BY 4.0（© Word Atlas contributors）；本原型未轉載其插圖或錄音。示範詞卡經人工整理，但仍建議用於正式教學前自行核對。</footer>
+<div id="toast" role="status" aria-live="polite"></div>
+<input id="fileInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
+<dialog id="editor"><form id="wordForm" class="dialog-pad"><div class="row-split"><h2 id="editorTitle" style="margin-top:0;font-family:Georgia,serif">新增單字</h2><button type="button" class="button small" id="closeEditor">關閉</button></div><div class="two"><div class="field"><label for="fWord">英文 *</label><input id="fWord" name="w" required></div><div class="field"><label for="fZh">中文意思 *</label><input id="fZh" name="zh" required></div></div><div class="two"><div class="field"><label for="fPos">詞性</label><input id="fPos" name="pos" placeholder="adj."></div><div class="field"><label for="fCefr">CEFR</label><select id="fCefr" name="cefr"><option value="">未分類</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select></div></div><div class="field"><label for="fDefinition">英文解釋</label><textarea id="fDefinition" name="definition"></textarea></div><div class="field"><label for="fExample">英文例句</label><textarea id="fExample" name="example"></textarea></div><div class="field"><label for="fExampleZh">例句中文</label><textarea id="fExampleZh" name="exampleZh"></textarea></div><div class="field"><label for="fCol">常見搭配（用 ; 分隔）</label><input id="fCol" name="collocations"></div><div class="field"><label for="fTopic">主題</label><input id="fTopic" name="topic" value="custom"></div><div class="actions"><button type="submit" class="button primary">儲存單字</button><button id="deleteWord" type="button" class="button danger hidden">刪除單字</button></div></form></dialog>
+<dialog id="deckEditor"><form id="deckForm" class="dialog-pad"><div class="row-split"><h2 style="font-family:Georgia,serif;margin-top:0">新增詞庫</h2><button type="button" id="closeDeck" class="button small">關閉</button></div><div class="field"><label for="deckTitle">詞庫名稱 *</label><input id="deckTitle" required placeholder="例如 Everyday English"></div><div class="field"><label for="deckDesc">簡介</label><textarea id="deckDesc" placeholder="這份詞庫用來學習…"></textarea></div><button type="submit" class="button primary">建立詞庫</button></form></dialog>
+<script type="application/json" id="starterDeck">
+{
+  "id": "ielts-starter",
+  "title": "IELTS Academic · Starter 30",
+  "description": "30 個跨寫作、閱讀及口說常用的學術單字（供初版學習流程測試）",
+  "source": "My Word Atlas V1 — manually curated starter examples",
+  "words": [
+    {"id":"analyze","w":"analyze","senses":[{"pos":"v.","zh":"分析","en":"to examine something carefully to understand it"}],"ex":[{"en":"Researchers analyze the results before drawing a conclusion.","zh":"研究人員先分析結果，再作出結論。"}],"col":["analyze data｜分析數據"],"cefr":"B1","topic":"education"},
+    {"id":"approach","w":"approach","senses":[{"pos":"n.","zh":"方法；處理方式","en":"a way of dealing with something"}],"ex":[{"en":"The school adopted a new approach to teaching science.","zh":"學校採用了一種新的科學教學方法。"}],"col":["a practical approach｜實用的方法"],"cefr":"B1","topic":"education"},
+    {"id":"assess","w":"assess","senses":[{"pos":"v.","zh":"評估","en":"to judge the quality or importance of something"}],"ex":[{"en":"Teachers assess progress using several kinds of evidence.","zh":"教師透過不同證據評估進度。"}],"col":["assess the impact｜評估影響"],"cefr":"B2","topic":"education"},
+    {"id":"benefit","w":"benefit","senses":[{"pos":"n.","zh":"益處；好處","en":"a helpful or positive result"}],"ex":[{"en":"One benefit of public transport is lower air pollution.","zh":"公共交通的一項好處是能減少空氣污染。"}],"col":["long-term benefit｜長期益處"],"cefr":"A2","topic":"society"},
+    {"id":"challenge","w":"challenge","senses":[{"pos":"n.","zh":"挑戰；難題","en":"something difficult that requires effort"}],"ex":[{"en":"Providing affordable housing remains a major challenge.","zh":"提供負擔得起的住房仍是一大挑戰。"}],"col":["face a challenge｜面對挑戰"],"cefr":"B1","topic":"city"},
+    {"id":"consequence","w":"consequence","senses":[{"pos":"n.","zh":"後果；結果","en":"something that happens as a result of an action"}],"ex":[{"en":"Rising temperatures have serious consequences for coastal cities.","zh":"氣溫上升對沿海城市帶來嚴重後果。"}],"col":["unintended consequences｜意料之外的後果"],"cefr":"B2","topic":"environment"},
+    {"id":"considerable","w":"considerable","senses":[{"pos":"adj.","zh":"相當大的；可觀的","en":"large or important enough to be noticed"}],"ex":[{"en":"The project required a considerable amount of time.","zh":"這個項目需要相當多時間。"}],"col":["considerable progress｜顯著進展"],"cefr":"B2","topic":"work"},
+    {"id":"contribute","w":"contribute","senses":[{"pos":"v.","zh":"促成；貢獻","en":"to help cause or achieve something"}],"ex":[{"en":"Regular exercise can contribute to better mental health.","zh":"規律運動有助改善心理健康。"}],"col":["contribute to｜促成；有助於"],"cefr":"B2","topic":"health"},
+    {"id":"decline","w":"decline","senses":[{"pos":"v.","zh":"下降；減少","en":"to become smaller or weaker"}],"ex":[{"en":"The number of daily commuters declined last year.","zh":"去年每日通勤人數有所下降。"}],"col":["a sharp decline｜急劇下降"],"cefr":"B2","topic":"society"},
+    {"id":"diverse","w":"diverse","senses":[{"pos":"adj.","zh":"多樣的；不同的","en":"including many different types of people or things"}],"ex":[{"en":"A diverse team can offer a wider range of ideas.","zh":"多元化團隊可以提出更廣泛的想法。"}],"col":["diverse backgrounds｜不同背景"],"cefr":"B2","topic":"society"},
+    {"id":"efficient","w":"efficient","senses":[{"pos":"adj.","zh":"有效率的","en":"working well without wasting time or resources"}],"ex":[{"en":"An efficient heating system can reduce energy use.","zh":"高效率的供暖系統能減少能源消耗。"}],"col":["energy-efficient｜節能的"],"cefr":"B1","topic":"technology"},
+    {"id":"evidence","w":"evidence","senses":[{"pos":"n.","zh":"證據","en":"facts or information that support a conclusion"}],"ex":[{"en":"There is strong evidence that sleep supports learning.","zh":"有充分證據顯示睡眠有助學習。"}],"col":["provide evidence｜提供證據"],"cefr":"B2","topic":"thinking"},
+    {"id":"expand","w":"expand","senses":[{"pos":"v.","zh":"擴大；擴展","en":"to increase in size, scope, or amount"}],"ex":[{"en":"The company plans to expand its services to rural areas.","zh":"公司計劃把服務擴展到鄉郊地區。"}],"col":["expand access｜擴大使用機會"],"cefr":"B1","topic":"economy"},
+    {"id":"factor","w":"factor","senses":[{"pos":"n.","zh":"因素","en":"one of the things that affects a situation"}],"ex":[{"en":"Cost is an important factor in choosing a home.","zh":"成本是選擇住處的重要因素。"}],"col":["a key factor｜關鍵因素"],"cefr":"B1","topic":"thinking"},
+    {"id":"flexible","w":"flexible","senses":[{"pos":"adj.","zh":"靈活的；可變通的","en":"able to change easily in response to a situation"}],"ex":[{"en":"Flexible working hours can help parents manage family life.","zh":"彈性工時有助家長兼顧家庭生活。"}],"col":["flexible schedule｜彈性時間表"],"cefr":"B2","topic":"work"},
+    {"id":"impact","w":"impact","senses":[{"pos":"n.","zh":"影響","en":"a strong effect on something"}],"ex":[{"en":"Technology has had a major impact on communication.","zh":"科技對溝通方式產生重大影響。"}],"col":["have an impact on｜對……產生影響"],"cefr":"B1","topic":"technology"},
+    {"id":"indicate","w":"indicate","senses":[{"pos":"v.","zh":"顯示；表明","en":"to show that something is likely or true"}],"ex":[{"en":"The figures indicate a gradual improvement in air quality.","zh":"數據顯示空氣質素逐步改善。"}],"col":["indicate a trend｜顯示趨勢"],"cefr":"B2","topic":"environment"},
+    {"id":"inevitable","w":"inevitable","senses":[{"pos":"adj.","zh":"不可避免的","en":"certain to happen and impossible to prevent"}],"ex":[{"en":"Some changes are inevitable as cities grow.","zh":"隨著城市發展，一些改變無可避免。"}],"col":["an inevitable result｜不可避免的結果"],"cefr":"C1","topic":"city"},
+    {"id":"maintain","w":"maintain","senses":[{"pos":"v.","zh":"維持；保持","en":"to keep something at the same level or condition"}],"ex":[{"en":"It is important to maintain a healthy balance between work and rest.","zh":"維持工作和休息之間的健康平衡十分重要。"}],"col":["maintain standards｜維持標準"],"cefr":"B2","topic":"health"},
+    {"id":"method","w":"method","senses":[{"pos":"n.","zh":"方法","en":"a particular way of doing something"}],"ex":[{"en":"The researchers compared two different teaching methods.","zh":"研究人員比較了兩種不同的教學方法。"}],"col":["research method｜研究方法"],"cefr":"B1","topic":"education"},
+    {"id":"outcome","w":"outcome","senses":[{"pos":"n.","zh":"結果；成果","en":"the final result of an activity or process"}],"ex":[{"en":"Better planning can improve the outcome of the project.","zh":"更好的規劃可以改善項目的成果。"}],"col":["learning outcomes｜學習成果"],"cefr":"B2","topic":"education"},
+    {"id":"perspective","w":"perspective","senses":[{"pos":"n.","zh":"觀點；角度","en":"a particular way of looking at something"}],"ex":[{"en":"Travelling can help people understand different perspectives.","zh":"旅行有助人們理解不同觀點。"}],"col":["from another perspective｜從另一個角度"],"cefr":"B2","topic":"thinking"},
+    {"id":"priority","w":"priority","senses":[{"pos":"n.","zh":"優先事項","en":"something considered more important than other things"}],"ex":[{"en":"Improving road safety should be a top priority.","zh":"改善道路安全應該是首要事項。"}],"col":["top priority｜首要任務"],"cefr":"B2","topic":"society"},
+    {"id":"reliable","w":"reliable","senses":[{"pos":"adj.","zh":"可靠的","en":"able to be trusted or depended on"}],"ex":[{"en":"Students need reliable sources for academic research.","zh":"學生進行學術研究需要可靠的資料來源。"}],"col":["reliable information｜可靠資訊"],"cefr":"B1","topic":"education"},
+    {"id":"require","w":"require","senses":[{"pos":"v.","zh":"需要；要求","en":"to need something for a particular purpose"}],"ex":[{"en":"Most laboratory experiments require careful preparation.","zh":"大部分實驗室實驗都需要仔細準備。"}],"col":["require attention｜需要留意"],"cefr":"B1","topic":"science"},
+    {"id":"resilient","w":"resilient","senses":[{"pos":"adj.","zh":"有韌性的；能迅速恢復的","en":"able to recover after difficulties"}],"ex":[{"en":"The resilient community rebuilt its homes after the flood.","zh":"這個堅韌的社區在洪水後重建家園。"}],"col":["resilient community｜有韌性的社區"],"cefr":"C1","topic":"society"},
+    {"id":"significant","w":"significant","senses":[{"pos":"adj.","zh":"顯著的；重要的","en":"large or important enough to be noticed"}],"ex":[{"en":"The new policy led to a significant reduction in waste.","zh":"新政策令廢物量顯著減少。"}],"col":["significant difference｜顯著差異"],"cefr":"B2","topic":"environment"},
+    {"id":"sustainable","w":"sustainable","senses":[{"pos":"adj.","zh":"可持續的","en":"able to continue without causing long-term harm"}],"ex":[{"en":"Sustainable farming protects soil and water resources.","zh":"可持續農業能保護土壤和水資源。"}],"col":["sustainable development｜可持續發展"],"cefr":"B2","topic":"environment"},
+    {"id":"trend","w":"trend","senses":[{"pos":"n.","zh":"趨勢","en":"a general direction in which something is changing"}],"ex":[{"en":"The chart shows an upward trend in online shopping.","zh":"圖表顯示網上購物呈上升趨勢。"}],"col":["an upward trend｜上升趨勢"],"cefr":"B1","topic":"economy"},
+    {"id":"valid","w":"valid","senses":[{"pos":"adj.","zh":"有效的；合理的","en":"well-founded or acceptable for a particular purpose"}],"ex":[{"en":"The study raised a valid question about data privacy.","zh":"這項研究提出了一個關於資料私隱的合理問題。"}],"col":["valid argument｜合理的論點"],"cefr":"B2","topic":"thinking"}
+  ]
+}
+
+</script>
+<script type="module">
+const STORAGE_KEY = 'my-word-atlas-v1:state';
+const DAY_MS = 86400000;
+const MAX_IMPORT_WORDS = 500;
+const defaultState = () => ({
+  schema: 1,
+  decks: {},
+  progress: {},
+  activity: [],
+  settings: { dailyNew: 5, dailyReviewLimit: 25 },
+  selectedDeck: 'ielts-starter'
+});
+const escapeHTML = (s = '') => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+const slug = (s = '') => String(s).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70) || 'word';
+const wordKey = (deckId, wordId) => `${deckId}::${wordId}`;
+const dateTag = (d = new Date()) => (new Date(d.getTime() - d.getTimezoneOffset()*60000)).toISOString().slice(0,10);
+function meaning(w) { return w.senses?.[0]?.zh || w.zh || ''; }
+function definition(w) { return w.senses?.[0]?.en || ''; }
+function partOfSpeech(w) { return w.senses?.[0]?.pos || w.pos || ''; }
+function example(w) { return w.ex?.[0]?.en || ''; }
+function normalizeWord(raw, idx=0) {
+  if(!raw || typeof raw !== 'object') throw Error(`第 ${idx+1} 筆單字不是有效物件`);
+  const w = String(raw.w || raw.word || raw.en || '').trim();
+  const zh = String(raw.senses?.[0]?.zh || raw.zh || raw.meaning || '').trim();
+  if(!w || !zh) throw Error(`第 ${idx+1} 筆單字缺少英文或中文意思`);
+  const id = String(raw.id || slug(w)).trim();
+  const pos = String(raw.senses?.[0]?.pos || raw.pos || '').trim();
+  const en = String(raw.senses?.[0]?.en || raw.definition || '').trim();
+  let ex = Array.isArray(raw.ex) ? raw.ex : (raw.example || raw.exampleEn ? [{en:raw.example || raw.exampleEn,zh:raw.exampleZh || ''}] : []);
+  ex = ex.map(e => typeof e==='string' ? {en:e, zh:''} : {en:String(e.en || ''), zh:String(e.zh || '')}).filter(e => e.en);
+  let col = Array.isArray(raw.col) ? raw.col : (raw.collocations ? String(raw.collocations).split(/[;；]/) : []);
+  return {id,w,senses:[{pos,zh,en}],ex,col:col.map(x=>String(x).trim()).filter(Boolean),cefr:String(raw.cefr || ''),topic:String(raw.topic || 'custom'),tip:String(raw.tip || '')};
+}
+function normalizeDeck(input, preferredId='') {
+  const data = Array.isArray(input) ? {words:input} : input;
+  if(!data || !Array.isArray(data.words)) throw Error('JSON 必須是單字陣列，或包含 words 陣列的詞庫物件');
+  if(data.words.length > MAX_IMPORT_WORDS) throw Error(`初版每次匯入上限 ${MAX_IMPORT_WORDS} 個單字，避免瀏覽器本機空間不足。請分批匯入。`);
+  const out=[]; const ids=new Set(), heads=new Set();
+  data.words.forEach((raw,i)=>{
+    const w=normalizeWord(raw,i); const wordLower=w.w.toLowerCase();
+    if(heads.has(wordLower)) return;
+    let id=w.id; let x=2; while(ids.has(id)){id=`${w.id}-${x++}`}; w.id=id;
+    heads.add(wordLower); ids.add(id); out.push(w);
+  });
+  if(!out.length) throw Error('詞庫沒有可使用的單字');
+  return {id:preferredId || String(data.id || `my-deck-${Date.now()}`),title:String(data.title || '我的詞庫'), description:String(data.description || ''),words:out,source:String(data.source || 'user'),createdAt:String(data.createdAt || new Date().toISOString())};
+}
+function parseCSV(src) {
+  const rows=[]; let row=[], cur='', quoted=false;
+  for(let i=0;i<src.length;i++) {
+    let c=src[i];
+    if(c==='"') { if(quoted && src[i+1]==='"') {cur+='"';i++;} else quoted=!quoted; }
+    else if(c===',' && !quoted){row.push(cur);cur='';}
+    else if((c==='\n'||c==='\r') && !quoted){
+      if(c==='\r' && src[i+1]==='\n') i++;
+      row.push(cur); if(row.some(x=>x.trim())) rows.push(row); row=[];cur='';
+    } else cur+=c;
+  }
+  if(quoted) throw Error('CSV 存在未關閉的雙引號');
+  row.push(cur); if(row.some(x=>x.trim())) rows.push(row);
+  if(rows.length < 2) throw Error('CSV 需要標題列及至少一個單字');
+  const headers=rows.shift().map(x=>x.trim().replace(/^\uFEFF/,'').toLowerCase());
+  return rows.map(cells => Object.fromEntries(headers.map((h,i)=>[h,(cells[i] || '').trim()])));
+}
+function csvToDeck(src,title='匯入的單字') {
+  const rows=parseCSV(src).map(r=>({w:r.w || r.word || r.en,zh:r.zh || r.meaning || r.chinese,pos:r.pos || '', definition:r.definition || '',exampleEn:r.example || r.exampleen || '',exampleZh:r.examplezh || '',collocations:r.collocations || r.col || '',cefr:r.cefr || '',topic:r.topic || 'custom'}));
+  return normalizeDeck({title,words:rows});
+}
+function csvQuote(v) { let s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function deckCSV(deck){
+  const h=['word','zh','pos','definition','example','exampleZh','collocations','cefr','topic'];
+  const arr=deck.words.map(w=>[w.w,meaning(w),partOfSpeech(w),definition(w),w.ex?.[0]?.en || '',w.ex?.[0]?.zh || '',w.col?.join('; ') || '',w.cefr,w.topic]);
+  return '\uFEFF'+[h,...arr].map(r=>r.map(csvQuote).join(',')).join('\r\n');
+}
+function getRecord(state,deckId,wid){return state.progress[wordKey(deckId,wid)] || null;}
+function getDueDate(record){return record?.card?.due || record?.fallback?.due || null;}
+function isDue(record,now=new Date()){
+  if(!record?.events?.length) return false;
+  const due=getDueDate(record); return !!due && new Date(due).getTime() <= now.getTime();
+}
+function fresh(record){return !record?.events?.length;}
+function studiedToday(state,deckId,now=new Date()){
+  const today=dateTag(now);
+  return Object.entries(state.progress).filter(([key,record])=>key.startsWith(`${deckId}::`)&&record.firstStudied && dateTag(new Date(record.firstStudied))===today).length;
+}
+function countDeck(state,deckId,now=new Date()){
+  const deck=state.decks[deckId]; if(!deck) return {total:0,newCount:0,due:0,learned:0};
+  const r=deck.words.map(w=>getRecord(state,deckId,w.id));
+  return {total:r.length,newCount:r.filter(fresh).length,due:r.filter(x=>isDue(x,now)).length,learned:r.filter(x=>!fresh(x)).length};
+}
+function buildTodayQueue(state,deckId,now=new Date(),rng=Math.random){
+  const deck=state.decks[deckId]; if(!deck) return [];
+  const shuffle=(xs)=>xs.map(v=>({v,r:rng()})).sort((a,b)=>a.r-b.r).map(x=>x.v);
+  const due=shuffle(deck.words.filter(w=>isDue(getRecord(state,deckId,w.id),now))).slice(0,state.settings.dailyReviewLimit || 25);
+  const dailyNewLeft=Math.max(0,(state.settings.dailyNew || 5)-studiedToday(state,deckId,now));
+  const next=shuffle(deck.words.filter(w=>fresh(getRecord(state,deckId,w.id)))).slice(0,dailyNewLeft);
+  const queue=due.map(w=>({w,phase:'independent',kind:'review'}));
+  for(let start=0; start<next.length;start+=5){
+    const batch=next.slice(start,start+5);
+    queue.push(...batch.map(w=>({w,phase:'preview',kind:'new'})));
+    queue.push(...shuffle(batch).map(w=>({w,phase:'guided',kind:'new'})));
+    queue.push(...shuffle(batch).map(w=>({w,phase:'independent',kind:'new'})));
+  }
+  return queue;
+}
+function gradeForAttempt(correct,hintLevel=0){
+  if(!correct) return 1;
+  if(hintLevel >= 2) return 1; // strong assistance -> short relearning
+  if(hintLevel === 1) return 2;
+  return 3;
+}
+function fallbackAdvance(record,grade,now=new Date()) {
+  const old=record?.fallback || {interval:0,streak:0,lapses:0};
+  let interval=old.interval||0,streak=old.streak||0,lapses=old.lapses||0;
+  if(grade===1){interval=0;streak=0;lapses+=1;}
+  else if(grade===2){streak+=1;interval = interval ? Math.max(1,Math.round(interval*1.25)) : 1;}
+  else{streak+=1;interval=interval?Math.max(1,Math.round(interval*2.2)):1;}
+  const due=new Date(now.getTime()+(grade===1?10*60000:interval*DAY_MS)).toISOString();
+  return {due,interval,streak,lapses};
+}
+function getMemoryQuality(record){
+  if(!record?.events?.length)return 'new';
+  const stability=record.card?.stability ?? record.fallback?.interval ?? 0;
+  return Number(stability)>=21?'mature':'learning';
+}
+
+
+const esc = escapeHTML;
+const $ = (id)=>document.getElementById(id);
+const tabs = ['home','library','insights'];
+let state=loadState(), activeTab='home';
+let session=null, editingWordId=null, scheduler=null, fsrsLib=null, fsrsLoaded=false;
+let toastTimer;
+function loadState(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(parsed && parsed.schema===1 && parsed.decks && parsed.progress) return {...defaultState(),...parsed,settings:{...defaultState().settings,...parsed.settings}};
+  }catch(e){console.warn('Learning state could not be read',e)}
+  return defaultState();
+}
+function saveState(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return true}
+  catch(e){console.error(e);toast('儲存失敗：本機空間可能已滿。請匯出備份或減少匯入數量。');return false}
+}
+function toast(message){
+  clearTimeout(toastTimer); $('toast').textContent=message;$('toast').classList.add('show');
+  toastTimer=setTimeout(()=>$('toast').classList.remove('show'),4300);
+}
+async function seed(){
+  if(Object.keys(state.decks).length) return;
+  try{
+    const deck=normalizeDeck(JSON.parse(document.getElementById('starterDeck').textContent),'ielts-starter');state.decks[deck.id]=deck;state.selectedDeck=deck.id;
+    saveState();
+  }catch(e){toast('範例資料載入失敗，仍可自行建立詞庫。請透過網站或本機伺服器開啟。');console.error(e)}
+}
+async function loadFsrs(){
+  try{
+    // v5.4.2 API, same major release as the original Word Atlas repository.
+    fsrsLib=await import('https://esm.sh/ts-fsrs@5.4.2?bundle');
+    scheduler=fsrsLib.fsrs({request_retention:0.9,maximum_interval:36500,enable_fuzz:true,enable_short_term:true,learning_steps:['1m','10m'],relearning_steps:['10m']});
+    if(!scheduler || typeof scheduler.next!=='function') throw Error('Scheduler API unavailable');
+    fsrsLoaded=true;
+  }catch(e){console.warn('FSRS module unavailable, using local safe fallback',e);fsrsLoaded=false}
+  render();
+}
+function safeDate(s){const d=new Date(s);return Number.isFinite(d.getTime())?d:new Date();}
+function refreshCardFromHistory(record){
+  if(!fsrsLoaded) return null;
+  try{
+    let card=fsrsLib.createEmptyCard();
+    for(const ev of record.events || []){
+      const next=scheduler.next(card,safeDate(ev.at),ev.grade);
+      card=next.card;
+    }
+    return card;
+  }catch(e){console.error('FSRS replay error',e);return null}
+}
+function persistAnswer(w,grade,kind='review',hintLevel=0){
+  const key=wordKey(state.selectedDeck,w.id);
+  const old=state.progress[key]||{events:[]};
+  const now=new Date();
+  const ev={at:now.toISOString(),grade,kind,hintLevel};
+  const record={...old,firstStudied:old.firstStudied||now.toISOString(),events:[...(old.events||[]),ev]};
+  if(fsrsLoaded){
+    const card=refreshCardFromHistory(record);
+    if(card){record.card=card;record.scheduler='fsrs-6';delete record.fallback;}
+    else {record.fallback=fallbackAdvance(old,grade,now);record.scheduler='basic';}
+  }else {record.fallback=fallbackAdvance(old,grade,now);record.scheduler='basic';}
+  // Retain the full per-card event history for accurate FSRS replay after import/offline use.
+  state.progress[key]=record;
+  state.activity.push({key,at:now.toISOString(),grade,kind,hintLevel});
+  if(state.activity.length>5000)state.activity=state.activity.slice(-5000);
+  saveState();
+}
+function currentDeck(){return state.decks[state.selectedDeck] || Object.values(state.decks)[0] || null}
+function selectDeck(id){if(!state.decks[id])return;state.selectedDeck=id;saveState();render();}
+function setTab(tab){
+  activeTab=tab;tabs.forEach(t=>$(t+'Tab').classList.toggle('hidden',tab!==t));
+  $('studyTab').classList.add('hidden');
+  document.querySelectorAll('[data-tab]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.tab===tab)));
+  render();
+}
+function speak(w){
+  if(!('speechSynthesis'in window)){toast('此瀏覽器沒有語音朗讀功能');return}
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(w);u.lang='en-GB';u.rate=.86;speechSynthesis.speak(u)}catch(e){toast('無法使用發音功能')}
+}
+function render(){renderDashboard();renderDecks();renderLibrary();renderInsights();}
+function renderDashboard(){
+  const deck=currentDeck();const counts=deck?countDeck(state,deck.id):{total:0,due:0,newCount:0,learned:0};
+  const left=deck?Math.max(0,state.settings.dailyNew-studiedToday(state,deck.id)):0;
+  $('stats').innerHTML=[['詞庫單字',counts.total,'WORDS'],['今日到期',counts.due,'DUE REVIEW'],['尚未學習',counts.newCount,'NEW'],['已接觸',counts.learned,'LEARNED']].map(([name,n,sub])=>`<div class="panel stat"><span>${name}</span><b>${n}</b><small>${sub}</small></div>`).join('');
+  $('todaySummary').innerHTML=deck?`<div style="font-size:14px;color:#64767e;line-height:1.9">目前詞庫：<strong style="color:#294456">${esc(deck.title)}</strong><br>已到期 <strong>${counts.due}</strong> 個 · 今日可學新字 <strong>${Math.min(left,counts.newCount)}</strong> 個</div><div class="hint" style="margin-top:17px">新字：先認識 → 首字母引導 → 獨立完整拼寫。<br>舊字：只有到期才進入正常複習。錯題當輪補救不會重複推進排程。</div>`:`<p class="muted">先建立一個詞庫，才能開始今日學習。</p>`;
+  $('startToday').disabled=!deck || (!counts.due && (!left || !counts.newCount));
+  $('schedulerStatus').textContent=fsrsLoaded?'已連接 ts-fsrs 5.4.2 · FSRS-6 間隔複習（90% 目標記憶率）':'離線／網路模組無法載入：目前使用保守的基本排程；練習歷史保留，連線後可重新計算 FSRS。';
+}
+function deckCard(deck){
+  const counts=countDeck(state,deck.id);const active=state.selectedDeck===deck.id;
+  return `<div class="deck ${active?'selected':''}"><div class="detail"><strong>${esc(deck.title)}</strong><small>${counts.total} 字 · ${counts.due} 待複習</small></div><button class="deck-btn" data-select="${esc(deck.id)}">${active?'使用中':'選擇'}</button></div>`;
+}
+function renderDecks(){
+  const decks=Object.values(state.decks);const html=decks.length?decks.map(deckCard).join(''):'<div class="empty">還沒有詞庫。可建立新詞庫或匯入檔案。</div>';
+  $('homeDecks').innerHTML=html;$('libraryDecks').innerHTML=html;
+}
+function renderLibrary(){
+  const deck=currentDeck();
+  $('libraryHeading').textContent=deck?deck.title:'單字列表';$('libraryDescription').textContent=deck?deck.description:'選擇或建立詞庫';
+  $('addWord').disabled=!deck;$('exportCSV').disabled=!deck;
+  const q=$('searchWords').value.trim().toLowerCase();
+  const words=(deck?.words||[]).filter(w=>!q||w.w.toLowerCase().includes(q)||meaning(w).includes(q));
+  $('wordList').innerHTML=words.length?words.map(w=>{
+    const rec=getRecord(state,deck.id,w.id);const stateText=fresh(rec)?'未學習':isDue(rec)?'待複習':getMemoryQuality(rec)==='mature'?'已穩定':'學習中';
+    return `<div class="list-row"><div class="word-content"><b>${esc(w.w)}</b><span class="zh">${esc(meaning(w))}</span><div class="chips"><span class="chip">${esc(w.cefr||'—')}</span><span class="chip">${esc(partOfSpeech(w)||'—')}</span><span class="chip">${stateText}</span></div></div><button class="button small" data-speak="${esc(w.id)}" title="朗讀">♫</button><button class="button small" data-edit="${esc(w.id)}">編輯</button></div>`;
+  }).join(''):'<div class="empty">沒有相符單字。你可以按「新增單字」。</div>';
+}
+function renderInsights(){
+  const deck=currentDeck();if(!deck){$('insightSummary').innerHTML='<p>尚無詞庫。</p>';return}
+  const words=deck.words; const records=words.map(w=>({w,record:getRecord(state,deck.id,w.id)}));
+  const scored=state.activity.filter(x=>x.key.startsWith(`${deck.id}::`)).slice(-100);
+  const correct=scored.filter(x=>x.grade>=2).length;
+  const rate=scored.length?Math.round(correct/scored.length*100):0;
+  const mastered=records.filter(x=>getMemoryQuality(x.record)==='mature').length;
+  const difficult=records.filter(x=>(x.record?.events||[]).filter(e=>e.grade===1).length>=3).slice(0,8);
+  $('insightSummary').innerHTML=`<div class="section-title"><h2>詞庫學習概況</h2></div><div class="row-split"><span class="muted">最近 100 次有效回想表現</span><strong>${rate}%</strong></div><div class="insight-bar"><span style="width:${rate}%"></span></div><p class="meta">以 Grade ≥ Hard 作為「有回想證據」的粗略統計，不等同正式 IELTS 正確率。</p><div class="row-split" style="margin-top:19px"><strong>記憶穩定（估計 ≥ 21 天）</strong><span>${mastered} / ${words.length}</span></div><div class="insight-bar"><span style="width:${words.length?mastered/words.length*100:0}%"></span></div><h3 style="margin-top:23px">困難字觀察</h3>${difficult.length?difficult.map(x=>`<div class="list-row"><strong>${esc(x.w.w)}</strong><span class="muted">${esc(meaning(x.w))}</span></div>`).join(''):'<p class="meta">累積 3 次以上 Again 的單字會在此出現。</p>'}<div class="hint" style="margin-top:16px">完整的語境錯誤診斷和教師視圖將在後續版本接入，目前只展示已收集的有效回想證據。</div>`;
+}
+function downloadText(filename,text,mime){const blob=new Blob([text],{type:mime});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function exportBackup(){downloadText('my-word-atlas-backup-'+dateTag()+'.json',JSON.stringify({format:'my-word-atlas-backup-v1',state},null,2),'application/json');toast('已產生備份，請妥善保存。')}
+function openEditor(id=null){
+  const deck=currentDeck();if(!deck)return;
+  editingWordId=id;
+  const w=deck.words.find(x=>x.id===id);
+  $('editorTitle').textContent=w?'編輯單字':'新增單字';
+  const f=$('wordForm');f.reset();
+  if(w){f.elements.w.value=w.w;f.elements.zh.value=meaning(w);f.elements.pos.value=partOfSpeech(w);f.elements.cefr.value=w.cefr;f.elements.definition.value=definition(w);f.elements.example.value=w.ex?.[0]?.en||'';f.elements.exampleZh.value=w.ex?.[0]?.zh||'';f.elements.collocations.value=w.col?.join('; ')||'';f.elements.topic.value=w.topic;}
+  else f.elements.topic.value='custom';
+  $('deleteWord').classList.toggle('hidden',!w);
+  $('editor').showModal();
+}
+function saveWord(e){
+  e.preventDefault();const deck=currentDeck();if(!deck)return;
+  const f=e.currentTarget;const word=f.elements.w.value.trim();const zh=f.elements.zh.value.trim();
+  if(!word||!zh)return toast('英文和中文意思不可留空。');
+  const duplicate=deck.words.some(w=>w.w.toLowerCase()===word.toLowerCase() && w.id!==editingWordId);
+  if(duplicate)return toast('這個詞庫已有相同英文單字。');
+  let id=editingWordId||slug(word);let i=2;while(!editingWordId && deck.words.some(w=>w.id===id))id=slug(word)+'-'+i++;
+  const w=normalizeWord({id,w:word,zh,pos:f.elements.pos.value,cefr:f.elements.cefr.value,definition:f.elements.definition.value,example:f.elements.example.value,exampleZh:f.elements.exampleZh.value,collocations:f.elements.collocations.value,topic:f.elements.topic.value});
+  if(editingWordId){deck.words[deck.words.findIndex(x=>x.id===editingWordId)]=w;}else deck.words.push(w);
+  saveState();$('editor').close();render();toast('單字已儲存。');
+}
+function removeWord(){
+  const deck=currentDeck();if(!deck||!editingWordId)return;
+  const w=deck.words.find(x=>x.id===editingWordId);if(!w)return;
+  if(!confirm(`確定刪除「${w.w}」？它在此詞庫中的學習紀錄也會刪除。`))return;
+  deck.words=deck.words.filter(x=>x.id!==editingWordId);delete state.progress[wordKey(deck.id,editingWordId)];
+  saveState();$('editor').close();render();toast('單字已刪除。');
+}
+function addDeck(e){
+  e.preventDefault();const title=$('deckTitle').value.trim();if(!title)return;
+  let id='custom-'+slug(title);let i=2;while(state.decks[id])id='custom-'+slug(title)+'-'+i++;
+  const deck={id,title,description:$('deckDesc').value.trim(),words:[],source:'user',createdAt:new Date().toISOString()};
+  state.decks[id]=deck;state.selectedDeck=id;saveState();$('deckEditor').close();render();toast('新詞庫已建立。');
+}
+function validateBackup(parsed){
+  if(parsed.format!=='my-word-atlas-backup-v1'||!parsed.state||typeof parsed.state!=='object')throw Error('備份格式不正確');
+  const candidate=parsed.state;
+  if(candidate.schema!==1 || typeof candidate.decks!=='object'||typeof candidate.progress!=='object')throw Error('備份版本不相容');
+  const rebuilt={...defaultState(),...candidate,settings:{...defaultState().settings,...candidate.settings},decks:{},progress:candidate.progress};
+  for(const [id,deck] of Object.entries(candidate.decks)){rebuilt.decks[id]=normalizeDeck({...deck,id},id)}
+  if(!rebuilt.decks[rebuilt.selectedDeck])rebuilt.selectedDeck=Object.keys(rebuilt.decks)[0]||'';
+  return rebuilt;
+}
+async function onFile(e){
+  const file=e.target.files?.[0];e.target.value='';if(!file)return;
+  try{
+    if(file.size>5_000_000)throw Error('初版限制單檔最大 5MB，請縮小或分批匯入。');
+    const text=await file.text();let deck;
+    if(file.name.toLowerCase().endsWith('.csv'))deck=csvToDeck(text,file.name.replace(/\.csv$/i,''));
+    else{
+      const json=JSON.parse(text);
+      if(json.format==='my-word-atlas-backup-v1'){
+        const restored=validateBackup(json);
+        if(!confirm('還原會完全替換目前所有詞庫及學習紀錄。確定繼續嗎？'))return;
+        state=restored;saveState();render();toast('備份已還原。');return;
+      }
+      deck=normalizeDeck(json);
+      if(!deck.title||deck.title==='我的詞庫')deck.title=file.name.replace(/\.json$/i,'');
+    }
+    const base=slug(deck.id);let id=base,i=2;while(state.decks[id])id=base+'-'+i++;
+    deck.id=id;state.decks[id]=deck;state.selectedDeck=id;
+    if(!saveState()){delete state.decks[id];return}
+    setTab('library');toast(`已匯入「${deck.title}」，共 ${deck.words.length} 個單字。`);
+  }catch(err){toast('匯入失敗：'+err.message);console.error(err)}
+}
+function hideAllForStudy(){tabs.forEach(t=>$(t+'Tab').classList.add('hidden'));$('studyTab').classList.remove('hidden');document.querySelectorAll('[data-tab]').forEach(el=>el.setAttribute('aria-selected','false'));}
+function startToday(){
+  const queue=buildTodayQueue(state,state.selectedDeck);
+  if(!queue.length)return toast('目前沒有到期或可學的新字。');
+  session={deckId:state.selectedDeck,queue,index:0,hintLevel:0,feedback:null,wrong:false,retype:false,answered:false};
+  hideAllForStudy();renderStudy();
+}
+function progressNext(){
+  if(!session)return;
+  session.index++;session.hintLevel=0;session.feedback=null;session.wrong=false;session.retype=false;session.answered=false;
+  if(session.index>=session.queue.length){const total=session.queue.length;session=null;setTab('home');toast(`完成今日練習：共 ${total} 個學習步驟。`);return}
+  renderStudy();
+}
+function soundButton(w){return `<button class="button small" id="sayCurrent" type="button">♫ 聽發音</button>`}
+function hintText(word,level){
+  if(level<=0)return '';
+  const chars=Array.from(word); if(level===1) return chars.map((c,i)=>i===0?c:'•').join('')+` (${chars.length})`;
+  if(level===2) return chars.map((c,i)=>i===0||i===chars.length-1?c:'•').join('');
+  const rotated=[...chars].reverse();if(rotated.join('').toLowerCase()===word.toLowerCase()&&chars.length>1)rotated.push(rotated.shift());return rotated.join(' · ');
+}
+function renderStudy(){
+  if(!session)return;const task=session.queue[session.index],w=task.w;
+  $('studyCounter').textContent=`${session.index+1} / ${session.queue.length}`;
+  $('studyBar').style.width=`${100*session.index/session.queue.length}%`;
+  const stage=task.phase==='preview'?'01 · 初次接觸':task.phase==='guided'?'02 · 有提示回想':'03 · 獨立主動回想';
+  let body='';
+  if(task.phase==='preview'){
+    body=`<div class="stage">${stage}</div><div class="big-word">${esc(w.w)}</div><div class="row-split"><div class="meta">${esc(partOfSpeech(w))} · ${esc(w.cefr||'—')} · ${esc(w.topic||'')}</div>${soundButton(w)}</div><div class="meaning">${esc(meaning(w))}</div><p class="sub">${esc(definition(w))}</p>${example(w)?`<div class="example" style="margin-top:18px"><strong>${esc(example(w))}</strong>${w.ex?.[0]?.zh?`<div style="font-size:12px;color:#6d867d">${esc(w.ex[0].zh)}</div>`:''}</div>`:''}${w.col?.length?`<p class="meta" style="margin-top:16px">搭配詞：${esc(w.col.join(' · '))}</p>`:''}<div class="hint" style="margin:20px 0">請看、理解並朗讀單字。此步驟不計入 SRS 排程。</div><button class="button primary" id="advance">我已認識這個字 →</button>`;
+  } else {
+    const isGuided=task.phase==='guided';const level=isGuided?Math.max(1,session.hintLevel):session.hintLevel;
+    let feedback='';
+    if(session.feedback){const f=session.feedback;feedback=`<div class="feedback ${f.type}">${esc(f.message)}</div>`;}
+    const instruction=session.retype?'看完正確答案後，請重新完整輸入一次。此練習不會再次增加排程。':isGuided?'這次先用首字母協助回想。':'不看答案，從中文意思完整拼出英文。';
+    body=`<div class="stage">${stage}</div><div class="meaning" style="margin-top:20px">${esc(meaning(w))}</div><p class="prompt">${esc(instruction)}</p><div class="hint-word" id="visibleHint">${esc(hintText(w.w,level)||'— 無提示 —')}</div><div class="actions" style="justify-content:center;margin-bottom:16px">${soundButton(w)}<button class="button small" id="revealHint" ${session.retype||level>=3?'disabled':''}>${level===0?'提示 1／3':level===1?'再提示 2／3':level===2?'再提示 3／3':'提示已用完'}</button></div><form id="answerForm"><div class="field"><label for="spellInput">完整輸入英文</label><input id="spellInput" class="input-word" autocapitalize="off" autocomplete="off" spellcheck="false" enterkeyhint="done" required autofocus></div><div class="actions"><button class="button primary" id="submitAnswer" type="submit">檢查答案</button>${session.answered?'<button class="button secondary" type="button" id="advance">下一步 →</button>':''}</div></form>${feedback}`;
+  }
+  $('studyCard').innerHTML=body;
+  $('sayCurrent')?.addEventListener('click',()=>speak(w));
+  $('advance')?.addEventListener('click',progressNext);
+  $('revealHint')?.addEventListener('click',()=>{session.hintLevel=Math.min(3,session.hintLevel+1);renderStudy()});
+  $('answerForm')?.addEventListener('submit',answerCurrent);
+  $('spellInput')?.focus();
+}
+function answerCurrent(e){
+  e.preventDefault();if(!session)return;
+  const task=session.queue[session.index],w=task.w;
+  const actual=$('spellInput').value.trim().replace(/\s+/g,' ').toLowerCase();
+  const expected=w.w.trim().toLowerCase();
+  if(!actual)return;
+  if(session.answered)return progressNext();
+  if(session.retype){
+    if(actual===expected){session.answered=true;session.feedback={type:'ok',message:'已重新練習正確拼法。這次不重複計分，請繼續下一步。'};}
+    else session.feedback={type:'bad',message:`正確拼法為 ${w.w}。請再照著輸入一次。`};
+    return renderStudy();
+  }
+  const correct=actual===expected;
+  if(task.phase==='independent'){
+    const grade=gradeForAttempt(correct,session.hintLevel);
+    persistAnswer(w,grade,task.kind,session.hintLevel);
+  }
+  if(correct){
+    session.answered=true;
+    if(task.phase==='guided')session.feedback={type:'info',message:'有提示回想完成。稍後還有無提示測試，現在不會推進複習間隔。'};
+    else if(session.hintLevel>=2)session.feedback={type:'info',message:'需要較多提示，因此安排短期重學，而非長期延後複習。'};
+    else session.feedback={type:'ok',message:'答對了！已記錄這次獨立回想。'};
+  }else{
+    session.wrong=true;session.retype=true;
+    session.feedback={type:'bad',message:`你輸入的是「${actual}」，正確答案是「${w.w}」。請再完整輸入一次。${task.phase==='guided'?'本階段不修改排程。':'已按 Again 排入短期重學。'}`};
+  }
+  renderStudy();
+}
+function bind(){
+  document.querySelectorAll('[data-tab]').forEach(el=>el.addEventListener('click',()=>setTab(el.dataset.tab)));
+  document.body.addEventListener('click',e=>{
+    const sel=e.target.closest('[data-select]');if(sel){selectDeck(sel.dataset.select);return}
+    const edit=e.target.closest('[data-edit]');if(edit){openEditor(edit.dataset.edit);return}
+    const sp=e.target.closest('[data-speak]');if(sp){const w=currentDeck()?.words.find(x=>x.id===sp.dataset.speak);if(w)speak(w.w)}
+  });
+  $('switchToLibrary').addEventListener('click',()=>setTab('library'));
+  $('newDeck').addEventListener('click',()=>$('deckEditor').showModal());
+  $('closeDeck').addEventListener('click',()=>$('deckEditor').close());
+  $('deckForm').addEventListener('submit',addDeck);
+  $('addWord').addEventListener('click',()=>openEditor());
+  $('closeEditor').addEventListener('click',()=>$('editor').close());
+  $('wordForm').addEventListener('submit',saveWord);
+  $('deleteWord').addEventListener('click',removeWord);
+  $('searchWords').addEventListener('input',renderLibrary);
+  $('importBtn').addEventListener('click',()=>$('fileInput').click());
+  $('restoreBtn').addEventListener('click',()=>$('fileInput').click());
+  $('fileInput').addEventListener('change',onFile);
+  $('exportCSV').addEventListener('click',()=>{const d=currentDeck();if(d)downloadText(slug(d.title)+'.csv',deckCSV(d),'text/csv;charset=utf-8')});
+  $('backupBtn').addEventListener('click',exportBackup);
+  $('startToday').addEventListener('click',startToday);
+  $('exitStudy').addEventListener('click',()=>{session=null;setTab('home')});
+}
+await seed();bind();render();loadFsrs();
+
+</script>
+</body></html>
