@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f4f0e6">
   <meta name="description" content="My Word Atlas — local-first personal vocabulary studio">
-  <title>My Word Atlas V1.4 · 個人詞彙圖鑑</title>
+  <title>My Word Atlas V1.4.1.1 · 個人詞彙圖鑑</title>
   <style>
     :root{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#202b36;background:#f4f0e6;font-synthesis:none}
     *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:inherit}button:disabled{opacity:.45;cursor:not-allowed}
@@ -33,7 +33,7 @@
 <button class="tab" data-tab="insights" aria-selected="false">學習紀錄</button>
 </nav></div></header>
 <main class="wrap">
-<section class="lead"><div><div class="eyebrow">PERSONAL VOCABULARY STUDIO · V1.4</div><h1>See the word.<br><em>Make it yours.</em></h1><p class="sub">建立自己的單字內容，循序進入主動回想，再於適當時間重新遇見它。</p></div><div class="orbit" role="img" aria-label="象徵單字記憶軌道的幾何插圖"></div></section>
+<section class="lead"><div><div class="eyebrow">PERSONAL VOCABULARY STUDIO · V1.4.1</div><h1>See the word.<br><em>Make it yours.</em></h1><p class="sub">建立自己的單字內容，循序進入主動回想，再於適當時間重新遇見它。</p></div><div class="orbit" role="img" aria-label="象徵單字記憶軌道的幾何插圖"></div></section>
 <section id="homeTab">
 <div class="grid stats" id="stats"></div>
 <div class="grid main-grid"><section class="panel pad"><div class="section-title"><div><h2>今天的學習旅程</h2><p>到期複習優先，新字採三階段練習</p></div></div><div id="todaySummary"></div><div class="actions" style="margin-top:22px"><button class="button primary" id="startToday">開始今日學習</button><button class="button" id="switchToLibrary">管理我的單字</button><button class="button" id="testAudio" type="button">♫ 測試發音</button></div><div class="notice" id="schedulerStatus">正在檢查 FSRS 排程模組…</div><div class="media-options"><label><input type="checkbox" id="enableMedia" checked> 啟用外部 Word Atlas 圖片／音檔</label><label>發音：<select id="accentSelect" aria-label="發音口音"><option value="uk">英式 UK</option><option value="us">美式 US</option></select></label></div><p class="meta" style="margin:10px 0 0">發音已自動整合：內建詞卡優先嘗試 Word Atlas 錄音，匯入及自訂單字使用瀏覽器英語語音，無須自行尋找音檔。外部素材無法取得時會自動回退；部分裝置可能沒有 UK／US 對應語音。</p></section><section class="panel pad"><div class="section-title"><div><h2>我的學習空間</h2><p>切換詞庫，各自保存進度</p></div></div><div id="homeDecks" class="deck-list"></div></section></div>
@@ -45,7 +45,7 @@
 <section id="insightsTab" class="hidden"><div class="section-title"><div><h2>Learning Insights</h2><p>用近期練習證據看見自己的進步</p></div><button class="button" id="backupBtn">匯出完整備份 JSON</button></div><div class="grid main-grid"><div class="panel pad" id="insightSummary"></div><div class="panel pad"><h3>資料與隱私</h3><p class="sub" style="font-size:13px">資料保存在這個瀏覽器的 localStorage，不會傳到我們的伺服器。換設備或清除瀏覽資料前請匯出備份。</p><div class="actions" style="margin-top:16px"><button class="button" id="restoreBtn">還原進度備份</button></div></div></div></section>
 <section id="studyTab" class="hidden study"><div class="row-split"><button class="button small" id="exitStudy">← 暫停並返回</button><span id="studyCounter" class="meta"></span></div><div class="progress-line"><div id="studyBar" style="width:0%"></div></div><div class="panel pad" id="studyCard"></div></section>
 </main>
-<footer class="wrap footer">My Word Atlas V1.4 · 模組化獨立原型，資料格式參考 <a href="https://github.com/designfuchen/word-atlas" target="_blank" rel="noreferrer">Word Atlas</a> 的開放資料設計。原專案程式碼 MIT，素材 CC BY 4.0（© Word Atlas contributors）；本版本可按設定連結其插圖與錄音，素材採 CC BY 4.0 授權，並保留來源署名。示範詞卡經人工整理，但仍建議用於正式教學前自行核對。</footer>
+<footer class="wrap footer">My Word Atlas V1.4.1 · 模組化獨立原型，資料格式參考 <a href="https://github.com/designfuchen/word-atlas" target="_blank" rel="noreferrer">Word Atlas</a> 的開放資料設計。原專案程式碼 MIT，素材 CC BY 4.0（© Word Atlas contributors）；本版本可按設定連結其插圖與錄音，素材採 CC BY 4.0 授權，並保留來源署名。示範詞卡經人工整理，但仍建議用於正式教學前自行核對。</footer>
 <div id="toast" role="status" aria-live="polite"></div>
 <input id="fileInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
 <dialog id="editor"><form id="wordForm" class="dialog-pad"><div class="row-split"><h2 id="editorTitle" style="margin-top:0;font-family:Georgia,serif">新增單字</h2><button type="button" class="button small" id="closeEditor">關閉</button></div><div class="two"><div class="field"><label for="fWord">英文 *</label><input id="fWord" name="w" required></div><div class="field"><label for="fZh">中文意思 *</label><input id="fZh" name="zh" required></div></div><div class="two"><div class="field"><label for="fPos">詞性</label><input id="fPos" name="pos" placeholder="adj."></div><div class="field"><label for="fCefr">CEFR</label><select id="fCefr" name="cefr"><option value="">未分類</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select></div></div><div class="field"><label for="fDefinition">英文解釋</label><textarea id="fDefinition" name="definition"></textarea></div><div class="field"><label for="fExample">英文例句</label><textarea id="fExample" name="example"></textarea></div><div class="field"><label for="fExampleZh">例句中文</label><textarea id="fExampleZh" name="exampleZh"></textarea></div><div class="field"><label for="fCol">常見搭配（用 ; 分隔）</label><input id="fCol" name="collocations"></div><div class="field"><label for="fTopic">主題</label><input id="fTopic" name="topic" value="custom"></div>
@@ -1287,7 +1287,7 @@ function renderStudy(){
   $('studyCard').innerHTML=body;
   $('sayCurrent')?.addEventListener('click',()=>speak(w));
   $('advance')?.addEventListener('click',progressNext);
-  $('revealHint')?.addEventListener('click',()=>{session.hintLevel=Math.min(3,session.hintLevel+1);renderStudy()});
+  $('revealHint')?.addEventListener('click',()=>{session.hintLevel=Math.min(3,Math.max(task.phase==='guided'?1:0,session.hintLevel)+1);renderStudy()});
   $('answerForm')?.addEventListener('submit',answerCurrent);
   $('spellInput')?.focus();
 }
