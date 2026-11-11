@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f4f0e6">
   <meta name="description" content="My Word Atlas — local-first personal vocabulary studio">
-  <title>My Word Atlas V1.2 · 個人詞彙圖鑑</title>
+  <title>My Word Atlas V1.3 · 個人詞彙圖鑑</title>
   <style>
     :root{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#202b36;background:#f4f0e6;font-synthesis:none}
     *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:inherit}button:disabled{opacity:.45;cursor:not-allowed}
@@ -36,16 +36,16 @@
 <section class="lead"><div><div class="eyebrow">PERSONAL VOCABULARY STUDIO · V1.2</div><h1>See the word.<br><em>Make it yours.</em></h1><p class="sub">建立自己的單字內容，循序進入主動回想，再於適當時間重新遇見它。</p></div><div class="orbit" role="img" aria-label="象徵單字記憶軌道的幾何插圖"></div></section>
 <section id="homeTab">
 <div class="grid stats" id="stats"></div>
-<div class="grid main-grid"><section class="panel pad"><div class="section-title"><div><h2>今天的學習旅程</h2><p>到期複習優先，新字採三階段練習</p></div></div><div id="todaySummary"></div><div class="actions" style="margin-top:22px"><button class="button primary" id="startToday">開始今日學習</button><button class="button" id="switchToLibrary">管理我的單字</button></div><div class="notice" id="schedulerStatus">正在檢查 FSRS 排程模組…</div><div class="media-options"><label><input type="checkbox" id="enableMedia" checked> 啟用外部 Word Atlas 圖片／音檔</label><label>發音：<select id="accentSelect" aria-label="發音口音"><option value="uk">英式 UK</option><option value="us">美式 US</option></select></label></div><p class="meta" style="margin:10px 0 0">外部素材依網路狀態載入；無法取得音檔時會改用瀏覽器朗讀。圖片為參考場景，未必對應詞卡的全部義項。</p></section><section class="panel pad"><div class="section-title"><div><h2>我的學習空間</h2><p>切換詞庫，各自保存進度</p></div></div><div id="homeDecks" class="deck-list"></div></section></div>
+<div class="grid main-grid"><section class="panel pad"><div class="section-title"><div><h2>今天的學習旅程</h2><p>到期複習優先，新字採三階段練習</p></div></div><div id="todaySummary"></div><div class="actions" style="margin-top:22px"><button class="button primary" id="startToday">開始今日學習</button><button class="button" id="switchToLibrary">管理我的單字</button><button class="button" id="testAudio" type="button">♫ 測試發音</button></div><div class="notice" id="schedulerStatus">正在檢查 FSRS 排程模組…</div><div class="media-options"><label><input type="checkbox" id="enableMedia" checked> 啟用外部 Word Atlas 圖片／音檔</label><label>發音：<select id="accentSelect" aria-label="發音口音"><option value="uk">英式 UK</option><option value="us">美式 US</option></select></label></div><p class="meta" style="margin:10px 0 0">發音已自動整合：內建詞卡優先嘗試 Word Atlas 錄音，匯入及自訂單字使用瀏覽器英語語音，無須自行尋找音檔。外部素材無法取得時會自動回退；部分裝置可能沒有 UK／US 對應語音。</p></section><section class="panel pad"><div class="section-title"><div><h2>我的學習空間</h2><p>切換詞庫，各自保存進度</p></div></div><div id="homeDecks" class="deck-list"></div></section></div>
 </section>
-<section id="libraryTab" class="hidden"><div class="section-title"><div><h2>Content Studio</h2><p>每一張詞卡都能編輯、檢查與再利用</p></div><div class="actions"><button class="button small" id="newDeck">＋ 新增詞庫</button><button class="button small" id="importBtn">匯入 JSON／CSV</button><button class="button small" id="exportCSV">匯出 CSV</button></div></div><div class="library-layout"><section class="panel pad"><h3 style="margin-top:0">詞庫</h3><div id="libraryDecks" class="deck-list"></div><div class="hint" style="margin-top:14px">支持 Word Atlas JSON 詞條格式，及含 <code>word,zh,pos,example</code> 等欄位的 CSV。</div></section><section class="panel pad"><div class="section-title"><div><h2 id="libraryHeading">單字列表</h2><p id="libraryDescription">選擇左側詞庫</p></div><button class="button small primary" id="addWord">＋ 新增單字</button></div><input class="search" id="searchWords" placeholder="搜尋英文或中文意思…" aria-label="搜尋單字"><div id="wordList"></div></section></div></section>
+<section id="libraryTab" class="hidden"><div class="section-title"><div><h2>Content Studio</h2><p>每一張詞卡都能編輯、檢查與再利用</p></div><div class="actions"><button class="button small" id="newDeck">＋ 新增詞庫</button><button class="button small" id="importBtn">匯入 JSON／CSV</button><button class="button small" id="exportCSV">匯出 CSV</button></div></div><div class="library-layout"><section class="panel pad"><h3 style="margin-top:0">詞庫</h3><div id="libraryDecks" class="deck-list"></div><div class="hint" style="margin-top:14px">支援 Word Atlas JSON、一般 <code>word,zh</code> CSV，以及 Google 翻譯「已儲存的翻譯」CSV（自動辨認中英方向；詞性和例句可以留空）。</div></section><section class="panel pad"><div class="section-title"><div><h2 id="libraryHeading">單字列表</h2><p id="libraryDescription">選擇左側詞庫</p></div><button class="button small primary" id="addWord">＋ 新增單字</button></div><input class="search" id="searchWords" placeholder="搜尋英文或中文意思…" aria-label="搜尋單字"><div id="wordList"></div></section></div></section>
 <section id="atlasTab" class="hidden"><div class="section-title"><div><h2>Vocabulary Constellation</h2><p>探索詞庫的主題分佈、記憶狀態及到期單字 · 本機輕量版星圖</p></div></div>
 <div class="panel pad"><div class="row-split star-controls"><div class="actions"><label>顯示：<select id="atlasFilter" aria-label="星圖記憶狀態"><option value="all">全部單字</option><option value="due">到期複習</option><option value="new">未學新字</option><option value="learning">學習中</option><option value="mature">較穩定</option></select></label><input id="atlasSearch" class="search" aria-label="星圖搜尋單字" placeholder="搜尋單字或主題…"></div><span class="meta" id="atlasCount"></span></div>
 <div class="star-layout"><div class="star-chart" id="atlasCanvas"></div><aside class="star-details" id="atlasDetails"><p class="muted">點選一顆星，查看單字卡與語境。</p></aside></div><div class="star-legend"><span><i class="legend-dot new"></i> 未學習</span><span><i class="legend-dot due"></i> 到期</span><span><i class="legend-dot learning"></i> 學習中</span><span><i class="legend-dot mature"></i> 穩定</span></div><p class="meta">簡易 SVG 星圖最多顯示 160 個單字；不是原版 Word Atlas 的 WebGL 銀河。星點位置由單字 ID 決定，避免每次開啟重新亂跳。</p></div></section>
 <section id="insightsTab" class="hidden"><div class="section-title"><div><h2>Learning Insights</h2><p>用近期練習證據看見自己的進步</p></div><button class="button" id="backupBtn">匯出完整備份 JSON</button></div><div class="grid main-grid"><div class="panel pad" id="insightSummary"></div><div class="panel pad"><h3>資料與隱私</h3><p class="sub" style="font-size:13px">資料保存在這個瀏覽器的 localStorage，不會傳到我們的伺服器。換設備或清除瀏覽資料前請匯出備份。</p><div class="actions" style="margin-top:16px"><button class="button" id="restoreBtn">還原進度備份</button></div></div></div></section>
 <section id="studyTab" class="hidden study"><div class="row-split"><button class="button small" id="exitStudy">← 暫停並返回</button><span id="studyCounter" class="meta"></span></div><div class="progress-line"><div id="studyBar" style="width:0%"></div></div><div class="panel pad" id="studyCard"></div></section>
 </main>
-<footer class="wrap footer">My Word Atlas V1.2 · 模組化獨立原型，資料格式參考 <a href="https://github.com/designfuchen/word-atlas" target="_blank" rel="noreferrer">Word Atlas</a> 的開放資料設計。原專案程式碼 MIT，素材 CC BY 4.0（© Word Atlas contributors）；本版本可按設定連結其插圖與錄音，素材採 CC BY 4.0 授權，並保留來源署名。示範詞卡經人工整理，但仍建議用於正式教學前自行核對。</footer>
+<footer class="wrap footer">My Word Atlas V1.3 · 模組化獨立原型，資料格式參考 <a href="https://github.com/designfuchen/word-atlas" target="_blank" rel="noreferrer">Word Atlas</a> 的開放資料設計。原專案程式碼 MIT，素材 CC BY 4.0（© Word Atlas contributors）；本版本可按設定連結其插圖與錄音，素材採 CC BY 4.0 授權，並保留來源署名。示範詞卡經人工整理，但仍建議用於正式教學前自行核對。</footer>
 <div id="toast" role="status" aria-live="polite"></div>
 <input id="fileInput" type="file" accept=".json,.csv,application/json,text/csv" hidden>
 <dialog id="editor"><form id="wordForm" class="dialog-pad"><div class="row-split"><h2 id="editorTitle" style="margin-top:0;font-family:Georgia,serif">新增單字</h2><button type="button" class="button small" id="closeEditor">關閉</button></div><div class="two"><div class="field"><label for="fWord">英文 *</label><input id="fWord" name="w" required></div><div class="field"><label for="fZh">中文意思 *</label><input id="fZh" name="zh" required></div></div><div class="two"><div class="field"><label for="fPos">詞性</label><input id="fPos" name="pos" placeholder="adj."></div><div class="field"><label for="fCefr">CEFR</label><select id="fCefr" name="cefr"><option value="">未分類</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option></select></div></div><div class="field"><label for="fDefinition">英文解釋</label><textarea id="fDefinition" name="definition"></textarea></div><div class="field"><label for="fExample">英文例句</label><textarea id="fExample" name="example"></textarea></div><div class="field"><label for="fExampleZh">例句中文</label><textarea id="fExampleZh" name="exampleZh"></textarea></div><div class="field"><label for="fCol">常見搭配（用 ; 分隔）</label><input id="fCol" name="collocations"></div><div class="field"><label for="fTopic">主題</label><input id="fTopic" name="topic" value="custom"></div>
@@ -804,25 +804,72 @@ function normalizeDeck(input, preferredId='') {
   if(!out.length) throw Error('詞庫沒有可使用的單字');
   return {id:preferredId || String(data.id || `my-deck-${Date.now()}`),title:String(data.title || '我的詞庫'), description:String(data.description || ''),words:out,source:String(data.source || 'user'),createdAt:String(data.createdAt || new Date().toISOString())};
 }
-function parseCSV(src) {
-  const rows=[]; let row=[], cur='', quoted=false;
-  for(let i=0;i<src.length;i++) {
-    let c=src[i];
-    if(c==='"') { if(quoted && src[i+1]==='"') {cur+='"';i++;} else quoted=!quoted; }
-    else if(c===',' && !quoted){row.push(cur);cur='';}
-    else if((c==='\n'||c==='\r') && !quoted){
-      if(c==='\r' && src[i+1]==='\n') i++;
-      row.push(cur); if(row.some(x=>x.trim())) rows.push(row); row=[];cur='';
-    } else cur+=c;
+// A saved Google Translate CSV has no header: each row is
+// [source language, target language, original text, translated text].
+function parseCSVRows(src) {
+  const rows=[];let row=[],cur='',quoted=false;
+  const value=String(src||'').replace(/^\uFEFF/,'');
+  for(let i=0;i<value.length;i++){
+    const c=value[i];
+    if(c==='"'){if(quoted && value[i+1]==='"'){cur+='"';i++}else quoted=!quoted}
+    else if(c===','&&!quoted){row.push(cur);cur=''}
+    else if((c==='\n'||c==='\r')&&!quoted){
+      if(c==='\r'&&value[i+1]==='\n')i++;
+      row.push(cur);if(row.some(x=>x.trim()))rows.push(row);row=[];cur='';
+    }else cur+=c;
   }
-  if(quoted) throw Error('CSV 存在未關閉的雙引號');
-  row.push(cur); if(row.some(x=>x.trim())) rows.push(row);
-  if(rows.length < 2) throw Error('CSV 需要標題列及至少一個單字');
-  const headers=rows.shift().map(x=>x.trim().replace(/^\uFEFF/,'').toLowerCase());
-  return rows.map(cells => Object.fromEntries(headers.map((h,i)=>[h,(cells[i] || '').trim()])));
+  if(quoted)throw Error('CSV 存在未關閉的雙引號');
+  row.push(cur);if(row.some(x=>x.trim()))rows.push(row);
+  if(!rows.length)throw Error('CSV 沒有可匯入的資料');
+  return rows;
 }
-function csvToDeck(src,title='匯入的單字') {
-  const rows=parseCSV(src).map(r=>({w:r.w || r.word || r.en,zh:r.zh || r.meaning || r.chinese,pos:r.pos || '', definition:r.definition || '',exampleEn:r.example || r.exampleen || '',exampleZh:r.examplezh || '',collocations:r.collocations || r.col || '',cefr:r.cefr || '',topic:r.topic || 'custom',imageUrl:r.imageurl||'',audioUkUrl:r.audioukurl||'',audioUsUrl:r.audiousurl||'',atlasMedia:/^(true|yes|1)$/i.test(r.atlasmedia||'')}));
+function parseCSV(src){
+  const rows=parseCSVRows(src);
+  if(rows.length<2)throw Error('CSV 需要標題列及至少一個單字');
+  const headers=rows.shift().map(x=>x.trim().toLowerCase());
+  return rows.map(cells=>Object.fromEntries(headers.map((h,i)=>[h,(cells[i]||'').trim()])));
+}
+function languageKind(label){
+  const s=String(label||'').toLowerCase().replace(/[\s()（）]/g,'');
+  if(['英文','英語','english','en'].includes(s))return 'en';
+  if(s.startsWith('中文')||['chinese','zh','國語','普通話','粵語','廣東話','cantonese'].includes(s))return 'zh';
+  if(['偵測語言','检测语言','detectlanguage','auto'].includes(s))return 'auto';
+  return '';
+}
+function csvToDeck(src,title='匯入的單字'){
+  const rawRows=parseCSVRows(src);
+  const sample=rawRows.slice(0,Math.min(12,rawRows.length));
+  const translationRows=sample.filter(r=>r.length>=4 && languageKind(r[0]) && languageKind(r[1]));
+  // Detect data rows BEFORE treating the first saved translation as a header.
+  if(translationRows.length >= Math.ceil(sample.length*.7)){
+    const words=[];let skipped=0,reversed=0;
+    for(const cells of rawRows){
+      if(cells.length<4){skipped++;continue}
+      const [from,to,original,translated]=cells.map(x=>String(x||'').trim());
+      if(!original||!translated){skipped++;continue}
+      const a=languageKind(from),b=languageKind(to);
+      let w='',zh='';
+      if(a==='en' && b==='zh'){w=original;zh=translated}
+      else if(a==='zh' && b==='en'){w=translated;zh=original;reversed++}
+      else if(a==='auto'&&b==='zh'&&/[a-z]/i.test(original)){w=original;zh=translated}
+      else if(a==='zh'&&b==='auto'&&/[a-z]/i.test(translated)){w=translated;zh=original;reversed++}
+      else{skipped++;continue}
+      words.push({w,zh,topic:'saved-translations',atlasMedia:false});
+    }
+    if(!words.length)throw Error('已識別翻譯 CSV，但沒有可用的英中配對資料');
+    const deck=normalizeDeck({title,words,source:'google-translate-saved'});
+    deck.importSummary={original:rawRows.length,reversed,duplicates:words.length-deck.words.length,skipped};
+    return deck;
+  }
+  const rows=parseCSV(src).map(r=>({
+    w:r.w||r.word||r.en||r.英文||r.英語||r.english,
+    zh:r.zh||r.meaning||r.chinese||r['中文 (繁體)']||r['中文（繁體）']||r['中文 (簡體)']||r.中文,
+    pos:r.pos||'',definition:r.definition||'',exampleEn:r.example||r.exampleen||'',
+    exampleZh:r.examplezh||'',collocations:r.collocations||r.col||'',cefr:r.cefr||'',
+    topic:r.topic||'custom',imageUrl:r.imageurl||'',audioUkUrl:r.audioukurl||'',
+    audioUsUrl:r.audiousurl||'',atlasMedia:/^(true|yes|1)$/i.test(r.atlasmedia||'')
+  }));
+  if(!rows.some(r=>r.w&&r.zh))throw Error('CSV 欄位不相符；需要 word,zh，或直接匯入 Google 翻譯「已儲存的翻譯」原始 CSV');
   return normalizeDeck({title,words:rows});
 }
 function csvQuote(v) { let s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
@@ -1026,9 +1073,19 @@ function setTab(tab){
   document.querySelectorAll('[data-tab]').forEach(el=>el.setAttribute('aria-selected',String(el.dataset.tab===tab)));
   render();
 }
-function browserSpeak(text){
-  if(!('speechSynthesis'in window)){toast('此瀏覽器沒有語音朗讀功能');return}
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text));u.lang=state.settings.accent==='us'?'en-US':'en-GB';u.rate=.86;speechSynthesis.speak(u)}catch(e){toast('無法使用發音功能')}
+function browserSpeak(text,fromFallback=false){
+  if(!('speechSynthesis'in window)){toast('此瀏覽器沒有語音朗讀功能；可改用 Chrome / Edge 並確認系統已安裝英語語音。');return}
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(String(text));
+    u.lang=state.settings.accent==='us'?'en-US':'en-GB';u.rate=.86;
+    const voices=speechSynthesis.getVoices?.()||[];
+    const locale=u.lang.toLowerCase();
+    const voice=voices.find(v=>v.lang.toLowerCase()===locale)||voices.find(v=>v.lang.toLowerCase().startsWith('en'));
+    if(voice)u.voice=voice;
+    speechSynthesis.speak(u);
+    if(fromFallback)toast('錄音檔未能載入，已切換至瀏覽器英文語音。');
+  }catch(e){toast('無法使用瀏覽器語音，請確認裝置有啟用英語 TTS。')}
 }
 function speak(word){
   const w=typeof word==='string'?{w:word}:word;
@@ -1038,9 +1095,18 @@ function speak(word){
   if(!url)return browserSpeak(w.w);
   try{
     const audio=new Audio(url);playingAudio=audio;
-    audio.onerror=()=>{if(playingAudio===audio)browserSpeak(w.w)};
-    audio.play().catch(()=>{if(playingAudio===audio)browserSpeak(w.w)});
-  }catch{browserSpeak(w.w)}
+    let handled=false;
+    const fallback=()=>{if(handled||playingAudio!==audio)return;handled=true;browserSpeak(w.w,true)};
+    audio.onerror=fallback;
+    audio.play().catch(fallback);
+  }catch{browserSpeak(w.w,true)}
+}
+function audioSourceLabel(w){
+  if(state.settings.remoteMedia===false)return '音源：裝置內建英語朗讀';
+  const custom=safeMediaURL(state.settings.accent==='us'?w.audioUsUrl:w.audioUkUrl);
+  if(custom)return '音源：自訂錄音（無法載入時改用裝置語音）';
+  if(w.atlasMedia&&atlasMediaId(w))return '音源：Word Atlas 錄音優先（無法載入時自動朗讀）';
+  return '音源：裝置內建英語朗讀（無須上傳音檔）';
 }
 function mediaBlock(w){
   if(state.settings.remoteMedia===false)return '';
@@ -1067,7 +1133,7 @@ function renderStarMap(){
   const w=selected.find(w=>w.id===selectedStarId);
   if(!w){$('atlasDetails').innerHTML='<p class="muted">點選一顆星，查看英文、中文、例句和發音。</p>';return}
   const status=memoryStatus(w,deck);
-  $('atlasDetails').innerHTML=`<span class="stage">${esc(w.topic||'custom')} · ${esc(w.cefr||'—')} · ${status}</span><h3>${esc(w.w)}</h3><p>${esc(partOfSpeech(w))} · ${esc(meaning(w))}</p>${mediaBlock(w)}${example(w)?`<div class="example">${esc(example(w))}</div>`:''}${w.col?.length?`<p class="meta" style="margin-top:10px">搭配：${esc(w.col.join(' · '))}</p>`:''}<div class="actions"><button class="button small" data-star-audio="${esc(w.id)}">♫ 聽發音</button><button class="button small" data-edit="${esc(w.id)}">編輯詞卡</button></div>`;
+  $('atlasDetails').innerHTML=`<span class="stage">${esc(w.topic||'custom')} · ${esc(w.cefr||'—')} · ${status}</span><h3>${esc(w.w)}</h3><p>${esc(partOfSpeech(w))} · ${esc(meaning(w))}</p>${mediaBlock(w)}<p class="meta">${esc(audioSourceLabel(w))}</p>${example(w)?`<div class="example">${esc(example(w))}</div>`:''}${w.col?.length?`<p class="meta" style="margin-top:10px">搭配：${esc(w.col.join(' · '))}</p>`:''}<div class="actions"><button class="button small" data-star-audio="${esc(w.id)}">♫ 聽發音</button><button class="button small" data-edit="${esc(w.id)}">編輯詞卡</button></div>`;
 }
 
 function renderDashboard(){
@@ -1176,7 +1242,10 @@ async function onFile(e){
     const previousDeck=state.selectedDeck;
     deck.id=id;state.decks[id]=deck;state.selectedDeck=id;
     if(!saveState()){delete state.decks[id];state.selectedDeck=previousDeck;return}
-    setTab('library');toast(`已匯入「${deck.title}」，共 ${deck.words.length} 個單字。`);
+    setTab('library');
+    const summary=deck.importSummary;
+    const suffix=summary?`（原檔 ${summary.original} 筆，去除 ${summary.duplicates} 筆重複${summary.skipped?`，略過 ${summary.skipped} 筆不支援資料`:''}；已自動處理中英反向翻譯）`:'';
+    toast(`已匯入「${deck.title}」：${deck.words.length} 個單字／片語${suffix}`);
   }catch(err){toast('匯入失敗：'+err.message);console.error(err)}
 }
 function hideAllForStudy(){tabs.forEach(t=>$(t+'Tab').classList.add('hidden'));$('studyTab').classList.remove('hidden');document.querySelectorAll('[data-tab]').forEach(el=>el.setAttribute('aria-selected','false'));}
@@ -1206,7 +1275,7 @@ function renderStudy(){
   const stage=task.phase==='preview'?'01 · 初次接觸':task.phase==='guided'?'02 · 有提示回想':'03 · 獨立主動回想';
   let body='';
   if(task.phase==='preview'){
-    body=`<div class="stage">${stage}</div>${mediaBlock(w)}<div class="big-word">${esc(w.w)}</div><div class="row-split"><div class="meta">${esc(partOfSpeech(w))} · ${esc(w.cefr||'—')} · ${esc(w.topic||'')}</div>${soundButton(w)}</div><div class="meaning">${esc(meaning(w))}</div><p class="sub">${esc(definition(w))}</p>${example(w)?`<div class="example" style="margin-top:18px"><strong>${esc(example(w))}</strong>${w.ex?.[0]?.zh?`<div style="font-size:12px;color:#6d867d">${esc(w.ex[0].zh)}</div>`:''}</div>`:''}${w.col?.length?`<p class="meta" style="margin-top:16px">搭配詞：${esc(w.col.join(' · '))}</p>`:''}<div class="hint" style="margin:20px 0">請看、理解並朗讀單字。此步驟不計入 SRS 排程。</div><button class="button primary" id="advance">我已認識這個字 →</button>`;
+    body=`<div class="stage">${stage}</div>${mediaBlock(w)}<div class="big-word">${esc(w.w)}</div><div class="row-split"><div class="meta">${esc(partOfSpeech(w))} · ${esc(w.cefr||'—')} · ${esc(w.topic||'')}</div>${soundButton(w)}</div><p class="meta">${esc(audioSourceLabel(w))}</p><div class="meaning">${esc(meaning(w))}</div><p class="sub">${esc(definition(w))}</p>${example(w)?`<div class="example" style="margin-top:18px"><strong>${esc(example(w))}</strong>${w.ex?.[0]?.zh?`<div style="font-size:12px;color:#6d867d">${esc(w.ex[0].zh)}</div>`:''}</div>`:''}${w.col?.length?`<p class="meta" style="margin-top:16px">搭配詞：${esc(w.col.join(' · '))}</p>`:''}<div class="hint" style="margin:20px 0">請看、理解並朗讀單字。此步驟不計入 SRS 排程。</div><button class="button primary" id="advance">我已認識這個字 →</button>`;
   } else {
     const isGuided=task.phase==='guided';const level=isGuided?Math.max(1,session.hintLevel):session.hintLevel;
     let feedback='';
@@ -1275,6 +1344,7 @@ function bind(){
   $('searchWords').addEventListener('input',renderLibrary);
   $('importBtn').addEventListener('click',()=>$('fileInput').click());
   $('restoreBtn').addEventListener('click',()=>$('fileInput').click());
+  $('testAudio').addEventListener('click',()=>speak({id:'resilient',w:'resilient',atlasMedia:true}));
   $('fileInput').addEventListener('change',onFile);
   $('exportCSV').addEventListener('click',()=>{const d=currentDeck();if(d)downloadText(slug(d.title)+'.csv',deckCSV(d),'text/csv;charset=utf-8')});
   $('backupBtn').addEventListener('click',exportBackup);
