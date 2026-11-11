@@ -1,10 +1,10 @@
-# My Word Atlas V1.2 · 個人化單字圖鑑
+# My Word Atlas V1.3 · 個人化單字圖鑑
 
 **線上版**：https://raymond2z.github.io/Ryan.github.io/my-word-atlas/
 
 這是根據 [Word Atlas](https://github.com/designfuchen/word-atlas) 資料結構與學習理念建立的獨立原型；**尚非 Word Atlas React 原始碼的正式 Fork**。原有單字學習進度沿用 `localStorage` 的 `my-word-atlas-v1:state`，更新不會主動清除既有紀錄。
 
-## V1.2 新功能
+## V1.3 新功能
 
 - **Vocabulary Constellation**：輕量 SVG 單字星圖，按主題分佈、可搜尋、篩選未學／到期／學習中／較穩定字；每個星點可用滑鼠或鍵盤開啟詞卡。此功能不是原版 Word Atlas WebGL 星圖。
 - **Word Atlas 參考媒體**：30 個內建 IELTS 詞卡可按原詞 ID 嘗試載入 Word Atlas 縮圖與英式／美式音檔。外部資源不可用時顯示圖片回退介面，發音自動回退到瀏覽器 TTS。不能保證每個字都含有相符的圖片或音檔。
@@ -30,7 +30,7 @@
 ## 資料安全
 
 - 資料只存於瀏覽器 localStorage。不同瀏覽器／設備不會自動同步。建議升級前先使用「學習紀錄 → 匯出完整備份」下載 JSON。
-- V1.2 不會覆蓋極光單字冒險島 V4.7 的原有資料。自訂詞庫同時使用 `word + meaning + id`，請勿任意改動已有字詞的唯一 ID。
+- V1.3 不會覆蓋極光單字冒險島 V4.7 的原有資料。自訂詞庫同時使用 `word + meaning + id`，請勿任意改動已有字詞的唯一 ID。
 - 開啟外部媒體時，瀏覽器會向 Word Atlas 或自訂 HTTPS 媒體來源發起連線；可在首頁關閉。
 - Word Atlas 媒體只作參考情境，可能代表不同詞義；正式教材請人工確認內容與授權。
 
