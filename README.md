@@ -9,6 +9,7 @@
 | STEM 教材 | 點解鐵路要留縫？ | [開啟](rail-expansion/)；以溫度拉桿探索鋼軌熱脹冷縮與伸縮縫 | 
 | 數學教材 | 乘法探索樂園 · Multiplication Playground | [開啟](multiplication-playground/)；以積木分組與數線跳躍探索乘法 |
 | STEM 教材 | Sim Lab Baseball Lab | [開啟](simlab-baseball-lab/) |
+| STEM 教材 | micro:bit Wireless Maze | [開啟](microbit-wireless-maze/)；使用 micro:bit v2 傾斜操控小球，挑戰迷宮通關時間 |
 | 抽籤工具 | Classroom Picker | [開啟](classroom-picker/) |
 | 小遊戲 | 點擊目標 | [開啟](clicking_game/) |
 | 抽選工具 | Gacha Name Picking | [開啟](GachaName%20PickingV2/gacha.html) |
@@ -25,6 +26,7 @@
 ├── rail-expansion/                   # 鐵路熱脹冷縮互動教材
 ├── multiplication-playground/        # 乘法積木、數線與五個一數互動教材
 ├── simlab-baseball-lab/               # 英文 Tinkercad Sim Lab 棒球教學
+├── microbit-wireless-maze/            # micro:bit v2 傾斜操控迷宮
 ├── classroom-picker/                 # 隨機抽選與平均分組工具
 ├── clicking_game/                     # 點擊目標小遊戲
 ├── GachaName PickingV2/               # 名稱隨機抽選工具與音效

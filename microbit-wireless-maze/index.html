@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f1e8">
+  <meta name="description" content="Tilt a micro:bit or use the arrow keys to roll a ball through a maze.">
+  <title>micro:bit Wireless Maze</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="bluetooth.js?v=3"></script>
+  <script defer src="maze.js?v=3"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="shell masthead-inner">
+      <div class="brand"><span class="led" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>micro:bit<span class="brand-divider"></span><span class="brand-label">Wireless Maze</span></div>
+      <a class="guide-link" href="#setup">Setup guide <span aria-hidden="true">↘</span></a>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="intro" aria-labelledby="title">
+      <h1 id="title">Wireless Maze<span aria-hidden="true">.</span></h1>
+      <p>Tilt your micro:bit to roll the ball through the maze. How fast can you reach the exit?</p>
+    </section>
+    <div class="layout">
+      <section class="console" aria-label="Maze game">
+        <div class="console-header">
+          <div class="console-title"><span aria-hidden="true"></span>Maze</div>
+          <p id="message" role="status">Move the ball to start the timer</p>
+        </div>
+        <div class="stage">
+          <canvas id="maze" width="760" height="552" tabindex="0" aria-label="3D maze. Start at the top left and exit at the bottom right." aria-describedby="controls-hint"></canvas>
+          <div class="finish" id="finish" hidden>
+            <div class="finish-card">
+              <p>You made it out!</p>
+              <div id="finish-score"></div>
+              <button id="again" type="button">Play again <span aria-hidden="true">↻</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="console-footer">
+          <div class="legend"><span><i class="start-mark"></i>Start</span><span><i class="goal-mark"></i>Exit</span></div>
+          <button type="button" class="reset" id="reset"><span aria-hidden="true">↻</span> Restart</button>
+        </div>
+      </section>
+      <aside class="controls" aria-label="Controls and scores">
+        <section class="panel clock-panel" aria-label="Timer">
+          <div class="stat"><span>Elapsed time</span><div><output id="timer" aria-live="off">0.000</output><small>s</small></div></div>
+          <div class="stat"><span>Best time</span><div><output id="best">—</output><small>s</small></div></div>
+        </section>
+        <section class="panel controller">
+          <h2>Controls</h2>
+          <button id="connect" type="button" class="connect"><span class="ble-icon" aria-hidden="true">ᛒ</span><span id="connect-label">Connect micro:bit</span><span class="connect-arrow" aria-hidden="true">↗</span></button>
+          <div class="connection-row"><span class="status-dot" id="ble-dot"></span><p id="ble-status" role="status">Bluetooth disconnected</p><button type="button" id="calibrate" hidden>Calibrate</button></div>
+          <div class="tilt" id="tilt" hidden><span>X <output id="axis-x" aria-live="off">—</output></span><span>Y <output id="axis-y" aria-live="off">—</output></span><span>Z <output id="axis-z" aria-live="off">—</output></span></div>
+          <div class="keyboard">
+            <div><strong>Keyboard or touch</strong><p id="controls-hint">Use arrow keys or WASD,<br>or hold an on-screen arrow.</p></div>
+            <div class="dpad" role="group" aria-label="On-screen arrow buttons">
+              <button type="button" data-key="ArrowUp" aria-label="Move up">↑</button>
+              <button type="button" data-key="ArrowLeft" aria-label="Move left">←</button>
+              <button type="button" data-key="ArrowDown" aria-label="Move down">↓</button>
+              <button type="button" data-key="ArrowRight" aria-label="Move right">→</button>
+            </div>
+          </div>
+        </section>
+        <section class="panel history">
+          <h2>Recent times</h2>
+          <p id="empty-history">Your times appear here after you finish a round.</p>
+          <ol id="scores" aria-label="Last five completion times"></ol>
+        </section>
+      </aside>
+    </div>
+    <details class="setup" id="setup">
+      <summary>How to connect a micro:bit v2</summary>
+      <ol>
+        <li>Connect your micro:bit v2 with a USB data cable. Copy the <a href="https://javalab.org/lee/microbit-javalab-mbl-v6.hex">Javalab MBL v6 firmware</a> to the <code>MICROBIT</code> drive.</li>
+        <li>Turn on Bluetooth and open this page in Chrome or Edge over HTTPS or on <code>localhost</code>. Disconnect the micro:bit from any other browser tabs.</li>
+        <li>Select <strong>Connect micro:bit</strong> and choose your device. When the X, Y, and Z readings appear, lay the board flat with the LEDs facing up and select <strong>Calibrate</strong>.</li>
+      </ol>
+    </details>
+    <footer><a href="https://javalab.org/en/microbit_maze_en/">Inspired by Javalab’s Micro:bit Wireless Maze ↗</a></footer>
+  </main>
+</body>
+</html>
