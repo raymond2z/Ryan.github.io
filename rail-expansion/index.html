@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#f4f8f8">
-<meta name="description" content="互動小實驗：六段路軌加熱後伸長，伸縮縫收窄，最後受壓屈曲。">
-<title>路軌熱脹冷縮實驗室｜Ryan's Lab</title>
+<meta name="description" content="Explore how six rails expand when heated, closing gaps and potentially buckling under compression.">
+<title>Railway Expansion Lab｜Ryan's Lab</title>
 <style>
 :root{font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC",sans-serif;color:#18383a;background:#f4f8f8;font-synthesis:none}
 *{box-sizing:border-box}body{margin:0;line-height:1.65}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #eeaa46;outline-offset:3px}a{color:#087970}.wrap{width:min(1050px,calc(100% - 30px));margin:auto}
@@ -66,66 +66,66 @@ input[type=range]{width:100%;accent-color:#087d73;cursor:pointer;display:block;m
 </head>
 <body>
 <div class="wrap">
-<nav aria-label="網站導覽"><a href="../">← Ryan's Lab</a><strong>STEM · 生活中的科學</strong></nav>
-<header><div class="eyebrow">Interactive STEM · 熱脹冷縮</div><h1>六段鐵路，<br>加熱之後會點？</h1><p>鋼製路軌一遇熱就會<mark>伸長</mark>。如果路軌之間的空間唔夠，佢哋就可能互相頂住，產生好大壓力，最後<strong>屈曲、彎起，甚至損壞</strong>。</p></header>
+<nav aria-label="Site navigation"><a href="../">← Ryan's Lab</a><strong>STEM · Science in everyday life</strong></nav>
+<header><div class="eyebrow">Interactive STEM · Thermal expansion</div><h1>What happens when<br>railway tracks heat up?</h1><p>Steel rails <mark>expand</mark> when they heat up. If there is not enough space between them, they can push against each other, building up pressure and possibly <strong>bending, buckling or becoming damaged</strong>.</p></header>
 <main>
 <section class="panel">
-<div class="playhead"><div><h2>實驗：同時加熱六段路軌</h2><p class="subtitle">睇住每段路軌伸長，留意五個接駁位點樣變化。</p></div><div id="temp-output" class="temp" aria-live="polite">20°C</div></div>
-<div class="zoom-toolbar" role="group" aria-label="路軌視角及縮放控制">
-  <div class="zoom-label"><span id="zoom-status" aria-live="polite">視角：全部 6 段 · 1.0×</span><small>放大後可以睇清楚每一個接駁位</small></div>
+<div class="playhead"><div><h2>Experiment: Heat six rails together</h2><p class="subtitle">Watch each rail expand and observe how the five joints change.</p></div><div id="temp-output" class="temp" aria-live="polite">20°C</div></div>
+<div class="zoom-toolbar" role="group" aria-label="Track view and zoom controls">
+  <div class="zoom-label"><span id="zoom-status" aria-live="polite">View: all 6 rails · 1.0×</span><small>Zoom in to see the joints more clearly</small></div>
   <div class="zoom-buttons">
-    <button class="zoom-btn" type="button" id="zoom-out" aria-label="縮小路軌視圖" title="縮小">−</button>
-    <button class="zoom-btn" type="button" id="zoom-in" aria-label="放大路軌視圖" title="放大">＋</button>
-    <button class="zoom-btn" type="button" id="pan-left" aria-label="向左觀看路軌" title="向左移動視角">←</button>
-    <button class="zoom-btn" type="button" id="pan-right" aria-label="向右觀看路軌" title="向右移動視角">→</button>
-    <button class="zoom-btn" type="button" id="zoom-all">全部 6 段</button>
-    <button class="zoom-btn accent" type="button" id="zoom-three">放大睇 3 段</button>
+    <button class="zoom-btn" type="button" id="zoom-out" aria-label="Zoom out of track" title="Zoom out">−</button>
+    <button class="zoom-btn" type="button" id="zoom-in" aria-label="Zoom in on track" title="Zoom in">＋</button>
+    <button class="zoom-btn" type="button" id="pan-left" aria-label="View tracks to the left" title="Move view left">←</button>
+    <button class="zoom-btn" type="button" id="pan-right" aria-label="View tracks to the right" title="Move view right">→</button>
+    <button class="zoom-btn" type="button" id="zoom-all">All 6 rails</button>
+    <button class="zoom-btn accent" type="button" id="zoom-three">Zoom in: 3 rails</button>
   </div>
 </div>
-<p class="zoom-note">用 ＋／− 放大縮小；放大後按 ←／→，可以查看左右其他路軌。</p>
+<p class="zoom-note">Use ＋ and − to zoom. When zoomed in, use ← and → to explore the rest of the track.</p>
 <div class="track-frame">
-<svg id="track" viewBox="0 0 1000 352" role="img" aria-label="六段平行路軌的俯視動態圖。升溫會令五個接駁縫隙收窄，嚴重受壓時路軌會屈曲。" xmlns="http://www.w3.org/2000/svg">
-<rect width="1000" height="352" fill="#e3ebeb"/><text x="500" y="180" font-size="25" text-anchor="middle" fill="#647b7d">準備模擬六段路軌…</text>
+<svg id="track" viewBox="0 0 1000 352" role="img" aria-label="Animated overhead view of six rail sections. As temperature rises, the five gaps narrow; under severe compression, the rails buckle." xmlns="http://www.w3.org/2000/svg">
+<rect width="1000" height="352" fill="#e3ebeb"/><text x="500" y="180" font-size="25" text-anchor="middle" fill="#647b7d">Preparing the six-rail simulation…</text>
 </svg>
 </div>
-<p class="plot-caption">↑ 俯視示意圖。路軌、縫隙和彎曲幅度均為教學需要而放大，唔係實際比例。</p>
+<p class="plot-caption">↑ Overhead illustration. Rail lengths, gaps and bending are exaggerated for teaching and are not to scale.</p>
 <div class="controls">
-<div class="range-row"><label for="heat">鋼軌溫度</label><span id="phase-label">室溫</span></div>
-<input type="range" id="heat" min="-10" max="100" value="20" step="1" aria-label="調整鋼軌溫度">
+<div class="range-row"><label for="heat">Rail temperature</label><span id="phase-label">Room temperature</span></div>
+<input type="range" id="heat" min="-10" max="100" value="20" step="1" aria-label="Adjust rail temperature">
 <div class="range-ends"><span>❄️ −10°C</span><span>🔥 100°C</span></div>
-<div class="control-buttons"><button class="btn primary" id="play" type="button">▶ 自動加熱</button><button class="btn" id="reset" type="button">↺ 重設 20°C</button></div>
-<div class="switcher" role="group" aria-label="選擇有沒有預留伸縮縫">
-<button type="button" class="btn" data-gap="yes" aria-pressed="true">✅ 有預留伸縮縫</button>
-<button type="button" class="btn" data-gap="no" aria-pressed="false">❌ 完全冇留縫</button>
+<div class="control-buttons"><button class="btn primary" id="play" type="button">▶ Auto heat</button><button class="btn" id="reset" type="button">↺ Reset to 20°C</button></div>
+<div class="switcher" role="group" aria-label="Choose whether expansion gaps are included">
+<button type="button" class="btn" data-gap="yes" aria-pressed="true">✅ With expansion gaps</button>
+<button type="button" class="btn" data-gap="no" aria-pressed="false">❌ No gaps</button>
 </div>
 </div>
 <div class="metrics">
-<div class="metric"><small>每段 10 米鋼軌伸長量</small><strong id="elongation">0.0 mm</strong></div>
-<div class="metric"><small>每個接駁位剩餘縫隙</small><strong id="space">5.0 mm</strong></div>
-<div class="metric"><small>受壓狀態</small><strong id="pressure">無擠壓</strong></div>
+<div class="metric"><small>Change in length per 10 m rail</small><strong id="elongation">0.0 mm</strong></div>
+<div class="metric"><small>Remaining gap at each joint</small><strong id="space">5.0 mm</strong></div>
+<div class="metric"><small>Compression status</small><strong id="pressure">No compression</strong></div>
 </div>
-<div class="notice" id="message" role="status" aria-live="polite"><strong id="message-title">正常狀態</strong><p id="message-body">五個接駁位都有足夠空間。</p></div>
-<p class="fine">模型假設：六段鋼軌各長 10 米；20°C 時每個接駁位可預留 5 mm；鋼的線膨脹係數約 0.000012 /°C。動畫中的「屈曲」出現溫度只係用來展示原理，唔係真實鐵路的失效門檻。</p>
+<div class="notice" id="message" role="status" aria-live="polite"><strong id="message-title">Normal</strong><p id="message-body">All five joints have enough space.</p></div>
+<p class="fine">Model assumptions: six rails, each 10 m long; a 5 mm gap at each joint at 20°C when gaps are enabled; and a steel linear expansion coefficient of approximately 0.000012 /°C. The temperature at which buckling appears is illustrative, not a real railway failure threshold.</p>
 </section>
 <section>
-<h2>加熱時，會發生四件事</h2>
+<h2>Four things that can happen when rails heat up</h2>
 <div class="steps">
-<article class="step"><div class="circle">①</div><h3>路軌伸長</h3><p>金屬受熱膨脹，每一段都慢慢變長。</p></article>
-<article class="step"><div class="circle">②</div><h3>縫隙收窄</h3><p>本來留咗嘅空間越來越細。</p></article>
-<article class="step"><div class="circle">③</div><h3>互相頂住</h3><p>縫隙用盡，鋼軌再伸長就會受到限制。</p></article>
-<article class="step"><div class="circle">④</div><h3>屈曲損壞</h3><p>壓力太大時，路軌可能向旁邊彎曲，帶來危險。</p></article>
+<article class="step"><div class="circle">①</div><h3>Rails expand</h3><p>Metal expands as it heats up, so each rail becomes longer.</p></article>
+<article class="step"><div class="circle">②</div><h3>Gaps narrow</h3><p>The space between the rails becomes smaller.</p></article>
+<article class="step"><div class="circle">③</div><h3>Rails push together</h3><p>Once the gaps close, the rails cannot expand freely.</p></article>
+<article class="step"><div class="circle">④</div><h3>Buckling and damage</h3><p>If compression becomes too great, rails may bend sideways and create a danger.</p></article>
 </div>
 </section>
-<section class="callout"><h2>會唔會「爆炸」？</h2><p>通常唔會好似炸彈咁爆炸。更準確嘅現象叫做<strong>路軌屈曲（track buckling）</strong>：受熱膨脹又無法自由伸長時，路軌可能突然向旁邊彎曲、移位；嚴重時會損壞鐵路，甚至影響列車安全。動畫用誇張嘅彎曲效果去幫你睇清楚。</p></section>
-<section class="panel quiz"><h2>小挑戰</h2><p>如果六段路軌都被加熱，接駁縫隙又已經消失，最可能出現咩問題？</p>
-<button type="button" data-answer="wrong">A. 鋼軌會自動變得更短</button>
-<button type="button" data-answer="right">B. 鋼軌受壓，可能屈曲變形</button>
-<button type="button" data-answer="wrong">C. 鋼軌唔再受溫度影響</button>
+<section class="callout"><h2>Will the tracks explode?</h2><p>Usually, tracks do not explode like a bomb. A more accurate term is <strong>track buckling</strong>: when heated rails cannot expand freely, they may suddenly bend or move sideways. In severe cases, this can damage the track and affect train safety. The animation exaggerates the bending so it is easier to see.</p></section>
+<section class="panel quiz"><h2>Quick challenge</h2><p>If all six rails are heated and the gaps between them have closed, what is most likely to happen?</p>
+<button type="button" data-answer="wrong">A. The rails automatically become shorter</button>
+<button type="button" data-answer="right">B. The rails are compressed and may buckle</button>
+<button type="button" data-answer="wrong">C. Temperature no longer affects the rails</button>
 <p class="answer" id="answer" aria-live="polite"></p>
 </section>
-<section class="callout"><h2>現代鐵路一定有縫嗎？</h2><p>唔一定。現代鐵路好多使用<strong>連續焊接鋼軌（無縫路軌）</strong>，利用固定系統、安裝溫度及工程設計去管理熱應力，唔係每一段都要有可見縫隙。所以真正重要嘅係：<strong>鐵路必須妥善處理熱脹冷縮。</strong></p></section>
+<section class="callout"><h2>Do modern railways always have gaps?</h2><p>Not always. Many modern railways use <strong>continuously welded rail</strong>. Engineers manage thermal stress through fastenings, installation temperature and track design, so there does not have to be a visible gap between every section. The important point is that <strong>railways must be designed to manage thermal expansion and contraction.</strong></p></section>
 </main>
-<footer>Ryan's Lab · 小學 STEM 科學示意。此互動模擬並非鐵路工程安全計算。</footer>
+<footer>Ryan's Lab · A primary STEM illustration. This simulation is not a railway engineering safety calculation.</footer>
 </div>
 <script>
 (function(){
@@ -143,7 +143,7 @@ function zoomView(){
   viewCenter=Math.max(half,Math.min(1000-half,viewCenter));
   svg.setAttribute('viewBox',(viewCenter-half).toFixed(2)+' 0 '+width.toFixed(2)+' 352');
   svg.style.aspectRatio=width+' / 352';
-  zoomStatus.textContent=zoom<=1.01?'視角：全部 6 段 · 1.0×':'視角：局部接駁位 · '+zoom.toFixed(1)+'×';
+  zoomStatus.textContent=zoom<=1.01?'View: all 6 rails · 1.0×':'View: close-up of joints · '+zoom.toFixed(1)+'×';
   zoomIn.disabled=zoom>=2.19;zoomOut.disabled=zoom<=1.01;
   panLeft.disabled=viewCenter<=half+0.5;panRight.disabled=viewCenter>=1000-half-0.5;
 }
@@ -171,18 +171,18 @@ var remaining=Math.max(0,raw),over=Math.max(0,-raw),severity=Math.max(0,Math.min
 var bent=severity>0,damage=severity>.80,collision=over>0.01;
 var gapPx=Math.max(0,Math.min(39,remaining*4.0)),segW=(end-begin-(count-1)*gapPx)/count;
 tempOut.textContent=temp+'°C';longEl.textContent=(delta>0?'+':'')+f(delta)+' mm';spaceEl.textContent=f(remaining)+' mm';
-pEl.textContent=damage?'嚴重屈曲':bent?'路軌屈曲':collision?'互相擠壓':'無擠壓';
+pEl.textContent=damage?'Severe buckling':bent?'Buckling':collision?'Compression':'No compression';
 notice.className='notice'+(bent?' danger':collision?' warn':'');
-if(damage){phaseEl.textContent='危險：嚴重變形';msgTitle.textContent='⚠ 路軌嚴重屈曲！';msgBody.textContent='鋼軌受熱繼續膨脹，壓力無法釋放。動畫顯示大幅度變形；實際情況可能危及鐵路安全。';}
-else if(bent){phaseEl.textContent='受壓屈曲';msgTitle.textContent='⚠ 路軌向旁邊彎曲！';msgBody.textContent='接駁縫隙已耗盡，持續受熱產生的壓縮力可能令路軌屈曲。';}
-else if(collision){phaseEl.textContent='相互擠壓';msgTitle.textContent='⚠ 五個接駁位已經頂住！';msgBody.textContent='縫隙已變成 0 mm。再加熱，鋼軌無法自由伸長，壓縮應力開始增加。';}
-else if(temp>20){phaseEl.textContent='縫隙收窄中';msgTitle.textContent='☀️ 路軌正在伸長';msgBody.textContent='六段鋼軌逐漸伸長，五個接駁位的空隙同時變窄。';}
-else if(temp<20){phaseEl.textContent='遇冷收縮';msgTitle.textContent='❄️ 路軌正在縮短';msgBody.textContent='溫度降低，路軌縮短，接駁位的空隙變大。';}
-else {phaseEl.textContent='基準溫度';msgTitle.textContent='✅ 六段路軌準備就緒';msgBody.textContent=hasGap?'20°C 時，每個接駁位都有 5 mm 空間。按「自動加熱」，睇住六段路軌一齊變長。':'20°C 時完全冇留縫。加熱之後，鋼軌會更快互相頂住。';}
+if(damage){phaseEl.textContent='Danger: severe deformation';msgTitle.textContent='⚠ Severe track buckling!';msgBody.textContent='The rails continue to expand under heat, but the pressure cannot be released. The animation shows severe deformation; in reality, this could endanger railway safety.';}
+else if(bent){phaseEl.textContent='Buckling under compression';msgTitle.textContent='⚠ The rails are bending sideways!';msgBody.textContent='The gaps have closed. Continued heating can create compression that may cause the rails to buckle.';}
+else if(collision){phaseEl.textContent='Rails pushing together';msgTitle.textContent='⚠ All five joints have closed!';msgBody.textContent='The gaps are now 0 mm. With further heating, the rails cannot expand freely and compressive stress starts to build.';}
+else if(temp>20){phaseEl.textContent='Gaps narrowing';msgTitle.textContent='☀️ The rails are expanding';msgBody.textContent='The six rails are expanding and all five gaps are narrowing.';}
+else if(temp<20){phaseEl.textContent='Contracting as they cool';msgTitle.textContent='❄️ The rails are contracting';msgBody.textContent='As the temperature falls, the rails contract and the gaps grow wider.';}
+else {phaseEl.textContent='Reference temperature';msgTitle.textContent='✅ Six rails are ready';msgBody.textContent=hasGap?'At 20°C, each joint has a 5 mm gap. Select Auto heat to watch all six rails expand.':'At 20°C, there are no gaps. The rails will push against each other sooner as they heat up.';}
 var s='<defs><linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef8f9"/><stop offset=".38" stop-color="#7e979d"/><stop offset=".65" stop-color="#425962"/><stop offset="1" stop-color="#bacdd0"/></linearGradient><linearGradient id="ballast" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d9e1e0"/><stop offset="1" stop-color="#c7d4d5"/></linearGradient></defs>';
 s+='<rect width="1000" height="352" fill="#e4eced"/><rect x="38" y="71" width="924" height="225" rx="13" fill="url(#ballast)"/>';
 for(var a=73;a<=935;a+=29){s+='<rect x="'+a+'" y="87" width="15" height="197" rx="3" fill="#758d89" opacity=".60"/><rect x="'+(a+2)+'" y="88" width="4" height="195" fill="#b5c5be" opacity=".85"/>';}
-s+='<text x="500" y="29" text-anchor="middle" font-size="19" font-weight="750" fill="#355d60">六段鋼軌 · 五個接駁位</text>';
+s+='<text x="500" y="29" text-anchor="middle" font-size="19" font-weight="750" fill="#355d60">Six rails · five joints</text>';
 for(var i=0;i<count;i++){
 var left=begin+i*(segW+gapPx),right=left+segW,sign=i%2===0?1:-1;
 s+='<text x="'+f((left+right)/2)+'" y="64" text-anchor="middle" font-size="17" font-weight="750" fill="#45656b">'+(i+1)+'</text>';
@@ -204,13 +204,13 @@ s+='<path d="M '+f(x-8)+' 185 H '+f(x+8)+' M '+f(x-4)+' 181 L '+f(x)+' 185 L '+f
 }
 }
 if(bent){
-s+='<rect x="280" y="299" width="440" height="41" rx="13" fill="#fff1e9" stroke="#da7965"/><text x="500" y="325" text-anchor="middle" font-size="21" font-weight="800" fill="#aa4335">⚠ 擠壓過大：路軌屈曲變形！</text>';
+s+='<rect x="280" y="299" width="440" height="41" rx="13" fill="#fff1e9" stroke="#da7965"/><text x="500" y="325" text-anchor="middle" font-size="21" font-weight="800" fill="#aa4335">⚠ Too much compression: rails buckle!</text>';
 }else{
-s+='<rect x="280" y="302" width="440" height="36" rx="13" fill="#ffffffd9"/><text x="500" y="326" text-anchor="middle" font-size="17" font-weight="700" fill="#42696b">'+(collision?'接駁位頂住 · 開始受壓':'五個接駁位同步變化')+'</text>';
+s+='<rect x="280" y="302" width="440" height="36" rx="13" fill="#ffffffd9"/><text x="500" y="326" text-anchor="middle" font-size="17" font-weight="700" fill="#42696b">'+(collision?'Joints closed · compression begins':'All five joints change together')+'</text>';
 }
 svg.innerHTML=s;
 }
-function stop(){if(anim){cancelAnimationFrame(anim);anim=0;}document.getElementById('play').textContent='▶ 自動加熱'}
+function stop(){if(anim){cancelAnimationFrame(anim);anim=0;}document.getElementById('play').textContent='▶ Auto heat'}
 function setGap(enabled){hasGap=enabled;gapButtons.forEach(function(b){b.setAttribute('aria-pressed',String((b.dataset.gap==='yes')===enabled))});render()}
 gapButtons.forEach(function(b){b.addEventListener('click',function(){stop();setGap(b.dataset.gap==='yes')})});
 slider.addEventListener('input',function(){stop();render()});
@@ -219,11 +219,11 @@ document.getElementById('play').addEventListener('click',function(){
 if(anim){stop();return}
 if(+slider.value>=100)slider.value=20;
 var startTemp=+slider.value,startTime=0,duration=6000,button=this;
-button.textContent='Ⅱ 暫停加熱';
-function frame(t){if(!startTime)startTime=t;var progress=Math.min(1,(t-startTime)/duration);slider.value=Math.round(startTemp+(100-startTemp)*progress);render();if(progress<1){anim=requestAnimationFrame(frame)}else{anim=0;button.textContent='▶ 再次加熱'}}
+button.textContent='Ⅱ Pause heating';
+function frame(t){if(!startTime)startTime=t;var progress=Math.min(1,(t-startTime)/duration);slider.value=Math.round(startTemp+(100-startTemp)*progress);render();if(progress<1){anim=requestAnimationFrame(frame)}else{anim=0;button.textContent='▶ Heat again'}}
 anim=requestAnimationFrame(frame);
 });
-document.querySelectorAll('[data-answer]').forEach(function(b){b.addEventListener('click',function(){document.getElementById('answer').textContent=b.dataset.answer==='right'?'✅ 正確！路軌受壓可能屈曲，唔係好似炸彈咁爆炸。':'再諗一諗：熱脹冷縮令鋼軌伸長，如果無位伸長會點？'})});
+document.querySelectorAll('[data-answer]').forEach(function(b){b.addEventListener('click',function(){document.getElementById('answer').textContent=b.dataset.answer==='right'?'✅ Correct! Compressed rails may buckle rather than explode like a bomb.':'Try again: when rails heat up and expand, what happens if there is no room for them to grow?'})});
 render();
 })();
 </script>
