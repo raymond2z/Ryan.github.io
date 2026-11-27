@@ -9,7 +9,38 @@ function transform(data,tilt){const a=tilt*Math.PI/180,c=Math.cos(a),s=Math.sin(
 function lower(points,x){let a=0,b=points.length-1;while(a<b){const m=(a+b)>>1;if(points[m][0]<x)a=m+1;else b=m;}return a;}
 // A finite road: no support is extrapolated past either end.
 function surface(points,x,r){if(x<points[0][0]||x>points.at(-1)[0])return null;let best=-Infinity,slope=0;const a=Math.max(0,lower(points,x-r)-1),b=lower(points,x+r);for(let i=a;i<Math.min(b+1,points.length-1);i++){const u=points[i],v=points[i+1],dx=v[0]-u[0];if(dx<1e-12)continue;const k=(v[1]-u[1])/dx,lo=Math.max(u[0],x-r),hi=Math.min(v[0],x+r);if(lo>hi)continue;const q=Math.max(lo,Math.min(hi,x+r*k/Math.hypot(1,k))),h=Math.sqrt(Math.max(1e-16,r*r-(q-x)**2)),z=u[1]+k*(q-u[0])+h;if(z>best){best=z;slope=(q-x)/h;}}const n=Math.hypot(1,slope);return {z:best,nx:-slope/n,nz:1/n,tx:1/n,tz:slope/n};}
-function bodyGap(profiles,x,z,angle,length,offset){const c=Math.cos(angle),s=Math.sin(angle);let gap=Infinity;for(const points of [profiles.points,profiles.guide]){const a=Math.max(0,lower(points,x-length)-1),b=lower(points,x+length);for(let i=a;i<Math.min(b+1,points.length-1);i++){const u=points[i],v=points[i+1],ta=(u[0]-x)*c+(u[1]-z)*s,tb=(v[0]-x)*c+(v[1]-z)*s,na=-(u[0]-x)*s+(u[1]-z)*c,nb=-(v[0]-x)*s+(v[1]-z)*c;let lo=0,hi=1;if(Math.abs(tb-ta)<1e-12){if(Math.abs(ta)>length/2)continue;}else{const aa=(-length/2-ta)/(tb-ta),bb=(length/2-ta)/(tb-ta);lo=Math.max(0,Math.min(aa,bb));hi=Math.min(1,Math.max(aa,bb));if(lo>hi)continue;}gap=Math.min(gap,offset-na-lo*(nb-na),offset-na-hi*(nb-na));}}return gap;}
+function bodyGap(profiles,x,z,angle,length,offset,hit){
+ const c=Math.cos(angle),s=Math.sin(angle);
+ let gap=Infinity;
+ for(const [surface,points] of [['Road',profiles.points],['Center guide',profiles.guide]]){
+  const start=Math.max(0,lower(points,x-length)-1),end=lower(points,x+length);
+  for(let i=start;i<Math.min(end+1,points.length-1);i++){
+   const u=points[i],v=points[i+1];
+   const ta=(u[0]-x)*c+(u[1]-z)*s,tb=(v[0]-x)*c+(v[1]-z)*s;
+   const na=-(u[0]-x)*s+(u[1]-z)*c,nb=-(v[0]-x)*s+(v[1]-z)*c;
+   let lo=0,hi=1;
+   if(Math.abs(tb-ta)<1e-12){
+    if(Math.abs(ta)>length/2)continue;
+   }else{
+    const a=(-length/2-ta)/(tb-ta),b=(length/2-ta)/(tb-ta);
+    lo=Math.max(0,Math.min(a,b));hi=Math.min(1,Math.max(a,b));
+    if(lo>hi)continue;
+   }
+   const fraction=nb>na?hi:lo;
+   const clearance=offset-na-fraction*(nb-na);
+   if(clearance<gap){
+    gap=clearance;
+    if(hit){
+     hit.surface=surface;
+     hit.x=u[0]+fraction*(v[0]-u[0]);
+     hit.z=u[1]+fraction*(v[1]-u[1]);
+     hit.local=ta+fraction*(tb-ta);
+    }
+   }
+  }
+ }
+ return gap;
+}
 function simulate(data,raw,geometry,settings={},options={}){
  const p=P.sanitize(raw),g=F.validate(geometry),d=sanitize(settings),dt=options.dt||.0002;
  if(!(dt>=.000025&&dt<=.001))throw Error('Unsupported dynamics timestep.');
@@ -23,7 +54,10 @@ function simulate(data,raw,geometry,settings={},options={}){
  const spin=[p.v0,p.v0],local=[-f*wb,(1-f)*wb],samples=[],events=[];let dissipated=0,status='timeout',contacts=[true,true],loads=[0,0],maxPenetration=0,peak=0,airTime=0,singleTime=0,impactPeak=0;
  const datum=Math.min(...profiles.points.map(q=>q[1]))-r,kinetic=()=>.5*m*(vx*vx+vz*vz)+.5*I*omega*omega+.5*mw*(spin[0]**2+spin[1]**2),initialEnergy=m*9.81*(cz-datum)+kinetic();
  function axle(j){const a=local[j]*Math.cos(angle)+h*Math.sin(angle),b=local[j]*Math.sin(angle)-h*Math.cos(angle);return {x:cx+a,z:cz+b,a,b};}
- function capture(){x=cx+(.5-f)*wb*Math.cos(angle)+h*Math.sin(angle);z=cz+(.5-f)*wb*Math.sin(angle)-h*Math.cos(angle);const potential=m*9.81*(cz-datum),translation=.5*m*(vx*vx+vz*vz),pitch=.5*I*omega*omega,wheel=.5*mw*(spin[0]**2+spin[1]**2);samples.push({t,x,z,cx,cz,vx,vz,v:Math.hypot(vx,vz),angle,omega,rear:+contacts[0],front:+contacts[1],rearLoad:loads[0],frontLoad:loads[1],potential,translation,pitch,wheel,kinetic:translation+pitch+wheel,dissipated,residual:initialEnergy-potential-translation-pitch-wheel-dissipated,gap:bodyGap(profiles,x,z,angle,g.length/1000,(g.clearance-p.radius)/1000)});}
+ const hit={};
+ const measure=()=>bodyGap(profiles,x,z,angle,g.length/1000,(g.clearance-p.radius)/1000,hit);
+ let gap=measure(),minGap=gap,collision=null;
+ function capture(){x=cx+(.5-f)*wb*Math.cos(angle)+h*Math.sin(angle);z=cz+(.5-f)*wb*Math.sin(angle)-h*Math.cos(angle);const potential=m*9.81*(cz-datum),translation=.5*m*(vx*vx+vz*vz),pitch=.5*I*omega*omega,wheel=.5*mw*(spin[0]**2+spin[1]**2);samples.push({t,x,z,cx,cz,vx,vz,v:Math.hypot(vx,vz),angle,omega,rear:+contacts[0],front:+contacts[1],rearLoad:loads[0],frontLoad:loads[1],potential,translation,pitch,wheel,kinetic:translation+pitch+wheel,dissipated,residual:initialEnergy-potential-translation-pitch-wheel-dissipated,gap});}
  capture();
  // Sequential normal impulses and ideal rolling constraints. Wheel spin is an
  // independent rim-speed degree of freedom per axle (half the wheel inertia).
@@ -43,15 +77,21 @@ function simulate(data,raw,geometry,settings={},options={}){
   const beforeResistance=kinetic();for(let j=0;j<2;j++)if(contacts[j]){const loss=(p.crr*loads[j]+p.axle*.001/(2*r))*dt;spin[j]=Math.sign(spin[j])*Math.max(0,Math.abs(spin[j])-loss/mw);}dissipated+=Math.max(0,beforeResistance-kinetic());
   cx+=vx*dt;cz+=vz*dt;angle+=omega*dt;t+=dt;peak=Math.max(peak,Math.hypot(vx,vz));if(!contacts[0]&&!contacts[1])airTime+=dt;else if(contacts[0]!==contacts[1])singleTime+=dt;
   x=cx+(.5-f)*wb*Math.cos(angle)+h*Math.sin(angle);z=cz+(.5-f)*wb*Math.sin(angle)-h*Math.cos(angle);
-  if(step%5===0)capture();
   if(![cx,cz,omega].every(Number.isFinite)||maxPenetration>.001){status='invalid';break;}
-  if(bodyGap(profiles,x,z,angle,g.length/1000,(g.clearance-p.radius)/1000)<-.0002){status='chassis-contact';break;}
+  gap=measure();
+  minGap=Math.min(minGap,gap);
+  if(step%5===0)capture();
+  if(gap<-.0002){
+   collision={...hit,t,gap,part:hit.local>wb/2?'Front overhang':hit.local< -wb/2?'Rear overhang':'Between the axles'};
+   status='chassis-contact';
+   break;
+  }
   if(x+g.length/2000*Math.cos(angle)-Math.min((g.clearance-p.radius)/1000*Math.sin(angle),((g.clearance-p.radius)/1000+.014)*Math.sin(angle))>=profiles.points.at(-1)[0]){status='finished';break;}
   if(t>.5&&vx<.001&&Math.abs(vz)<.01&&Math.abs(omega)<.1){status='stalled';break;}
   if(cx<profiles.points[0][0]||cz<datum-.2||Math.abs(angle)>Math.PI){status='offtrack';break;}
  }
  capture();const maxResidual=Math.max(...samples.map(s=>Math.abs(s.residual)));if(maxResidual>Math.max(.002,initialEnergy*.03))status='invalid';
- return {p,g,d,profiles,samples,events,time:t,status,peak,airTime,singleTime,impactPeak,initialEnergy,maxResidual,maxPenetration,dt};
+ return {p,g,d,profiles,samples,events,time:t,status,peak,airTime,singleTime,impactPeak,initialEnergy,maxResidual,maxPenetration,minGap,collision,dt};
 }
 const api={defaults,specs,sanitize,surface,bodyGap,transform,simulate};global.DerbyDynamics=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

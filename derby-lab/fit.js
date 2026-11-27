@@ -4,7 +4,7 @@ const defaults={wheelbase:90,length:150,clearance:10,bodyWidth:32,inner:38,wheel
 const specs=[
  {key:'wheelbase',label:'Wheelbase',min:85,max:100,step:1},
  {key:'length',label:'Body length',min:140,max:160,step:1},
- {key:'clearance',label:'Chassis road clearance',min:8,max:10,step:.5},
+ {key:'clearance',label:'Ground clearance',min:8,max:25,step:.5},
  {key:'bodyWidth',label:'Body width',min:30,max:34,step:1},
  {key:'inner',label:'Wheel inner clearance',min:36,max:40,step:1},
  {key:'wheelWidth',label:'Wheel width',min:8,max:10,step:.5}
