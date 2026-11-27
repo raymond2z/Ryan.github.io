@@ -2,6 +2,12 @@
 
 Add a dated entry for each update. Record what changed, why, and how it was checked.
 
+## 2026-11-27 · Inspect the tightest gap
+
+- Added **Inspect tightest gap** in Balance Lab. It jumps to the exact simulation step with the smallest gap, highlights the location in blue, and identifies the part of the chassis and the track surface. Collisions retain their red marker.
+- Added the closest approach time and location to pitch report exports. The playback timeline now includes that frame.
+- Verified both track profiles at five clearance settings. Finish times, collision results, and minimum gaps matched the previous model. With 40 mm wheels, a 100 mm wheelbase, a 140 mm body, and 18 mm clearance, the original track's tightest gap was 0.93 mm at 0.8844 s at the front overhang above the center guide, around 1.615 m along the track. All 15 experiment-review tests passed.
+
 ## 2026-11-27 · Ground clearance and chassis contact
 
 - Expanded ground clearance from 8–10 mm to 8–25 mm in 0.5 mm steps. Added ground clearance and body length sliders to Direct car design. The side view previews the dimensions and marks the distance from level ground to the underside.

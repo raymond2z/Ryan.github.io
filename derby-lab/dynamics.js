@@ -57,7 +57,11 @@ function simulate(data,raw,geometry,settings={},options={}){
  const hit={};
  const measure=()=>bodyGap(profiles,x,z,angle,g.length/1000,(g.clearance-p.radius)/1000,hit);
  let gap=measure(),minGap=gap,collision=null;
- function capture(){x=cx+(.5-f)*wb*Math.cos(angle)+h*Math.sin(angle);z=cz+(.5-f)*wb*Math.sin(angle)-h*Math.cos(angle);const potential=m*9.81*(cz-datum),translation=.5*m*(vx*vx+vz*vz),pitch=.5*I*omega*omega,wheel=.5*mw*(spin[0]**2+spin[1]**2);samples.push({t,x,z,cx,cz,vx,vz,v:Math.hypot(vx,vz),angle,omega,rear:+contacts[0],front:+contacts[1],rearLoad:loads[0],frontLoad:loads[1],potential,translation,pitch,wheel,kinetic:translation+pitch+wheel,dissipated,residual:initialEnergy-potential-translation-pitch-wheel-dissipated,gap});}
+ const location=()=>({...hit,t,gap,part:hit.local>wb/2?'Front overhang':hit.local< -wb/2?'Rear overhang':'Between the axles'});
+ let closestApproach=Number.isFinite(gap)?location():null;
+ function snapshot(){x=cx+(.5-f)*wb*Math.cos(angle)+h*Math.sin(angle);z=cz+(.5-f)*wb*Math.sin(angle)-h*Math.cos(angle);const potential=m*9.81*(cz-datum),translation=.5*m*(vx*vx+vz*vz),pitch=.5*I*omega*omega,wheel=.5*mw*(spin[0]**2+spin[1]**2);return {t,x,z,cx,cz,vx,vz,v:Math.hypot(vx,vz),angle,omega,rear:+contacts[0],front:+contacts[1],rearLoad:loads[0],frontLoad:loads[1],potential,translation,pitch,wheel,kinetic:translation+pitch+wheel,dissipated,residual:initialEnergy-potential-translation-pitch-wheel-dissipated,gap};}
+ const capture=()=>samples.push(snapshot());
+ let closestFrame=snapshot();
  capture();
  // Sequential normal impulses and ideal rolling constraints. Wheel spin is an
  // independent rim-speed degree of freedom per axle (half the wheel inertia).
@@ -79,10 +83,14 @@ function simulate(data,raw,geometry,settings={},options={}){
   x=cx+(.5-f)*wb*Math.cos(angle)+h*Math.sin(angle);z=cz+(.5-f)*wb*Math.sin(angle)-h*Math.cos(angle);
   if(![cx,cz,omega].every(Number.isFinite)||maxPenetration>.001){status='invalid';break;}
   gap=measure();
-  minGap=Math.min(minGap,gap);
+  if(gap<minGap){
+   minGap=gap;
+   closestApproach=location();
+   closestFrame=snapshot();
+  }
   if(step%5===0)capture();
   if(gap<-.0002){
-   collision={...hit,t,gap,part:hit.local>wb/2?'Front overhang':hit.local< -wb/2?'Rear overhang':'Between the axles'};
+   collision=location();
    status='chassis-contact';
    break;
   }
@@ -91,7 +99,11 @@ function simulate(data,raw,geometry,settings={},options={}){
   if(cx<profiles.points[0][0]||cz<datum-.2||Math.abs(angle)>Math.PI){status='offtrack';break;}
  }
  capture();const maxResidual=Math.max(...samples.map(s=>Math.abs(s.residual)));if(maxResidual>Math.max(.002,initialEnergy*.03))status='invalid';
- return {p,g,d,profiles,samples,events,time:t,status,peak,airTime,singleTime,impactPeak,initialEnergy,maxResidual,maxPenetration,minGap,collision,dt};
+ if(closestApproach&&!samples.some(s=>s.t===closestFrame.t)){
+  const index=samples.findIndex(s=>s.t>closestFrame.t);
+  samples.splice(index<0?samples.length:index,0,closestFrame);
+ }
+ return {p,g,d,profiles,samples,events,time:t,status,peak,airTime,singleTime,impactPeak,initialEnergy,maxResidual,maxPenetration,minGap,collision,closestApproach,dt};
 }
 const api={defaults,specs,sanitize,surface,bodyGap,transform,simulate};global.DerbyDynamics=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

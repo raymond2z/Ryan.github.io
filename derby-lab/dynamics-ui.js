@@ -4,13 +4,17 @@ const $=id=>document.getElementById(id),D=DerbyDynamics;let settings={...D.defau
 try{settings=D.sanitize(JSON.parse(localStorage.getItem('derby-pitch-v1')||'{}'));}catch{}
 for(const d of D.specs){const label=document.createElement('label');label.className='pitch-field';label.htmlFor='pitch-'+d.key;label.textContent=d.label+' ('+d.unit+')';const input=document.createElement('input');input.id='pitch-'+d.key;input.type='number';Object.assign(input,{min:d.min,max:d.max,step:d.step,value:settings[d.key]});label.append(input);$('pitch-controls').append(label);input.oninput=()=>{const v=Number(input.value);if(input.value===''||v<d.min||v>d.max)return;settings[d.key]=v;try{localStorage.setItem('derby-pitch-v1',JSON.stringify(settings));}catch{}schedule();};input.onchange=()=>{settings=D.sanitize({...settings,[d.key]:Number(input.value)});input.value=settings[d.key];schedule();};}
 function stop(){playing=false;cancelAnimationFrame(frame);$('pitch-play').textContent='▶ Play pitch model';}
-function schedule(){stop();clearTimeout(timer);$('pitch-summary').textContent='Updating axle contacts…';$('pitch-clearance').textContent='';timer=setTimeout(update,90);}
+function schedule(){stop();clearTimeout(timer);$('pitch-summary').textContent='Updating axle contacts…';$('pitch-clearance').textContent='';$('pitch-closest').disabled=true;$('pitch-end').disabled=true;timer=setTimeout(update,90);}
 const status={finished:'Front bumper crossed the finish', 'chassis-contact':'Stopped: chassis touched the road / guide',stalled:'Stopped: stalled',offtrack:'Stopped: outside model bounds',invalid:'Numerical validity limit exceeded',timeout:'Simulation time limit reached'};
-function update(){if(!setup)return;designDraw();try{run=D.simulate(DerbyTracks.fit(setup.profile),setup.params,setup.geometry,settings);run.profile=setup.profile;time=0;const s=run.samples.at(-1);$('pitch-summary').textContent=status[run.status]+` · ${run.time.toFixed(3)} s · axle midpoint x ${(s.x*1000).toFixed(0)} mm. Peak speed ${run.peak.toFixed(2)} m/s. Maximum sampled wheel penetration ${(run.maxPenetration*1000).toFixed(3)} mm.`;$('pitch-inputs').textContent=`Using current setup: ${setup.params.mass} g total / ${setup.params.wheels} g wheels · ${setup.geometry.wheelbase} mm wheelbase · ${setup.geometry.length} mm body · ${setup.params.radius*2} mm wheels · ${setup.geometry.clearance} mm road clearance. Pitch inertia ${(setup.params.mass/1000*(settings.gyration/1000)**2).toExponential(3)} kg·m².`;const contact=run.collision;
+function update(){if(!setup)return;designDraw();try{run=D.simulate(DerbyTracks.fit(setup.profile),setup.params,setup.geometry,settings);run.profile=setup.profile;time=0;const s=run.samples.at(-1);$('pitch-summary').textContent=status[run.status]+` · ${run.time.toFixed(3)} s · axle midpoint x ${(s.x*1000).toFixed(0)} mm. Peak speed ${run.peak.toFixed(2)} m/s. Maximum sampled wheel penetration ${(run.maxPenetration*1000).toFixed(3)} mm.`;$('pitch-inputs').textContent=`Using current setup: ${setup.params.mass} g total / ${setup.params.wheels} g wheels · ${setup.geometry.wheelbase} mm wheelbase · ${setup.geometry.length} mm body · ${setup.params.radius*2} mm wheels · ${setup.geometry.clearance} mm road clearance. Pitch inertia ${(setup.params.mass/1000*(settings.gyration/1000)**2).toExponential(3)} kg·m².`;const contact=run.collision,closest=run.closestApproach;
+ $('pitch-end').disabled=false;
+ $('pitch-closest').disabled=!closest;
+ $('pitch-closest').hidden=!closest || contact?.t===closest.t;
  $('pitch-end').textContent=contact?'Inspect chassis contact':'Inspect final state';
  $('pitch-clearance').textContent=
   `Flat-ground clearance ${run.g.clearance} mm · Minimum during run ${(run.minGap*1000).toFixed(2)} mm`+
-  (contact?` · ${contact.part} hit the ${contact.surface.toLowerCase()} at track x = ${(contact.x*1000).toFixed(0)} mm.`:run.minGap<0?' (within the 0.20 mm contact tolerance).':'.');
+  (contact?` · ${contact.part} hit the ${contact.surface.toLowerCase()} at track x = ${(contact.x*1000).toFixed(0)} mm.`:
+  closest?` · ${closest.part} over the ${closest.surface.toLowerCase()} at track x = ${(closest.x*1000).toFixed(0)} mm${run.minGap<0?' (within the 0.20 mm contact tolerance)':''}.`:'.');
  renderEvents();draw();}catch(error){run=null;$('pitch-summary').textContent='Unable to simulate: '+error.message;}}
 function sample(){let i=0;while(i+1<run.samples.length&&run.samples[i+1].t<=time)i++;return run.samples[i];}
 function renderEvents(){const list=$('pitch-events');list.replaceChildren();const segments=[];for(const s of run.samples){const code=s.rear+2*s.front;let q=segments.at(-1);if(!q||q.code!==code){q={code,start:s.t,end:s.t};segments.push(q);}q.end=s.t;}const labels=['Both axles airborne','Rear axle only','Front axle only','Both axles supported'];let shown=0;for(const q of segments){if(q.code===3||q.end-q.start<.005)continue;const button=document.createElement('button');button.className='button secondary';button.textContent=`${labels[q.code]} · ${q.start.toFixed(3)}–${q.end.toFixed(3)} s`;button.onclick=()=>{stop();time=q.start;draw();};list.append(button);if(++shown===20)break;}if(!shown)list.textContent='No contact-loss interval lasting at least 5 ms.';}
@@ -19,11 +23,20 @@ const energies=[['potential',s.potential],['translation',s.translation],['wheel'
 drawScene(s);drawChart(s);}
 function context(id){const canvas=$(id),w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,2);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);return {ctx,w,h};}
 function drawScene(s){const {ctx,w,h}=context('pitch-scene');if(w<=0||h<=65)return;const zoom=Math.min(w/.48,(h-65)/.26),X=x=>w/2+(x-s.x)*zoom,Y=z=>h*.55-(z-s.z)*zoom;ctx.lineWidth=2;for(const [points,color] of [[run.profiles.points,'#d4b68a'],[run.profiles.guide,'#80b9f2']]){ctx.strokeStyle=color;ctx.beginPath();let first=true;for(const q of points){if(Math.abs(q[0]-s.x)>.35)continue;first?ctx.moveTo(X(q[0]),Y(q[1])):ctx.lineTo(X(q[0]),Y(q[1]));first=false;}ctx.stroke();}
-const c=Math.cos(s.angle),sn=Math.sin(s.angle),point=(u,n)=>[X(s.x+u*c-n*sn),Y(s.z+u*sn+n*c)],r=run.p.radius/1000,bottom=(run.g.clearance-run.p.radius)/1000;ctx.beginPath();for(const [i,[u,n]] of [[-run.g.length/2000,bottom],[run.g.length/2000,bottom],[run.g.length/2000,bottom+.014],[-run.g.length/2000,bottom+.014]].entries()){const q=point(u,n);i?ctx.lineTo(...q):ctx.moveTo(...q);}ctx.closePath();ctx.fillStyle=s.gap<0?'#e58c61':'#c5e68c';ctx.fill();for(const [j,u] of [-run.g.wheelbase/2000,run.g.wheelbase/2000].entries()){const q=point(u,0),contact=j?s.front:s.rear;ctx.beginPath();ctx.arc(...q,r*zoom,0,Math.PI*2);ctx.fillStyle='#182326';ctx.fill();ctx.strokeStyle=contact?'#c5e68c':'#f1a877';ctx.lineWidth=3;ctx.stroke();ctx.font='12px system-ui';ctx.fillStyle=ctx.strokeStyle;ctx.textAlign='center';ctx.fillText(j?'FRONT':'REAR',q[0],q[1]+r*zoom+19);}ctx.fillStyle='#f2dd88';ctx.beginPath();ctx.arc(X(s.cx),Y(s.cz),4,0,Math.PI*2);ctx.fill();ctx.textAlign='left';ctx.font='12px system-ui';ctx.fillText('CG',X(s.cx)+8,Y(s.cz)-7);if(run.collision&&s.t===run.collision.t){
- const hit=run.collision;
+const c=Math.cos(s.angle),sn=Math.sin(s.angle),point=(u,n)=>[X(s.x+u*c-n*sn),Y(s.z+u*sn+n*c)],r=run.p.radius/1000,bottom=(run.g.clearance-run.p.radius)/1000;ctx.beginPath();for(const [i,[u,n]] of [[-run.g.length/2000,bottom],[run.g.length/2000,bottom],[run.g.length/2000,bottom+.014],[-run.g.length/2000,bottom+.014]].entries()){const q=point(u,n);i?ctx.lineTo(...q):ctx.moveTo(...q);}ctx.closePath();ctx.fillStyle=s.gap<0?'#e58c61':'#c5e68c';ctx.fill();for(const [j,u] of [-run.g.wheelbase/2000,run.g.wheelbase/2000].entries()){const q=point(u,0),contact=j?s.front:s.rear;ctx.beginPath();ctx.arc(...q,r*zoom,0,Math.PI*2);ctx.fillStyle='#182326';ctx.fill();ctx.strokeStyle=contact?'#c5e68c':'#f1a877';ctx.lineWidth=3;ctx.stroke();ctx.font='12px system-ui';ctx.fillStyle=ctx.strokeStyle;ctx.textAlign='center';ctx.fillText(j?'FRONT':'REAR',q[0],q[1]+r*zoom+19);}ctx.fillStyle='#f2dd88';ctx.beginPath();ctx.arc(X(s.cx),Y(s.cz),4,0,Math.PI*2);ctx.fill();ctx.textAlign='left';ctx.font='12px system-ui';ctx.fillText('CG',X(s.cx)+8,Y(s.cz)-7);const collision=run.collision?.t===s.t;
+const hit=collision?run.collision:run.closestApproach?.t===s.t?run.closestApproach:null;
+if(hit){
+ if(!collision){
+  ctx.beginPath();
+  ctx.moveTo(X(hit.x),Y(hit.z));
+  ctx.lineTo(...point(hit.local,bottom));
+  ctx.strokeStyle='#9ce3ff';
+  ctx.lineWidth=2;
+  ctx.stroke();
+ }
  ctx.beginPath();
  ctx.arc(X(hit.x),Y(hit.z),6,0,Math.PI*2);
- ctx.fillStyle='#ff514d';
+ ctx.fillStyle=collision?'#ff514d':'#9ce3ff';
  ctx.fill();
  ctx.strokeStyle='#fff';
  ctx.lineWidth=2;
@@ -34,7 +47,13 @@ function drawChart(s){const {ctx,w,h}=context('pitch-chart');if(w<=0||h<=60)retu
 $('pitch-play').onclick=()=>{if(!run)return;if(playing){stop();return;}if(time>=run.time)time=0;playing=true;last=performance.now();$('pitch-play').textContent='Ⅱ Pause';const tick=now=>{if(!playing)return;time=Math.min(run.time,time+Math.min(.05,(now-last)/1000)*Number($('pitch-speed').value));last=now;draw();if(time>=run.time)stop();else frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);};
 $('pitch-timeline').oninput=e=>{if(!run)return;stop();time=run.time*Number(e.target.value)/1000;draw();};$('pitch-end').onclick=()=>{if(!run)return;stop();time=run.time;draw();};
 $('pitch-reset').onclick=()=>{settings={...D.defaults};for(const d of D.specs)$('pitch-'+d.key).value=settings[d.key];try{localStorage.setItem('derby-pitch-v1',JSON.stringify(settings));}catch{}schedule();};
-$('pitch-export').onclick=()=>{if(!run)return;const result={format:'derby-pitch-report',version:1,params:run.p,geometry:run.g,dynamics:run.d,status:run.status,dt:run.dt,time:run.time,initialEnergy:run.initialEnergy,maxResidual:run.maxResidual,track:run.profile,minimumClearanceMm:run.minGap*1000,collision:run.collision,samples:run.samples};const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='derby-pitch-report.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('pitch-closest').onclick=()=>{
+ if(!run?.closestApproach)return;
+ stop();
+ time=run.closestApproach.t;
+ draw();
+};
+$('pitch-export').onclick=()=>{if(!run)return;const result={format:'derby-pitch-report',version:1,params:run.p,geometry:run.g,dynamics:run.d,status:run.status,dt:run.dt,time:run.time,initialEnergy:run.initialEnergy,maxResidual:run.maxResidual,track:run.profile,minimumClearanceMm:run.minGap*1000,collision:run.collision,closestApproach:run.closestApproach,samples:run.samples};const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='derby-pitch-report.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 window.DerbyDynamicsUI={get:()=>({...settings}),set(raw){settings=D.sanitize(raw);for(const d of D.specs)$('pitch-'+d.key).value=settings[d.key];try{localStorage.setItem('derby-pitch-v1',JSON.stringify(settings));}catch{}schedule();}};
 window.addEventListener('derby-setup-change',e=>{setup=e.detail;schedule();});new ResizeObserver(()=>{if(run)draw();}).observe($('pitch-scene'));new ResizeObserver(()=>{if(run)draw();}).observe($('pitch-chart'));window.addEventListener('derby-activity-change',stop);document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
 
