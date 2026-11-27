@@ -3,7 +3,7 @@
 const copy=x=>JSON.parse(JSON.stringify(x));
 const id=()=>globalThis.crypto.randomUUID();
 const stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
-const signature=r=>stable([r.mode,r.setup.params,r.setup.geometry,r.mode==='balance'?r.setup.dynamics:null]);
+const signature=r=>stable([r.setup.profile==='straight'?'straight':'original',r.mode,r.setup.params,r.setup.geometry,r.mode==='balance'?r.setup.dynamics:null]);
 const text=(x,n=500)=>typeof x==='string'&&x.length<=n;
 function validate(d){
  if(!d||d.format!=='classroom-experiments'||d.version!==1||!text(d.id,80)||!text(d.project,80)||!text(d.classCode,40)||!d.classCode.trim()||!text(d.student,40)||!d.student.trim()||!Array.isArray(d.runs)||d.runs.length>2000)throw Error('Invalid experiment record.');

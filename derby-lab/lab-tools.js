@@ -2,6 +2,7 @@
 'use strict';
 const P=global.DerbyPhysics||(typeof require==='function'?require('./physics.js'):null);
 const F=global.DerbyFit||(typeof require==='function'?require('./fit.js'):null);
+const profileKey=id=>id==='straight'?'straight':'original';
 const minor=f=>f.maxHeight<.001&&f.duration<.020;
 const peakImpact=r=>Math.max(0,...r.flights.filter(f=>f.landed).map(f=>f.impact));
 const defaults={objective:'fastest',maxMass:142,maxImpact:1};
@@ -39,9 +40,9 @@ function parseDocument(text){
  const params=validParams(raw.params),name=cleanName(raw.name);
  if(raw.records!==undefined&&(!Array.isArray(raw.records)||raw.records.length>12))throw Error('A setup file can contain at most 12 saved setups.');
  if(raw.version===3&&(raw.geometry===undefined||(raw.records||[]).some(r=>r?.geometry===undefined)))throw Error('Missing v3 fit dimensions.');
- const records=(raw.records||[]).map(r=>({name:cleanName(r?.name),p:validParams(r?.p),geometry:raw.version===2?{...F.defaults}:F.validate(r.geometry)}));
- return {params,name,records,options:settings(raw.options),geometry:raw.version===2?{...F.defaults}:F.validate(raw.geometry)};
+ const records=(raw.records||[]).map(r=>({name:cleanName(r?.name),profile:profileKey(r?.profile),p:validParams(r?.p),geometry:raw.version===2?{...F.defaults}:F.validate(r.geometry)}));
+ return {profile:profileKey(raw.profile),params,name,records,options:settings(raw.options),geometry:raw.version===2?{...F.defaults}:F.validate(raw.geometry)};
 }
-function documentFor(params,name,options,records=[],geometry=F.defaults){return {format:'derby-lab',version:3,params:validParams(params),name:cleanName(name),options:settings(options),geometry:F.validate(geometry),records:records.map(r=>({name:cleanName(r.name),p:validParams(r.p),geometry:F.validate(r.geometry)}))};}
+function documentFor(params,name,options,records=[],geometry=F.defaults,profile='original'){return {format:'derby-lab',version:3,profile:profileKey(profile),params:validParams(params),name:cleanName(name),options:settings(options),geometry:F.validate(geometry),records:records.map(r=>({name:cleanName(r.name),profile:profileKey(r.profile),p:validParams(r.p),geometry:F.validate(r.geometry)}))};}
 const api={minor,peakImpact,defaults,settings,reason,candidates,validParams,cleanName,parseDocument,documentFor};global.DerbyLabTools=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

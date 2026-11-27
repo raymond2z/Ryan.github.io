@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const F=DerbyFit,D=DERBY_FIT_DATA,$=id=>document.getElementById(id);let g={...F.defaults},radius=15,result,index=0;
+const F=DerbyFit,$=id=>document.getElementById(id);let D=DerbyTracks.fit(),g={...F.defaults},radius=15,result,index=0;
 try{g=F.sanitize(JSON.parse(localStorage.getItem('derby-fit-v1')));}catch{}
 for(const d of F.specs){const label=document.createElement('label');label.className='fit-field';label.textContent=d.label+' (mm)';const input=document.createElement('input');input.type='number';input.id='fit-'+d.key;input.min=d.min;input.max=d.max;input.step=d.step;input.value=g[d.key];const apply=()=>{const n=Number(input.value);if(input.value===''||!Number.isFinite(n)){input.value=g[d.key];return;}g=F.sanitize({...g,[d.key]:n});refresh();changed();};input.onchange=apply;input.oninput=()=>{const n=Number(input.value);if(input.value!==''&&n>=d.min&&n<=d.max)apply();};label.append(input);$('fit-controls').append(label);}
 function changed(){try{localStorage.setItem('derby-fit-v1',JSON.stringify(g));}catch{}window.dispatchEvent(new Event('derby-fit-change'));}
@@ -22,6 +22,6 @@ function draw(){const p=result?.samples[index];if(!p)return;const canvas=$('fit-
  $('fit-readout').textContent=`Rear axle x ${(p.rearX/1000).toFixed(3)} m · Pitch ${(p.angle*180/Math.PI).toFixed(1)}° · Clearance ${p.gap.toFixed(2)} mm · ${p.hit.part}. ${p.gap<0?'Negative clearance means geometric overlap; this pose is not physically traversable with both wheels supported.':''}`;
 }
 $('fit-position').oninput=e=>{index=Number(e.target.value);draw();};$('fit-worst').onclick=()=>{index=result.samples.indexOf(result.worst);$('fit-position').value=index;draw();};$('fit-reset').onclick=()=>{g={...F.defaults};refresh();changed();};
-window.DerbyFitUI={get:()=>({...g}),set:raw=>{g=F.validate(raw);refresh();changed();},setRadius:r=>{if(r!==radius){radius=r;refresh();}}};
+window.DerbyFitUI={setProfile(id){const next=DerbyTracks.fit(id);if(next!==D){D=next;refresh();}},get:()=>({...g}),set:raw=>{g=F.validate(raw);refresh();changed();},setRadius:r=>{if(r!==radius){radius=r;refresh();}}};
 refresh();new ResizeObserver(draw).observe($('fit-canvas'));
 })();
