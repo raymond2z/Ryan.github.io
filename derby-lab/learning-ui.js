@@ -41,7 +41,19 @@ pitch.insertBefore(advanced,fitDrawer);pitch.querySelector('h2').textContent='Ke
 const caution=document.createElement('p');caution.className='learning-caution';caution.textContent='A model to explore, not a real-car prediction. Balance Lab uses different physics and timing from Race Lab.';pitch.querySelector('.fit-intro').after(caution);
 const contact=$('pitch-contact').parentElement;contact.className='learning-contact';pitch.querySelector('.pitch-layout').before(contact);
 const shared=document.createElement('button');shared.className='button secondary';shared.textContent='Change weight & wheels in Race Lab';shared.onclick=()=>select('race');pitch.querySelector('.tool-actions').append(shared);
-function select(mode){window.dispatchEvent(new Event('derby-activity-change'));const race=mode==='race';workspace.hidden=!race;pitch.hidden=race;files.hidden=!race;if(race)tuning.insertBefore(trackSettings,carExtras);else pitch.insertBefore(trackSettings,$('pitch-controls'));$('choose-race').setAttribute('aria-pressed',race);$('choose-balance').setAttribute('aria-pressed',!race);guide.textContent=race?'1. Change a slider   →   2. Start the race   →   3. Try another idea':'1. Move the balance point   →   2. Play   →   3. Watch the wheels';}
+const designPanel=$('drag-wheel-diameter').parentElement;
+const balanceBoard=document.createElement('div');
+balanceBoard.className='balance-board';
+const balanceView=document.createElement('div');
+balanceView.className='balance-view';
+const balanceSettings=document.createElement('aside');
+balanceSettings.setAttribute('aria-label','Balance Lab settings');
+const scene=pitch.querySelector('.pitch-layout');
+contact.before(balanceBoard);
+balanceBoard.append(balanceView,balanceSettings);
+balanceView.append(scene,contact,$('pitch-summary'),$('pitch-clearance'),$('pitch-end').parentElement);
+balanceSettings.append(designPanel,$('pitch-controls'));
+function select(mode){window.dispatchEvent(new Event('derby-activity-change'));const race=mode==='race';workspace.hidden=!race;pitch.hidden=race;files.hidden=!race;if(race)tuning.insertBefore(trackSettings,carExtras);else balanceSettings.append(trackSettings);$('choose-race').setAttribute('aria-pressed',race);$('choose-balance').setAttribute('aria-pressed',!race);guide.textContent=race?'1. Change a slider   →   2. Start the race   →   3. Try another idea':'1. Move the balance point   →   2. Play   →   3. Watch the wheels';}
 $('choose-race').onclick=()=>select('race');$('choose-balance').onclick=()=>select('balance');
 // Existing deep links still reveal their destination.
 function reveal(){if(location.hash==='#pitch-heading')select('balance');if(location.hash==='#fit-heading'){select('balance');fitDrawer.open=true;}}

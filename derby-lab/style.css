@@ -40,3 +40,19 @@
 .learning-contact{font-size:16px;margin:15px 0;color:#bdcfca}.learning-contact b{margin-left:12px;color:#d8f591}.energy-panel:has(.learning-drawer[open]) .energy-column>span,.energy-panel:has(.learning-drawer[open]) .energy-column>small{display:block}
 
 #track-settings .parameter{padding:12px 4px}#track-settings input[type=range]{min-height:32px}#track-settings .parameter label{font-size:17px}.track-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0 16px}#track-readout{color:#c6d7be;font-size:13px}#balance-activity>#track-settings{max-width:720px}#track-settings .learning-drawer{margin-bottom:0}
+
+.balance-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,36%);gap:18px;align-items:start}
+.balance-board>*{min-width:0}
+.balance-board .pitch-layout,.balance-board aside>div:first-child{margin-top:0!important}
+.balance-board .pitch-controls{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+@media(min-width:851px) and (min-height:600px){.balance-view{position:sticky;top:10px}}
+@media(max-width:850px){
+ .balance-board{grid-template-columns:minmax(0,1fr)}
+ .workspace:not([hidden]){display:flex;flex-direction:column;gap:14px}
+ .workspace>.simulation{display:contents}
+ .workspace .scene-card{order:-2;width:100%}
+ .workspace>.tuning-panel{order:-1;position:static;width:100%}
+ .workspace .simulation>*{width:100%}
+ .balance-board{gap:10px}
+ .balance-board #pitch-scene{height:clamp(165px,28vh,255px)}
+}

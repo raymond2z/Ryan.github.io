@@ -2,6 +2,11 @@
 
 Add a dated entry for each update. Record what changed, why, and how it was checked.
 
+## 2026-11-27 · Controls beside the simulation and student guide
+
+- Placed Balance Lab playback and inspection results beside the car design controls on wide screens. Narrow screens place the view above the controls, and Race Lab puts tuning before the detailed results.
+- Added an English student guide with one-variable investigations, collision inspection, and notebook instructions.
+
 ## 2026-11-27 · Inspect the tightest gap
 
 - Added **Inspect tightest gap** in Balance Lab. It jumps to the exact simulation step with the smallest gap, highlights the location in blue, and identifies the part of the chassis and the track surface. Collisions retain their red marker.
